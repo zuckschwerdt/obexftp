@@ -27,11 +27,13 @@
 %{
 #include "obexftp.h"
 #include "client.h"
-#include <stdint.h>
+#include <inttypes.h>
 %}
 #endif
      
-#include <stdint.h>
+#include <inttypes.h>
+#include <dirent.h>
+#include <sys/stat.h>
 #include <openobex/obex.h>
 #include "obexftp.h"
 
@@ -79,7 +81,13 @@ int obexftp_cli_disconnect(obexftp_client_t *cli);
 
 /* transfer */
 
-int obexftp_setpath(obexftp_client_t *cli, /*@null@*/ const char *name);
+int obexftp_setpath(obexftp_client_t *cli, /*@null@*/ const char *name, int create);
+
+#define	obexftp_cdup(cli) \
+	obexftp_setpath(cli, NULL)
+
+#define	obexftp_cdtop(cli) \
+	obexftp_setpath(cli, "")
 
 int obexftp_put(obexftp_client_t *cli, const char *name);
 
@@ -102,6 +110,16 @@ int obexftp_rename(obexftp_client_t *cli,
 		   const char *sourcename,
 		   const char *targetname);
 
+/* compatible directory handling */
+
+DIR *obexftp_opendir(obexftp_client_t *cli, const char *name);
+
+int obexftp_closedir(DIR *dir);
+
+struct dirent *obexftp_readdir(DIR *dir);
+
+int obexftp_stat(obexftp_client_t *cli, const char *name, struct stat *buf);
+
 /* cache wrapper */
 
 /*@null@*/ char *obexftp_fast_list(obexftp_client_t *cli,
@@ -112,3 +130,4 @@ int obexftp_rename(obexftp_client_t *cli,
 #endif
 
 #endif /* OBEXFTP_CLIENT_H */
+

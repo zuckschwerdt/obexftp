@@ -18,11 +18,12 @@ AM_PROG_LIBTOOL
 # Checks for header files.
 AC_HEADER_STDC
 AC_HEADER_DIRENT
-AC_CHECK_HEADERS([arpa/inet.h errno.h fcntl.h netdb.h netinet/in.h stdlib.h string.h sys/ioctl.h sys/socket.h sys/time.h termios.h unistd.h])
+AC_CHECK_HEADERS([arpa/inet.h errno.h fcntl.h netdb.h netinet/in.h stdlib.h string.h sys/ioctl.h sys/socket.h sys/time.h termios.h unistd.h sys/select.h])
 
 # Checks for libraries.
 AM_PATH_OPENOBEX(1.0.0)
 
+dnl IRDA_CHECK
 BLUETOOTH_CHECK
 
 dnl Check for C99 __func__
@@ -61,11 +62,11 @@ AC_SUBST(BFB_VERSION)
 AC_OUTPUT([
 Makefile 
 doc/Makefile
+contrib/Makefile
 vmo/Makefile
 apps/Makefile
 bfb/Makefile
 cobexbfb/Makefile
-cobexpe/Makefile
 obexftp/Makefile
 obexftp.spec
 ])

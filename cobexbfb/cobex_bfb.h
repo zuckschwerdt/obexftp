@@ -22,7 +22,7 @@
 #ifndef COBEXBFB_H
 #define COBEXBFB_H
 
-#include <stdint.h>
+#include <inttypes.h>
 
 #ifdef __cplusplus
 extern "C" {

@@ -29,6 +29,14 @@
 #include <fcntl.h>
 #include <sys/stat.h>
 
+#include <sys/types.h>
+#include <dirent.h>
+
+#ifdef HAVE_SYS_TIME_H
+#include <sys/time.h>
+#endif
+#include <time.h>
+
 /* htons */
 #ifdef _WIN32
 #include <winsock.h>
@@ -37,7 +45,7 @@
 #endif
 
 #ifdef _WIN32
-#define PATH_MAX MAX_PATH
+#define _POSIX_PATH_MAX MAX_PATH
 #endif /* _WIN32 */
 
 #ifdef HAVE_BLUETOOTH
@@ -96,7 +104,7 @@ static int setpath(obexftp_client_t *cli, const char *name)
 	for (p = strchr(tail, '/'); p != NULL; p = strchr(p, '/')) {
 		*p = '\0';
 		p++;
-		(void) obexftp_setpath(cli, tail);
+		(void) obexftp_setpath(cli, tail, 0);
 		tail = p;
 		depth++;
 	}
@@ -319,6 +327,7 @@ static int cli_sync_request(obexftp_client_t *cli, obex_object_t *object)
 obexftp_client_t *obexftp_cli_open(int transport, /*const*/ obex_ctrans_t *ctrans, obexftp_info_cb_t infocb, void *infocb_data)
 {
 	obexftp_client_t *cli;
+	return_val_if_fail(infocb != NULL, NULL);
 
 	DEBUG(3, "%s()\n", __func__);
 	cli = calloc (1, sizeof(obexftp_client_t));
@@ -553,8 +562,6 @@ int obexftp_get(obexftp_client_t *cli, const char *localname, const char *remote
 {
 	obex_object_t *object = NULL;
 	int ret;
-/*	int depth;	*/
-/*	const char *p;	*/
 
 	return_val_if_fail(cli != NULL, -1);
 	return_val_if_fail(remotename != NULL, -1);
@@ -562,13 +569,15 @@ int obexftp_get(obexftp_client_t *cli, const char *localname, const char *remote
 	cli->infocb(OBEXFTP_EV_RECEIVING, remotename, 0, cli->infocb_data);
 
 // this was a bad idea from the start
-/*
+if(0) {
+	int depth;
+	const char *p;
 	depth = setpath(cli, remotename);
 	if ((p = strrchr(remotename, '/')))
 		p++;
 	else
 		p = remotename;
-*/
+}
 	DEBUG(2, "%s() Getting %s -> %s\n", __func__, remotename, localname);
 
 	if (localname && *localname)
@@ -649,7 +658,7 @@ int obexftp_del(obexftp_client_t *cli, const char *name)
 
 
 /* Do OBEX SetPath -- change up if name is NULL */
-int obexftp_setpath(obexftp_client_t *cli, const char *name)
+int obexftp_setpath(obexftp_client_t *cli, const char *name, int create)
 {
 	obex_object_t *object;
 	int ret = 0;
@@ -672,7 +681,7 @@ int obexftp_setpath(obexftp_client_t *cli, const char *name)
 			}
 	
 			cli->infocb(OBEXFTP_EV_SENDING, tail, 0, cli->infocb_data);
-			object = obexftp_build_setpath (cli->obexhandle, tail);
+			object = obexftp_build_setpath (cli->obexhandle, tail, create);
 			ret = cli_sync_request(cli, object);
 			if(ret < 0) break;
 
@@ -681,7 +690,7 @@ int obexftp_setpath(obexftp_client_t *cli, const char *name)
 		}
 		free(copy);
 	} else {
-		object = obexftp_build_setpath (cli->obexhandle, NULL);
+		object = obexftp_build_setpath (cli->obexhandle, name, create);
 		ret = cli_sync_request(cli, object);
 	}
 
@@ -762,11 +771,11 @@ static int obexftp_visit(int action, const char *name, /*@unused@*/ const char *
 		break;
 
 	case VISIT_GOING_DEEPER:
-		ret = obexftp_setpath(userdata, name);
+		ret = obexftp_setpath(userdata, name, 0);
 		break;
 
 	case VISIT_GOING_UP:
-		ret = obexftp_setpath(userdata, NULL);
+		ret = obexftp_setpath(userdata, NULL, 0);
 		break;
 	}
 	DEBUG(3, "%s() returning %d\n", __func__, ret);
@@ -781,9 +790,9 @@ int obexftp_put(obexftp_client_t *cli, const char *name)
 	int ret;
 	
 	/* Remember cwd */
-	if((origdir = malloc(PATH_MAX)) == NULL)
+	if((origdir = malloc(_POSIX_PATH_MAX)) == NULL)
 		return -1;
-	if(getcwd(origdir, PATH_MAX) == NULL) {
+	if(getcwd(origdir, _POSIX_PATH_MAX) == NULL) {
 		free(origdir);
 		return -1;
 	}
@@ -801,12 +810,12 @@ int obexftp_put(obexftp_client_t *cli, const char *name)
 		name = ".";
 		
 		/* Get real name of new wd, extract last part of and do setpath to it */
-		if((newdir = malloc(PATH_MAX)) == NULL)
+		if((newdir = malloc(_POSIX_PATH_MAX)) == NULL)
 			return -1;
-		newdir = getcwd(newdir, PATH_MAX);
+		newdir = getcwd(newdir, _POSIX_PATH_MAX);
 		dirname = strrchr(newdir, '/') + 1;
 		if(strlen(dirname) != 0)
-			obexftp_setpath(cli, dirname);
+			obexftp_setpath(cli, dirname, 0);
 
 		free(newdir);
 	}
@@ -851,5 +860,161 @@ char *obexftp_fast_list(obexftp_client_t *cli, const char *name)
 		cli->infocb(OBEXFTP_EV_OK, name, 0, cli->infocb_data);
 
 	return cli->body_content;
+}
+
+/* directory handling */
+
+struct dirstream {
+	char *dir;
+	char *ptr;
+};
+
+typedef struct statentry STATENTRY;
+
+struct statentry {
+	char name[256];
+	int type;
+	int size;
+	time_t mtime;
+	STATENTRY *next;
+};
+
+char *statdir = NULL;
+STATENTRY *statbuf = NULL;
+
+static time_t atotime (const char *date)
+{
+	struct tm tm;
+
+	if (6 == sscanf(date, "%4d%2d%2dT%2d%2d%2d",
+			&tm.tm_year, &tm.tm_mday, &tm.tm_mon,
+			&tm.tm_hour, &tm.tm_min, &tm.tm_sec)) {
+		tm.tm_year -= 1900;
+		tm.tm_mon--;
+	}
+	tm.tm_isdst = 0;
+
+	return mktime(&tm);
+}
+
+DIR *obexftp_opendir(obexftp_client_t *cli, const char *name)
+{
+	/* purge stat buffer */
+	while (statbuf != NULL) {
+		STATENTRY *p = statbuf->next;
+		free(statbuf);
+		statbuf = p;
+	}
+	statbuf = NULL;
+
+	/* read dir */
+	struct dirstream *stream = malloc(sizeof(struct dirstream));
+	int res = 0;
+
+	/* List folder */
+	res = obexftp_list(cli, NULL, name);
+	if(res <= 0)
+		return NULL; /* errno */
+
+	stream->dir = cli->body_content;
+	stream->ptr = cli->body_content;
+
+	return (DIR *)stream;
+}
+
+int obexftp_closedir(DIR *dir)
+{
+	struct dirstream *d;
+	if (!dir)
+		return -1;
+	d = (struct dirstream *)dir;
+	free(d->dir);
+	free(d);
+	return 0;
+}
+
+struct dirent *obexftp_readdir(DIR *dir)
+{
+	struct dirstream *d;
+	struct dirent *ent;
+
+	char *line;
+	char name[200]; // bad coder
+	char mod[200]; // - no biscuits!
+	char size[200]; // int would be ok too.
+	int i;
+
+	if (!dir)
+		return NULL;
+
+	d = (struct dirstream *)dir;
+	ent = malloc(sizeof(struct dirent));
+
+	while (d->ptr) {
+		d->ptr = strchr(d->ptr, '<');
+		if (!(d->ptr))
+			return NULL;
+		line = d->ptr;
+		d->ptr = strchr(line, '>');
+		if (!(d->ptr))
+			return NULL;
+
+		*(d->ptr) = '\0';
+		(d->ptr)++;
+
+		if (2 == sscanf (line, "<folder name=\"%[^\"]\" modified=\"%[^\"]\"", name, mod)) {
+			STATENTRY *statent = malloc(sizeof(STATENTRY));
+			ent->d_type = DT_DIR;
+			strcpy(ent->d_name, name);
+
+			statent->type = DT_DIR;
+			strcpy(statent->name, name);
+			statent->mtime = atotime(mod);
+			statent->size = 0;
+			statent->next = statbuf;
+			statbuf = statent;
+			return ent;
+		}
+		if (3 == sscanf (line, "<file name=\"%[^\"]\" size=\"%[^\"]\" modified=\"%[^\"]\"", name, size, mod)) {
+			STATENTRY *statent = malloc(sizeof(STATENTRY));
+			ent->d_type = DT_REG;
+			strcpy(ent->d_name, name);
+			
+			statent->type = DT_REG;
+			strcpy(statent->name, name);
+			statent->mtime = atotime(mod);
+			statent->size = 0;
+			sscanf(size, "%i", &i);
+			statent->size = i; /* int to off_t */
+			statent->next = statbuf;
+			statbuf = statent;
+			return ent;
+		}
+		// handle hidden folder!
+	}
+	return NULL;
+}
+
+int obexftp_stat(obexftp_client_t *cli, const char *name, struct stat *buf)
+{
+	STATENTRY *p;
+	/* see if statbuf is recent */
+//	if (not recent) {
+//		DIR *dir = obexftp_opendir(cli, parent);
+//		while (obexftp_readdir(dir) != NULL);
+//		obexftp_closedir(dir);
+//	}
+
+	/* search */
+	for (p = statbuf; p; p = p->next) {
+		if (!strcmp(p->name, name)) {
+			buf->st_mode = p->type;
+			buf->st_mtime = p->mtime;
+			buf->st_size = p->size;
+		
+			return 0;
+		}
+	}
+	return -1;
 }
 

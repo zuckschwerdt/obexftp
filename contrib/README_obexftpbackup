@@ -1,0 +1,10 @@
+------------- obexftpbackup 1.0 -------------
+
+The sleeps appear to be necessary to give my Sony Ericsson T610 a chance.
+
+If you wish to retain all your previous downloads from the phone then
+don't use the -o option, and take care to rename your pictures from the
+default name otherwise Picture(1).jpg etc will omitted from your backup. 
+
+Ken Booth <ken@booths.org.uk>
+

@@ -22,7 +22,7 @@
 #ifndef OBEXFTP_OBJECT_H
 #define OBEXFTP_OBJECT_H
 
-#include <stdint.h>
+#include <inttypes.h>
 #include <openobex/obex.h>
 
 #ifdef __cplusplus
@@ -47,7 +47,7 @@ extern "C" {
 /*@null@*/ obex_object_t *obexftp_build_get (obex_t obex, const char *name);
 /*@null@*/ obex_object_t *obexftp_build_rename (obex_t obex, const char *from, const char *to);
 /*@null@*/ obex_object_t *obexftp_build_del (obex_t obex, const char *name);
-/*@null@*/ obex_object_t *obexftp_build_setpath (obex_t obex, const char *name);
+/*@null@*/ obex_object_t *obexftp_build_setpath (obex_t obex, const char *name, int create);
 /*@null@*/ obex_object_t *obexftp_build_put (obex_t obex, const char *name);
 
 #ifdef __cplusplus

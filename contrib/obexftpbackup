@@ -1,0 +1,72 @@
+#!/bin/bash --norc
+
+# This is the Bluetooth channel used by Sony Ericsson T610 phones
+btchan=15
+retries=10
+
+overwrite=0
+[ "X$1" == "X-o" ] && {
+        overwrite=1
+        shift
+}
+
+[ $# -gt 1 ] && {
+        echo "usage: $0 [-o] [dir]"
+        exit 1
+}
+
+topdir=$1
+[ -z "$1" ] && topdir=/home/ken/Documents/Obexftp-backups
+
+[ ! -d $topdir ] && {
+        echo "${0}: ${topdir}: No such directory"
+        exit 1
+}
+
+echo "Scanning for new phones"
+for btaddr in `hcitool scan | grep : | cut -f2`
+do
+        sleep 1
+        subdir=`hcitool scan | grep --fixed-strings $btaddr | cut -f3`
+        echo "Found phone $subdir"
+        mkdir "$topdir/$subdir" 2>/dev/null
+        echo $btaddr > "$topdir/$subdir/.Bluetooth-addr"
+done
+sleep 1
+
+for dir in $topdir/*
+do
+        echo Getting files for phone `basename "$dir"`
+        btaddr=`cat "$dir/.Bluetooth-addr"`
+        obexftp -b $btaddr -B $btchan -l / 2>/dev/null | tr '<' '\012' | grep "f
+older name" | cut -d\" -f2 | while read sub
+        do
+                sleep 1
+                echo "directory $dir/$sub"
+                mkdir "$dir/$sub" 2>/dev/null
+                obexftp -b $btaddr -B $btchan -l $sub 2>/dev/null | tr '<' '\012
+' | grep "file name" | cut -d\" -f2 | while read fil
+                do
+                        sleep 1
+                        echo "checking $dir/$sub/$fil"
+                        [ $overwrite == "1" ] || [ ! -f "$dir/$sub/$fil" ] && {
+                                echo "reading $dir/$sub/$fil"
+                                cd "$dir/$sub"
+                                retry=0
+                                success=0
+                                while [ $success -eq 0 -a $retry -lt $retries ]
+                                do
+                                        success=`obexftp -b $btaddr -B $btchan -
+c "$sub" -g "$fil" 2>&1 | grep -c '^Receiving '"$fil"'.*done$'`
+                                        sleep 1
+                                        [ $success -eq 0 ] && echo "Retrying ...
+"
+                                        retry=`expr $retry + 1`
+                                done
+                                echo "read $dir/$sub/$fil success $success"
+                        }
+                done
+        done
+done
+
+exit 0

@@ -1,6 +1,12 @@
 ObexFTP to do list
 ==================
 
+for 0.10.5
+
+* AT-Kommandos
+* UUID issue (FBS or S45 first?)
+
+
 * obexftpd server with simple inbox (like IrCP)
 
 * "Something went wrong" -- help texts

@@ -31,7 +31,9 @@
 #include <fcntl.h>
 #include <sys/types.h>
 #include <unistd.h>
+#ifdef HAVE_SYS_SELECT_H
 #include <sys/select.h>
+#endif
 
 #ifdef HAVE_SYS_TIME_H
 #include <sys/time.h>
@@ -281,7 +283,7 @@ void bfb_io_close(fd_t fd, int force)
 #ifdef _WIN32
 		if(SetCommBreak(fd) != TRUE)	{
 #else
-		if(ioctl(fd, TCSBRKP, 0) < 0)	{
+		if(ioctl(fd, TIOCSBRK, 0) < 0)	{
 #endif
 			DEBUG(1, "Unable to send break!\n");
 		}
@@ -377,6 +379,9 @@ fd_t bfb_io_open(const char *ttyname, int *typeinfo)
 
 	if(do_at_cmd(ttyfd, "ATZ\r\n", rspbuf, sizeof(rspbuf)) < 0) {
 		DEBUG(1, "Comm-error or already in BFB mode\n");
+#ifdef _WIN32
+		goto bfbmode;
+#else
 		newtio.c_cflag = B19200 | CS8 | CREAD;
 		(void) tcflush(ttyfd, TCIFLUSH);
 		(void) tcsetattr(ttyfd, TCSANOW, &newtio);
@@ -384,6 +389,7 @@ fd_t bfb_io_open(const char *ttyname, int *typeinfo)
 			DEBUG(1, "Comm-error or already in BFB mode\n");
 			goto bfbmode;
 		}
+#endif
 	}
 	if(strcasecmp("OK", rspbuf) != 0)	{
 		DEBUG(1, "Error doing ATZ (%s)\n", rspbuf);
@@ -410,8 +416,9 @@ fd_t bfb_io_open(const char *ttyname, int *typeinfo)
 	}
 	if(strcasecmp("^SIFS: WIRE", rspbuf) != 0)	{ /* expect "OK" too! */
 		if(strcasecmp("^SIFS: BLUE", rspbuf) != 0)	{
-			DEBUG(1, "Error doing AT^SIFS (%s)\n", rspbuf);
-			goto err;
+			if(strcasecmp("^SIFS: IRDA", rspbuf) != 0)      {
+				DEBUG(1, "Unknown connection doing AT^SIFS (%s), continuing anyway ...\n", rspbuf);
+			}
 		}
 	}
 
@@ -427,9 +434,11 @@ fd_t bfb_io_open(const char *ttyname, int *typeinfo)
 	sleep(1); /* synch a bit */
 
  bfbmode:
+#ifndef _WIN32
 	newtio.c_cflag = B57600 | CS8 | CREAD;
 	(void) tcflush(ttyfd, TCIFLUSH);
 	(void) tcsetattr(ttyfd, TCSANOW, &newtio);
+#endif
 
 	if (! bfb_io_init (ttyfd)) {
 		/* well there may be some garbage -- just try again */

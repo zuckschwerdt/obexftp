@@ -23,7 +23,7 @@
  *  FIXME: win32 not done yet
  */
 
-#include <stdint.h>
+#include <inttypes.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>

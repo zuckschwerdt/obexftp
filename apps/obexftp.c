@@ -29,11 +29,12 @@
 #define _GNU_SOURCE
 #include <getopt.h>
 
+#include <sys/types.h>
+#include <dirent.h>
+
 #include <obexftp/obexftp.h>
 #include <obexftp/client.h>
 #include <cobexbfb/cobex_bfb.h>
-/* waring: cobexpe serial io is broken on win32 */
-#include <cobexpe/cobex_pe.h>
 
 #ifdef _WIN32_FIXME
 /* OpenOBEX won't define a handler on win32 */
@@ -46,22 +47,7 @@ void DUMPBUFFER(unsigned int n, char *label, char *msg) { }
 #define OBEXFTP_PORT "OBEXFTP_PORT"
 #define OBEXFTP_ADDR "OBEXFTP_ADDR"
 
-#if 0
-void g_log_null_handler (const char *log_domain,
-			 GLogLevelFlags log_level,
-			 const char *message,
-			 void *user_data) {
-}
-
-void g_log_print_handler (const char *log_domain,
-			 GLogLevelFlags log_level,
-			 const char *message,
-			 void *user_data) {
-	g_print ("%s\n", message);
-}
-#endif
-
-/* current command, set my main, read from info_cb */
+/* current command, set by main, read from info_cb */
 int c;
 
 static void info_cb(int event, const char *msg, /*@unused@*/ int len, /*@unused@*/ void *data)
@@ -107,7 +93,7 @@ static void info_cb(int event, const char *msg, /*@unused@*/ int len, /*@unused@
 		break;
 
 	case OBEXFTP_EV_INFO:
-		fprintf(stderr, "Got info %d: \n", (int)msg);
+		printf("Got info %d: \n", (int)msg);
 		break;
 
 	case OBEXFTP_EV_BODY:
@@ -179,8 +165,7 @@ static void cli_disconnect()
 
 int main(int argc, char *argv[])
 {
-	/* int verbose=0; */
-	/* guint log_handler; */
+	int verbose=0;
 	int most_recent_cmd = 0;
 	char *p;
 	char *move_src = NULL;
@@ -212,23 +197,27 @@ int main(int argc, char *argv[])
 		int option_index = 0;
 		static struct option long_options[] = {
 			{"irda",	no_argument, NULL, 'i'},
+#ifdef HAVE_BLUETOOTH
 			{"bluetooth",	required_argument, NULL, 'b'},
+#endif
 			{"channel",	required_argument, NULL, 'B'},
 			{"tty",		required_argument, NULL, 't'},
 			{"list",	optional_argument, NULL, 'l'},
 			{"chdir",	required_argument, NULL, 'c'},
+			{"mkdir",	required_argument, NULL, 'C'},
 			{"get",		required_argument, NULL, 'g'},
 			{"put",		required_argument, NULL, 'p'},
 			{"delete",	required_argument, NULL, 'k'},
 			{"info",	no_argument, NULL, 'x'},
 			{"move",	required_argument, NULL, 'm'},
 			{"verbose",	no_argument, NULL, 'v'},
+			{"version",	no_argument, NULL, 'V'},
 			{"help",	no_argument, NULL, 'h'},
 			{"usage",	no_argument, NULL, 'u'},
 			{0, 0, 0, 0}
 		};
 		
-		c = getopt_long (argc, argv, "-ib:B:t:l::c:g:p:k:xm:vh",
+		c = getopt_long (argc, argv, "-ib:B:t:L:l::c:C:g:p:k:xm:Vvh",
 				 long_options, &option_index);
 		if (c == -1)
 			break;
@@ -240,10 +229,14 @@ int main(int argc, char *argv[])
 		
 		case 'i':
 			transport = OBEX_TRANS_IRDA;
+			if (tty != NULL)
+				free (tty);
 			break;
 		
 		case 'b':
 			transport = OBEX_TRANS_BLUETOOTH;
+			if (tty != NULL)
+				free (tty);
 			if (btaddr != NULL)
 				free (btaddr);
        			btaddr = optarg;
@@ -257,11 +250,25 @@ int main(int argc, char *argv[])
 			transport = OBEX_TRANS_CUSTOM;
 			if (tty != NULL)
 				free (tty);
+       			tty = optarg;
 
-			if (!strcasecmp(optarg, "irda"))
-				tty = NULL;
-			else
-				tty = optarg;
+			if (strstr(optarg, "ir") != NULL)
+				printf("Do you really want to use IrDA via ttys?\n");
+			break;
+
+		case 'L':
+			if(cli_connect ()) {
+				/* List folder */
+				struct dirent *ent;
+				DIR *dir = obexftp_opendir(cli, optarg);
+				while ((ent = obexftp_readdir(dir)) != NULL) {
+					struct stat st;
+					obexftp_stat(cli, ent->d_name, &st);
+					printf("%ld %s (%d)\n", st.st_size, ent->d_name, ent->d_type);
+				}
+				obexftp_closedir(dir);
+			}
+			most_recent_cmd = c;
 			break;
 
 		case 'l':
@@ -274,8 +281,16 @@ int main(int argc, char *argv[])
 
 		case 'c':
 			if(cli_connect ()) {
-				/* Get file */
-				(void) obexftp_setpath(cli, optarg);
+				/* Change dir */
+				(void) obexftp_setpath(cli, optarg, 0);
+			}
+			most_recent_cmd = c;
+			break;
+
+		case 'C':
+			if(cli_connect ()) {
+				/* Change or Make dir */
+				(void) obexftp_setpath(cli, optarg, 1);
 			}
 			most_recent_cmd = c;
 			break;
@@ -312,6 +327,7 @@ int main(int argc, char *argv[])
 				(void) obexftp_info(cli, 0x01);
 				(void) obexftp_info(cli, 0x02);
 			}
+			most_recent_cmd = 'h'; // not really
 			break;
 
 		case 'm':
@@ -329,41 +345,41 @@ int main(int argc, char *argv[])
 			break;
 
 		case 'v':
-#if 0
-			if (verbose++ > 0)
-				log_handler = g_log_set_handler (NULL,
-					 G_LOG_LEVEL_DEBUG,
-					 g_log_default_handler, NULL);
-			else
-				/* remove muting handler? */
-				/* g_log_remove_handler (NULL, log_handler); */
-				log_handler = g_log_set_handler (NULL,
-					 G_LOG_LEVEL_INFO,
-					 g_log_default_handler, NULL);
-#endif
+			verbose++;
 			break;
+			
+		case 'V':
+			printf("ObexFTP 0.10.4-rc3\n");
+			most_recent_cmd = 'h'; // not really
+			break;
+
 		case 'h':
 		case 'u':
-			printf("Usage: %s [-d <dev>] [-s|-a] [-l <dir> ...] [-c <dir>]\n"
-				"[-g <file> ...] [-p <files> ...] [-i] [-m <src> <dest> ...] [-k <files> ...]\n"
+			printf("Usage: %s [-i | -b <dev> [-B <chan>] | -t <dev>] [-l <dir> ...] [-c <dir>]\n"
+				"[-g <file> ...] [-p <files> ...] [-k <files> ...] [-x] [-m <src> <dest> ...]\n"
 				"Transfer files from/to Mobile Equipment.\n"
-				"Copyright (c) 2002-2003 Christian W. Zuckschwerdt\n"
+				"Copyright (c) 2002-2004 Christian W. Zuckschwerdt\n"
 				"\n"
 				" -i, --irda                  connect using IrDA transport\n"
+#ifdef HAVE_BLUETOOTH
 				" -b, --bluetooth <device>    connect to this bluetooth device\n"
 				" -B, --channel <number>      use this bluetooth channel when connecting\n"
-				" -t, --tty <device>          connect to this tty using a custom transport\n"
+#endif
+				" -t, --tty <device>          connect to this tty using a custom transport\n\n"
 				" -l, --list [<FOLDER>]       list a folder\n"
-				" -c, --chdir <DIR>           chdir / mkdir\n"
+				" -c, --chdir <DIR>           chdir\n"
+				" -C, --mkdir <DIR>           mkdir and chdir\n"
 				" -g, --get <SOURCE>          fetch files\n"
 				" -p, --put <SOURCE>          send files\n"
-				" -k, --delete <SOURCE>       delete files\n"
-				" -x, --info                  retrieve infos (Siemens)\n\n"
-				" -m, --move <SRC> <DEST>     move files (Siemens)\n"
+				" -k, --delete <SOURCE>       delete files\n\n"
+				" -x, --info                  retrieve infos (Siemens)\n"
+				" -m, --move <SRC> <DEST>     move files (Siemens)\n\n"
 				" -v, --verbose               verbose messages\n"
+				" -V, --version               print version info\n"
 				" -h, --help, --usage         this help text\n"
 				"\n",
 				argv[0]);
+			most_recent_cmd = 'h'; // not really
 			break;
 
 		default:
@@ -371,6 +387,9 @@ int main(int argc, char *argv[])
 				 argv[0]);
 		}
 	}
+
+	if (most_recent_cmd == 0)
+	       	fprintf(stderr, "Nothing to do. Use --help for help.\n");
 
 	if (optind < argc) {
 		fprintf(stderr, "non-option ARGV-elements: ");

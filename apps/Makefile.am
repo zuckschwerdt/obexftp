@@ -8,8 +8,7 @@ LDADD =				@OPENOBEX_LIBS@ \
 				@BLUETOOTH_LIBS@ \
 				../obexftp/libobexftp.la \
 				../cobexbfb/libcobexbfb.la \
-				../bfb/libbfb.la \
-				../cobexpe/libcobexpe.la
+				../bfb/libbfb.la
 # need on win32:
 # getopt.o getopt1.o libopenobex.a libwsock32.a
 

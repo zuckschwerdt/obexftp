@@ -186,15 +186,20 @@ obex_object_t *obexftp_build_del (obex_t obex, const char *name)
 
 
 /* if name is null ascend one directory */
-obex_object_t *obexftp_build_setpath (obex_t obex, const char *name)
+/* if name is empty change to top/default directory */
+obex_object_t *obexftp_build_setpath (obex_t obex, const char *name, int create)
 {
 	obex_object_t *object;
-	uint8_t setpath_nohdr_data[2] = {0,0};
+	// "Backup Level" flag and "Don't Create" flag
+	uint8_t setpath_nohdr_data[2] = {0, 0};
 	char *ucname;
 	int ucname_len;
 
 	object = OBEX_ObjectNew(obex, OBEX_CMD_SETPATH);
 
+	if (create == 0) {
+		setpath_nohdr_data[1] = 1;
+	}
 	if (name) {
 		ucname_len = strlen(name)*2 + 2;
 		ucname = malloc(ucname_len);

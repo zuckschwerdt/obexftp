@@ -22,7 +22,7 @@
 #ifndef BFB_IO_H
 #define BFB_IO_H
 
-#include <stdint.h>
+#include <inttypes.h>
 
 #ifdef __cplusplus
 extern "C" {

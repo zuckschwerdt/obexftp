@@ -26,7 +26,7 @@
 #include <sys/types.h>
 #ifdef _WIN32
 #define lstat(f,b) stat(f,b)
-#define PATH_MAX MAX_PATH
+#define _POSIX_PATH_MAX MAX_PATH
 #endif /* _WIN32 */
 #include <dirent.h>
 
@@ -45,9 +45,9 @@ static int visit_dir(const char *path, const visit_cb cb, void *userdata)
 	int len;
 	int ret = 1;
 
-	if((t = malloc(PATH_MAX + 1)) == NULL)
+	if((t = malloc(_POSIX_PATH_MAX + 1)) == NULL)
 		return -1;
-	t[PATH_MAX] = '\0'; /* save guard for strn... */
+	t[_POSIX_PATH_MAX] = '\0'; /* save guard for strn... */
 	
 	dir = opendir(path);
 	if(dir == NULL) {
@@ -59,9 +59,9 @@ static int visit_dir(const char *path, const visit_cb cb, void *userdata)
 			continue;
 		}
 
-		strncpy(t, path, PATH_MAX);
-		strncat(t, "/", PATH_MAX);
-		strncat(t, dirent->d_name, PATH_MAX);
+		strncpy(t, path, _POSIX_PATH_MAX);
+		strncat(t, "/", _POSIX_PATH_MAX);
+		strncat(t, dirent->d_name, _POSIX_PATH_MAX);
 		if(lstat(t, &statbuf) < 0) {
 			return -1;
 		}
@@ -75,8 +75,8 @@ static int visit_dir(const char *path, const visit_cb cb, void *userdata)
 			if( ret < 0)
 				goto out;
 			len = strlen(t);
-			strncat(t, dirent->d_name, PATH_MAX);
-			strncat(t, "/", PATH_MAX);
+			strncat(t, dirent->d_name, _POSIX_PATH_MAX);
+			strncat(t, "/", _POSIX_PATH_MAX);
 			ret = visit_dir(t, cb, userdata);
 			if(ret < 0)
 				goto out;

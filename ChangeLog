@@ -1,3 +1,23 @@
+2004-06-11  Christian W. Zuckschwerdt  <zany@triq.net>
+
+	* Version option added
+	
+2004-03-05  Christian W. Zuckschwerdt  <zany@triq.net>
+
+	* NetBSD portability patch by Soren S. Jorvang <soren@wheel.dk>
+	
+2004-02-04  Christian W. Zuckschwerdt  <zany@triq.net>
+
+	* Skip transports not linked, François Fleuret <francois.fleuret@inria.fr>
+	
+2004-01-30  Christian W. Zuckschwerdt  <zany@triq.net>
+
+	* IrCOMM 1-line show stopper fixed by Stefan Behnel <Stefan@Behnel.de>
+	
+2003-12-28  Christian W. Zuckschwerdt  <zany@triq.net>
+
+	* setpath patch for T610 by Adam Goode <adam@evdebs.org>
+	
 2003-10-22  Christian W. Zuckschwerdt  <zany@triq.net>
 
 	* bfb_write_packets patch by Jorge Ventura <jorge.ventura@varig.com>

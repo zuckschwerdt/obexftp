@@ -10,3 +10,9 @@ Carsten Pfeiffer <carpdjih@mailbox.tu-berlin.de> - coded a kio slave
 
 Jorge Ventura <jorge.ventura@varig.com> - write/select patch
 
+François Fleuret <francois.fleuret@inria.fr> - suggested transport checks
+
+Adam Goode <adam@evdebs.org> and Ken Booth <ken@booths.org.uk> - setpath
+
+Soren S. Jorvang <soren@wheel.dk> - NetBSD portability fixes
+

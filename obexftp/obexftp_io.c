@@ -19,7 +19,7 @@
  *     
  */
 
-#include <stdint.h>
+#include <inttypes.h>
 #include <stdlib.h>
 #include <unistd.h>
 #include <stdio.h>	/* FIXME: libraries shouldn't do this */
@@ -39,7 +39,7 @@
 #define S_IROTH 0
 #define S_IXGRP 0
 #define S_IXOTH 0
-#define PATH_MAX MAX_PATH
+#define _POSIX_PATH_MAX MAX_PATH
 #endif
 #define DEFFILEMOD (S_IRUSR|S_IWUSR|S_IRGRP|S_IROTH) /* 0644 */
 #define DEFXFILEMOD (DEFFILEMOD | S_IXGRP | S_IXUSR | S_IXOTH) /* 0755 */
@@ -130,7 +130,7 @@ static int nameok(const char *name)
 /* Concatenate two pathnames. */
 /* The first path may be NULL. */
 /* The second path is always treated relative. */
-/* dest must have at least PATH_MAX + 1 chars. */
+/* dest must have at least _POSIX_PATH_MAX + 1 chars. */
 static int pathcat(/*@unique@*/ char *dest, const char *path, const char *name)
 {
 	if(name == NULL)
@@ -140,14 +140,14 @@ static int pathcat(/*@unique@*/ char *dest, const char *path, const char *name)
 		name++;
 		
 	if((path == NULL) || (*path == '\0'))
-		strncpy(dest, name, PATH_MAX);
+		strncpy(dest, name, _POSIX_PATH_MAX);
 	else {
-		strncpy(dest, path, PATH_MAX);
+		strncpy(dest, path, _POSIX_PATH_MAX);
 		if (dest[strlen(dest)-1] != '/') {
 			dest[strlen(dest) + 1] = '\0';
 			dest[strlen(dest)] = '/';
 		}
-		strncat(dest, name, PATH_MAX-strlen(dest));
+		strncat(dest, name, _POSIX_PATH_MAX-strlen(dest));
 	}
 
 	return 0;
@@ -156,7 +156,7 @@ static int pathcat(/*@unique@*/ char *dest, const char *path, const char *name)
 /* Open a file, but do some sanity-checking first. */
 int open_safe(const char *path, const char *name)
 {
-	char diskname[PATH_MAX + 1] = {0,};
+	char diskname[_POSIX_PATH_MAX + 1] = {0,};
 	int fd;
 
 	DEBUG(3, "%s() \n", __func__);
@@ -178,7 +178,7 @@ int open_safe(const char *path, const char *name)
 /* Go to a directory. Create if not exists and create is true. */
 int checkdir(const char *path, const char *dir, int create, int allowabs)
 {
-	char newpath[PATH_MAX + 1] = {0,};
+	char newpath[_POSIX_PATH_MAX + 1] = {0,};
 	struct stat statbuf;
 	int ret = -1;
 

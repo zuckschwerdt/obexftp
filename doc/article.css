@@ -2,15 +2,15 @@
 /* RAL-6017 color : #4e8541 */
 /* RAL-1018 color : #fad233 */
 
-a {		text-decoration: none; color: #4e8541; }
-a:visited {	color: #4e8541; }
+a {		text-decoration: none; color: #487b9f; }
+a:visited {	color: #487b9f; }
 a:active {	color: #800000; }
 a:hover {	text-decoration: underline; color: #e9800f; }
-h1 a {		text-decoration: none; color: white; }
+h1 a {		text-decoration: none; color: #487b9f; }
 h2 a {		text-decoration: none; color: #444; }
 h3 a {		text-decoration: none; color: #444; }
-.menu a {      	text-decoration: none; color: white; display: block; padding: 0 8px;
-                background: #4e8541; border: 1px solid #4e8541; }
+.menu a {      	text-decoration: none; color: #999999; display: block; padding: 0 8px;
+                background: #eeeeef; border: 1px solid #eeeeef; }
 .menu a:hover {	text-decoration: none; color: black; margin-right: -1px;
                 background: #fff088; border: 1px solid #fad233; }
 .toc li a {	text-decoration: none; padding: 10px; }
@@ -42,40 +42,36 @@ html,body {	margin: 0;
 .menu {		float:left;
 		margin: 0;
 		padding: 0;
-		color: white;
-		background: #4e8541;
-                border: 1px solid #000; border-left: none; }
+		color: #999999;
+		background: #eeeeef;
+                border: 1px solid #999999; border-left: none; }
 		
 .toc   {	margin-left: 20px;
 		margin-right: 30px;
 		padding: 0;
 		float: right;
-		color: #4e8541;
+		color: #487b9f;
 		background: #eee;
 		text-shadow: black;
 		font-size: 12px; }
 		
-.main   {	margin-left: 100px; margin-right: 10px;
+.main   {	margin-left: 110px; margin-right: 10px;
 		padding: 0px 10px;
 		text-shadow: black;
-		border-left: 1px solid #4e8541; }
+		border-left: 1px solid #999999 }
 
 .figure   {	text-align: center; }
 
-h2,h3 {		margin-top: 10px;
-		margin-left: 10px;
-		margin-right: 10px;
-		padding: 2px 10px 2px 10px;
-		color: #4e8541;
-		background: #fff088;
-		clear: both;
-		border-bottom: 1px solid #fad233; }
+h2,h3 {		padding-left:0.5em;
+		font-size:1.15em;
+		color:#444444;
+		border-bottom:solid 1px #dddde0;
+		margin-bottom:1em; margin-top:1.6em;
+		clear: both; }
 
-h1 {		padding: 4px; padding-left: 50px;
-		font-family: Impact, Verdana, Arial, Helvetica, sans-serif;
-		color: white; background: #4e8541;
-		text-shadow: black;
-		border-top: 1px solid #000; border-bottom: 1px solid #000; }
+h1 {		font-size:22px; font-size:1.8em;
+		color:#487b9f;
+		margin-bottom:1em; }
 
 hr {		border: 0; border-top: 1px solid #4e8541; }
 

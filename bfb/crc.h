@@ -14,7 +14,7 @@
 #ifndef IRDA_CRC_H
 #define IRDA_CRC_H
 
-#include <stdint.h>
+#include <inttypes.h>
 
 #define INIT_FCS  0xffff   /* Initial FCS value */
 #define GOOD_FCS  0xf0b8   /* Good final FCS value */

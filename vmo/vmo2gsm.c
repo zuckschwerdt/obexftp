@@ -40,7 +40,7 @@
 int main(int argc, char *argv[])
 {
 	int i;
-	char fn[PATH_MAX+1];
+	char fn[_POSIX_PATH_MAX+1];
 	int in, out;
 	uint8_t frame[FRAME_SIZE];
 	int l;
@@ -48,7 +48,7 @@ int main(int argc, char *argv[])
 
 	for (i = 1; i < argc; i++) {
 		printf("Converting %s ", argv[i]);
-		snprintf(fn, PATH_MAX, "%s.gsm", argv[i]);
+		snprintf(fn, _POSIX_PATH_MAX, "%s.gsm", argv[i]);
 		in = open (argv[i], O_RDONLY);
 		out = creat (fn, 0644);
 		do {
