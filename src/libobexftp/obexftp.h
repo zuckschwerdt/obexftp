@@ -1,6 +1,6 @@
 /*
  *                
- * Filename:      flexmem.h
+ * Filename:      obexftp.h
  * Version:       
  * Description:   Transfer from/to Siemens Mobile Equipment via OBEX
  * Status:        Experimental.
@@ -27,33 +27,33 @@
  *     
  */
 
-#ifndef IRCP_H
-#define IRCP_H
+#ifndef OBEXFTP_H
+#define OBEXFTP_H
 
 #include <glib.h>
 
-typedef void (*ircp_info_cb_t)(gint event, gpointer param);
+typedef void (*obexftp_info_cb_t) (gint event, const gchar *buf, gint len, gpointer data);
 
 enum {
-	IRCP_EV_ERRMSG,
+	OBEXFTP_EV_ERRMSG,
 
-	IRCP_EV_OK,
-	IRCP_EV_ERR,
+	OBEXFTP_EV_OK,
+	OBEXFTP_EV_ERR,
 
-	IRCP_EV_CONNECTING,
-	IRCP_EV_DISCONNECTING,
-	IRCP_EV_SENDING,
+	OBEXFTP_EV_CONNECTING,
+	OBEXFTP_EV_DISCONNECTING,
+	OBEXFTP_EV_SENDING,
 
-	IRCP_EV_LISTENING,
-	IRCP_EV_CONNECTIND,
-	IRCP_EV_DISCONNECTIND,
-	IRCP_EV_RECEIVING,
+	OBEXFTP_EV_LISTENING,
+	OBEXFTP_EV_CONNECTIND,
+	OBEXFTP_EV_DISCONNECTIND,
+	OBEXFTP_EV_RECEIVING,
 
-	IRCP_EV_BODY,
-	IRCP_EV_INFO,
+	OBEXFTP_EV_BODY,
+	OBEXFTP_EV_INFO,
 };
 
 /* Number of bytes passed at one time to OBEX */
 #define STREAM_CHUNK 4096
 
-#endif
+#endif // OBEXFTP

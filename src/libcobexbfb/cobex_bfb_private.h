@@ -1,6 +1,6 @@
 /*
  *                
- * Filename:      cobex_bfb.h
+ * Filename:      cobex_bfb_private.h
  * Version:       
  * Description:   
  * Status:        Experimental.
@@ -29,7 +29,10 @@
 
 #include "bfb.h"
 
+#define SERPORT "/dev/ttyS0"
+
 typedef struct {
+	gchar *tty;
 	int fd;
 	guint8 recv[500];
 	gint recv_len;
@@ -37,16 +40,3 @@ typedef struct {
 	bfb_data_t *data;
 	gint data_len;
 } cobex_t;
-
-int cobex_init(char *ttyname);
-void cobex_cleanup(int force);
-int cobex_start_io(void);
-
-gint cobex_set_tty(gchar *tty);
-
-gint cobex_connect(obex_t *self, gpointer userdata);
-gint cobex_disconnect(obex_t *self, gpointer userdata);
-gint cobex_write(obex_t *self, gpointer userdata, guint8 *buffer, gint length);
-gint cobex_handleinput(obex_t *self, gpointer userdata, gint timeout);
-
-obex_ctrans_t *cobex_ctrans(void);

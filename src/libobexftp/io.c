@@ -83,9 +83,11 @@ err:
 //
 // Check for dangerous filenames.
 //
-static gboolean ircp_nameok(const gchar *name)
+static gboolean nameok(const gchar *name)
 {
 	DEBUG(4, G_GNUC_FUNCTION "()\n");
+
+        g_return_val_if_fail (name != NULL, FALSE);
 	
 	/* No abs paths */
 	if(name[0] == '/')
@@ -105,7 +107,7 @@ static gboolean ircp_nameok(const gchar *name)
 //
 // Open a file, but do some sanity-checking first.
 //
-gint ircp_open_safe(const gchar *path, const gchar *name)
+gint open_safe(const gchar *path, const gchar *name)
 {
 	GString *diskname;
 	gint fd;
@@ -113,7 +115,7 @@ gint ircp_open_safe(const gchar *path, const gchar *name)
 	DEBUG(4, G_GNUC_FUNCTION "()\n");
 	
 	/* Check for dangerous filenames */
-	if(ircp_nameok(name) == FALSE)
+	if(nameok(name) == FALSE)
 		return -1;
 
 	diskname = g_string_new(path);
@@ -136,14 +138,14 @@ gint ircp_open_safe(const gchar *path, const gchar *name)
 //
 // Go to a directory. Create if not exists and create is true.
 //
-gint ircp_checkdir(const gchar *path, const gchar *dir, cd_flags flags)
+gint checkdir(const gchar *path, const gchar *dir, cd_flags flags)
 {
 	GString *newpath;
 	struct stat statbuf;
 	gint ret = -1;
 
 	if(!(flags & CD_ALLOWABS))	{
-		if(ircp_nameok(dir) == FALSE)
+		if(nameok(dir) == FALSE)
 			return -1;
 	}
 

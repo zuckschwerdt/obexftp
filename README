@@ -23,7 +23,7 @@ Development will cease otherwise. Currently I know of 3 people
 using this tool (including me). So that proposal is not too
 unfair, see?
 
-If you are a developer and want to use flexmem library or even
+If you are a developer and want to use obexftp library or even
 cobex_bfb library do so. But please keep me informed - I'll send
 you pre-releases. That way your application is able to exploit the
 newest library features.

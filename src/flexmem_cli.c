@@ -1,6 +1,6 @@
 /*
  *                
- * Filename:      flexmem.c
+ * Filename:      obexftp_cli.c
  * Version:       0.6
  * Description:   Transfer from/to Siemens Mobile Equipment via OBEX
  * Status:        Experimental.
@@ -32,53 +32,51 @@
 #define _GNU_SOURCE
 #include <getopt.h>
 
-#include "libflexmem/flexmem.h"
-#include "libflexmem/client.h"
+#include "libobexftp/obexftp.h"
+#include "libobexftp/client.h"
+#include "libcobexbfb/cobex_bfb.h"
 
-void info_cb(gint event, gpointer param)
+void info_cb(gint event, const gchar *msg, gint len, gpointer data)
 {
-	gchar *msg = (gchar *) param;
-	guint32 info = GPOINTER_TO_UINT (param);
-
 	switch (event) {
 
-	case IRCP_EV_ERRMSG:
+	case OBEXFTP_EV_ERRMSG:
 		g_print("Error: %s\n", msg);
 		break;
 
-	case IRCP_EV_ERR:
+	case OBEXFTP_EV_ERR:
 		g_print("failed: %s\n", msg);
 		break;
-	case IRCP_EV_OK:
+	case OBEXFTP_EV_OK:
 		g_print("done\n");
 		break;
 
-	case IRCP_EV_CONNECTING:
+	case OBEXFTP_EV_CONNECTING:
 		g_print("Connecting...");
 		break;
-	case IRCP_EV_DISCONNECTING:
+	case OBEXFTP_EV_DISCONNECTING:
 		g_print("Disconnecting...");
 		break;
-	case IRCP_EV_SENDING:
+	case OBEXFTP_EV_SENDING:
 		g_print("Sending %s...", msg);
 		break;
-	case IRCP_EV_RECEIVING:
+	case OBEXFTP_EV_RECEIVING:
 		g_print("Receiving %s...", msg);
 		break;
 
-	case IRCP_EV_LISTENING:
+	case OBEXFTP_EV_LISTENING:
 		g_print("Waiting for incoming connection\n");
 		break;
 
-	case IRCP_EV_CONNECTIND:
+	case OBEXFTP_EV_CONNECTIND:
 		g_print("Incoming connection\n");
 		break;
-	case IRCP_EV_DISCONNECTIND:
+	case OBEXFTP_EV_DISCONNECTIND:
 		g_print("Disconnecting\n");
 		break;
 
-	case IRCP_EV_INFO:
-		g_print("Got info %d: \n", info);
+	case OBEXFTP_EV_INFO:
+		g_print("Got info %d: \n", GPOINTER_TO_UINT (msg));
 		break;
 
 	}
@@ -90,9 +88,10 @@ int main(int argc, char *argv[])
 	int c;
 	int most_recent_cmd = 0;
 	gchar *move_src = NULL;
-	ircp_client_t *cli;
+	obexftp_client_t *cli;
 	gchar *inbox;
 	gchar *tty = NULL;
+	obex_ctrans_t *ctrans = NULL;
 
 	while (1) {
 		int option_index = 0;
@@ -125,81 +124,87 @@ int main(int argc, char *argv[])
 				tty = NULL;
 			else
 				tty = optarg;
+
+			if (tty != NULL)
+				ctrans = cobex_ctrans (tty);
+			else
+				ctrans = NULL;
+
 			break;
 
 		case 'l':
-			cli = flexmem_cli_open(info_cb, tty);
+			cli = obexftp_cli_open(info_cb, ctrans, NULL);
 			if(cli == NULL) {
-				g_print("Error opening flexmem-client\n");
+				g_print("Error opening obexftp-client\n");
 				return -1;
 			}
 
 			// Connect
-			if(flexmem_cli_connect(cli) >= 0) {
-				flexmem_list(cli, optarg, optarg);
+			if(obexftp_cli_connect(cli) >= 0) {
+				obexftp_list(cli, optarg, optarg);
 
 				// Disconnect
-				flexmem_cli_disconnect(cli);
+				obexftp_cli_disconnect(cli);
 			}
-			flexmem_cli_close(cli);
+			obexftp_cli_close(cli);
 			most_recent_cmd = c;
 			break;
 
 		case 'g':
-			cli = flexmem_cli_open(info_cb, tty);
+			cli = obexftp_cli_open(info_cb, ctrans, NULL);
 			if(cli == NULL) {
-				g_print("Error opening flexmem-client\n");
+				g_print("Error opening obexftp-client\n");
 				return -1;
 			}
 			
 			// Connect
-			if(flexmem_cli_connect(cli) >= 0) {
+			if(obexftp_cli_connect(cli) >= 0) {
 				// Get all files
-				flexmem_get(cli, optarg, optarg);
+				obexftp_get(cli, optarg, optarg);
 
 				// Disconnect
-				flexmem_cli_disconnect(cli);
+				obexftp_cli_disconnect(cli);
 			}
-			flexmem_cli_close(cli);
+			obexftp_cli_close(cli);
 			most_recent_cmd = c;
 			break;
 
 		case 'p':
-			cli = flexmem_cli_open(info_cb, tty);
+			cli = obexftp_cli_open(info_cb, ctrans, NULL);
 			if(cli == NULL) {
-				g_print("Error opening flexmem-client\n");
+				g_print("Error opening obexftp-client\n");
 				return -1;
 			}
 			
 			// Connect
-			if(flexmem_cli_connect(cli) >= 0) {
+			if(obexftp_cli_connect(cli) >= 0) {
 				// Send all files
-				flexmem_put(cli, optarg);
+				obexftp_put(cli, optarg);
 
 				// Disconnect
-				flexmem_cli_disconnect(cli);
+				obexftp_cli_disconnect(cli);
 			}
-			flexmem_cli_close(cli);
+			obexftp_cli_close(cli);
 			most_recent_cmd = c;
 			break;
 
 		case 'i':
-			cli = flexmem_cli_open(info_cb, tty);
+			cli = obexftp_cli_open(info_cb, ctrans, NULL);
 			if(cli == NULL) {
-				g_print("Error opening flexmem-client\n");
+				g_print("Error opening obexftp-client\n");
 				return -1;
 			}
 			
 			// Connect
-			if(flexmem_cli_connect(cli) >= 0) {
+			if(obexftp_cli_connect(cli) >= 0) {
 				// Retrieve Info
-				flexmem_info(cli, 0x01);
-				flexmem_info(cli, 0x02);
+				obexftp_info(cli, 0x01);
+				obexftp_info(cli, 0x02);
 
 				// Disconnect
-				flexmem_cli_disconnect(cli);
+				obexftp_cli_disconnect(cli);
 			}
-			flexmem_cli_close(cli);
+			obexftp_cli_close(cli);
 			break;
 
 		case 'm':
@@ -210,41 +215,41 @@ int main(int argc, char *argv[])
 				break;
 			}
 
-			cli = flexmem_cli_open(info_cb, tty);
+			cli = obexftp_cli_open(info_cb, ctrans, NULL);
 			if(cli == NULL) {
-				g_print("Error opening flexmem-client\n");
+				g_print("Error opening obexftp-client\n");
 				return -1;
 			}
 			
 			// Connect
-			if(flexmem_cli_connect(cli) >= 0) {
+			if(obexftp_cli_connect(cli) >= 0) {
 				// Rename a file
-				flexmem_rename(cli, move_src, optarg);
+				obexftp_rename(cli, move_src, optarg);
 
 				// Disconnect
-				flexmem_cli_disconnect(cli);
+				obexftp_cli_disconnect(cli);
 			}
-			flexmem_cli_close(cli);
+			obexftp_cli_close(cli);
 
 			move_src = NULL;
 			break;
 
 		case 'k':
-			cli = flexmem_cli_open(info_cb, tty);
+			cli = obexftp_cli_open(info_cb, ctrans, NULL);
 			if(cli == NULL) {
-				g_print("Error opening flexmem-client\n");
+				g_print("Error opening obexftp-client\n");
 				return -1;
 			}
 			
 			// Connect
-			if(flexmem_cli_connect(cli) >= 0) {
+			if(obexftp_cli_connect(cli) >= 0) {
 				// Delete file
-				flexmem_del(cli, optarg);
+				obexftp_del(cli, optarg);
 
 				// Disconnect
-				flexmem_cli_disconnect(cli);
+				obexftp_cli_disconnect(cli);
 			}
-			flexmem_cli_close(cli);
+			obexftp_cli_close(cli);
 			most_recent_cmd = c;
 			break;
 

@@ -1,12 +1,12 @@
 /*
  *                
  * Filename:      cobex_bfb.c
- * Version:       0.4
+ * Version:       0.6
  * Description:   Talk OBEX over a serial port (Siemens specific)
  * Status:        Experimental.
  * Author:        Christian W. Zuckschwerdt <zany@triq.net>
  * Created at:    Don, 17 Jan 2002 18:27:25 +0100
- * Modified at:   Don,  7 Feb 2002 12:24:55 +0100
+ * Modified at:   Fre, 15 Feb 2002 15:41:10 +0100
  * Modified by:   Christian W. Zuckschwerdt <zany@triq.net>
  *
  *   Copyright (c) 2002 Christian W. Zuckschwerdt <zany@triq.net>
@@ -27,8 +27,6 @@
  *     
  */
 
-#define SERPORT "/dev/ttyS0"
-
 #include <sys/types.h>
 #include <sys/time.h>
 #include <sys/ioctl.h>
@@ -42,23 +40,12 @@
 #include <openobex/obex.h>
 #include "obex_t.h"
 #include "cobex_bfb.h"
+#include "cobex_bfb_private.h"
 #include "debug.h"
 
 
-obex_t *cobex_handle;
-cobex_t *c;
-gchar *_tty = NULL;
-
-gint cobex_set_tty(gchar *tty)
-{
-	g_free(_tty);
-	_tty = tty;
-
-	return 0;
-}
-
 /* Read a BFB answer */
-gint cobex_do_bfb_read(int fd, guint8 *buffer, gint length)
+static gint cobex_do_bfb_read(int fd, guint8 *buffer, gint length)
 {
 	struct timeval time;
 	fd_set fdset;
@@ -84,7 +71,7 @@ gint cobex_do_bfb_read(int fd, guint8 *buffer, gint length)
 
 
 /* Send an AT-command an expect 1 line back as answer */
-int cobex_do_at_cmd(int fd, char *cmd, char *rspbuf, int rspbuflen)
+static gint cobex_do_at_cmd(int fd, char *cmd, char *rspbuf, int rspbuflen)
 {
 	fd_set ttyset;
 	struct timeval tv;
@@ -172,7 +159,7 @@ int cobex_do_at_cmd(int fd, char *cmd, char *rspbuf, int rspbuflen)
 
 /* Init the phone and set it in BFB-mode */
 /* Returns fd or -1 on failure */
-gint cobex_init(char *ttyname)
+gint cobex_init(obex_t *self, const gchar *ttyname)
 {
 	int ttyfd;
 	struct termios oldtio, newtio;
@@ -187,6 +174,8 @@ gint cobex_init(char *ttyname)
 	guint8 speed[] = {0xc0,'1','1','5','2','0','0',0x13,0xd2,0x2b};
 	guint8 sifs[] = {'a','t','^','s','i','f','s',0x13};
 	*/
+
+        g_return_val_if_fail (self != NULL, -1);
 
 	DEBUG(1, G_GNUC_FUNCTION "() \n");
 
@@ -204,7 +193,7 @@ gint cobex_init(char *ttyname)
 	tcsetattr(ttyfd, TCSANOW, &newtio);
 
 	if(cobex_do_at_cmd(ttyfd, "ATZ\r\n", rspbuf, sizeof(rspbuf)) < 0)	{
-		g_print("Comm-error\n");
+		g_print("Comm-error or already in BFB mode\n");
 		goto bfbmode;
 	}
 	if(strcasecmp("OK", rspbuf) != 0)	{
@@ -255,36 +244,37 @@ gint cobex_init(char *ttyname)
 
 	return ttyfd;
  err:
-	cobex_cleanup(TRUE);
+	cobex_cleanup(self, TRUE);
 	return -1;
 }
 
-void cobex_cleanup(int force)
+void cobex_cleanup(obex_t *self, int force)
 {
+        g_return_if_fail (self != NULL);
+        g_return_if_fail (OBEX_FD(self) > 0);
+
 	if(force)	{
 		// Send a break to get out of OBEX-mode
-		if(ioctl(OBEX_FD(cobex_handle), TCSBRKP, 0) < 0)	{
+		if(ioctl(OBEX_FD(self), TCSBRKP, 0) < 0)	{
 			g_print("Unable to send break!\n");
 		}
 		sleep(1);
 	}
-	close(OBEX_FD(cobex_handle));
-	OBEX_FD(cobex_handle) = -1;
+	close(OBEX_FD(self));
+	OBEX_FD(self) = -1;
 }
 
 
 gint cobex_connect(obex_t *self, gpointer userdata)
 {
+	cobex_t *c;
+        g_return_val_if_fail (self != NULL, -1);
+        g_return_val_if_fail (userdata != NULL, -1);
+	c = (cobex_t *) userdata;
+
 	DEBUG(1, G_GNUC_FUNCTION "() \n");
 
-	cobex_handle = self;
-
-	c = g_new0(cobex_t, 1);
-
-	if(_tty == NULL)
-		_tty = SERPORT;
-
-	if((OBEX_FD(self) = cobex_init(_tty)) < 0)
+	if((OBEX_FD(self) = cobex_init(self, c->tty)) < 0)
 		return -1;
 
 	return 1;
@@ -293,7 +283,7 @@ gint cobex_connect(obex_t *self, gpointer userdata)
 gint cobex_disconnect(obex_t *self, gpointer userdata)
 {
 	DEBUG(1, G_GNUC_FUNCTION "() \n");
-	cobex_cleanup(FALSE);
+	cobex_cleanup(self, FALSE);
 	return 1;
 }
 
@@ -301,6 +291,10 @@ gint cobex_disconnect(obex_t *self, gpointer userdata)
 gint cobex_write(obex_t *self, gpointer userdata, guint8 *buffer, gint length)
 {
 	int actual;
+	cobex_t *c;
+        g_return_val_if_fail (self != NULL, -1);
+        g_return_val_if_fail (userdata != NULL, -1);
+	c = (cobex_t *) userdata;
 	
 	DEBUG(1, G_GNUC_FUNCTION "() \n");
 
@@ -327,6 +321,12 @@ gint cobex_handleinput(obex_t *self, gpointer userdata, gint timeout)
 	struct timeval time;
 	fd_set fdset;
 	bfb_frame_t *frame;
+
+	cobex_t *c;
+
+        g_return_val_if_fail (self != NULL, -1);
+        g_return_val_if_fail (userdata != NULL, -1);
+	c = (cobex_t *) userdata;
 
 	time.tv_sec = timeout;
 	time.tv_usec = 0;
@@ -383,6 +383,43 @@ static obex_ctrans_t _cobex_ctrans = {
 	handleinput: cobex_handleinput,
 };
 
-obex_ctrans_t *cobex_ctrans(void) {
-	return &_cobex_ctrans;
+obex_ctrans_t *cobex_ctrans (const gchar *tty) {
+	obex_ctrans_t *ctrans;
+	cobex_t *cobex;
+
+	cobex = g_new0 (cobex_t, 1);
+	if(tty == NULL)
+		tty = SERPORT;
+	cobex->tty = g_strdup (tty);
+
+	ctrans = g_new0 (obex_ctrans_t, 1);
+	ctrans->connect = cobex_connect;
+	ctrans->disconnect = cobex_disconnect;
+	ctrans->write = cobex_write;
+	ctrans->listen = NULL;
+	ctrans->handleinput = cobex_handleinput;
+	ctrans->userdata = cobex;
+	
+	return ctrans;
+}
+
+
+void cobex_free (obex_ctrans_t *ctrans)
+{
+	cobex_t *cobex;
+
+	g_return_if_fail (ctrans != NULL);
+
+	cobex = (cobex_t *)ctrans->userdata;
+
+	g_return_if_fail (cobex != NULL);
+
+	g_free (cobex->tty);
+	/* maybe there is a bfb_data_t left? */
+	/* g_free(cobex->data); */
+
+	g_free (cobex);
+	g_free (ctrans);
+
+	return;
 }

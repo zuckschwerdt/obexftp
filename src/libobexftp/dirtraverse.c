@@ -74,7 +74,7 @@ out:	g_string_free(t, TRUE);
 //
 //
 //
-gint visit_all_files(gchar *name, visit_cb cb, gpointer userdata)
+gint visit_all_files(const gchar *name, visit_cb cb, gpointer userdata)
 {
 	struct stat statbuf;
 	int ret;

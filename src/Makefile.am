@@ -1,4 +1,4 @@
-SUBDIRS = libflexmem
+SUBDIRS = libcobexbfb libobexftp
 
 INCLUDES = \
 	@GLIB_CFLAGS@ \
@@ -7,8 +7,8 @@ INCLUDES = \
 LDADD = \
 	@GLIB_LIBS@ \
 	@OPENOBEX_LIBS@ \
-	libflexmem/libflexmem.a \
-	libflexmem/libcobexbfb/libcobexbfb.a
+	libobexftp/libobexftp.a \
+	libcobexbfb/libcobexbfb.a
 
 flexmem_SOURCES = flexmem_cli.c
 

@@ -1,15 +1,22 @@
+# Process this file with autoconf to produce a configure script.
 AC_INIT(src/flexmem_cli.c)
-AM_INIT_AUTOMAKE(flexmem, 0.7)
+AM_INIT_AUTOMAKE(obexftp, 0.9)
 AM_CONFIG_HEADER(config.h)
 
 AM_MAINTAINER_MODE
 
+# Checks for programs.
 AC_ISC_POSIX
 AC_PROG_CC
 AC_PROG_CXX
 AC_PROG_RANLIB
-AC_HEADER_STDC
 
+# Checks for header files.
+AC_HEADER_STDC
+AC_HEADER_DIRENT
+AC_CHECK_HEADERS([arpa/inet.h errno.h fcntl.h netdb.h netinet/in.h stdlib.h string.h sys/ioctl.h sys/socket.h sys/time.h termios.h unistd.h])
+
+# Checks for libraries.
 AM_PATH_GLIB(1.2.0)
 AM_PATH_OPENOBEX(0.9.8)
 
@@ -21,6 +28,6 @@ CFLAGS="$CFLAGS -Wall"
 
 AC_OUTPUT([
 Makefile 
-src/libflexmem/libcobexbfb/Makefile
-src/libflexmem/Makefile
-src/Makefile])
+src/Makefile
+src/libcobexbfb/Makefile
+src/libobexftp/Makefile])

@@ -1,23 +1,22 @@
-SUBDIRS = libcobexbfb
-
 INCLUDES = \
 	@GLIB_CFLAGS@ \
 	@OPENOBEX_CFLAGS@
 
 LDADD = \
 	@GLIB_LIBS@ \
-	@OPENOBEX_LIBS@ \
-	libcobexbfb/libcobexbfb.a
+	@OPENOBEX_LIBS@
 
-libflexmem_a_SOURCES = \
+libobexftp_a_SOURCES = \
+		object.c object.h \
 		client.c client.h \
 		io.c io.h \
 		dirtraverse.c dirtraverse.h \
-		debug.h flexmem.h
+		debug.h obexftp.h
 
 pkginclude_HEADERS = \
-		flexmem.h \
-		client.h
+		obexftp.h \
+		client.h \
+		object.h
 	
-lib_LIBRARIES = libflexmem.a
+lib_LIBRARIES = libobexftp.a
 
