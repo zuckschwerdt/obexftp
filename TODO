@@ -1,0 +1,6 @@
+* Open the connection more quickly
+
+* Tear down BFB connection cleanly - no more cable cycling.
+
+* Transfers of large files (i.e. > 1k) over cable (BFB) seems broken.
+  Maybe I need to split into multiple frames?

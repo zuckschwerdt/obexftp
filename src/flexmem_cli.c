@@ -82,16 +82,46 @@ void info_cb(gint event, const gchar *msg, gint len, gpointer data)
 	}
 }
 
+obexftp_client_t *cli = NULL;
+obex_ctrans_t *ctrans = NULL;
+
+gboolean cli_connect()
+{
+	if (cli != NULL)
+		return TRUE;
+
+	/* Open */
+	cli = obexftp_cli_open (info_cb, ctrans, NULL);
+	if(cli == NULL) {
+		g_print("Error opening obexftp-client\n");
+		return FALSE;
+	}
+
+	/* Connect */
+	if (obexftp_cli_connect (cli) >= 0)
+		return TRUE;
+
+	cli = NULL;
+	return FALSE;
+}
+
+void cli_disconnect()
+{
+	if (cli != NULL) {
+		/* Disconnect */
+		obexftp_cli_disconnect (cli);
+		/* Close */
+		obexftp_cli_close (cli);
+	}
+}
 
 int main(int argc, char *argv[])
 {
 	int c;
 	int most_recent_cmd = 0;
 	gchar *move_src = NULL;
-	obexftp_client_t *cli;
 	gchar *inbox;
 	gchar *tty = NULL;
-	obex_ctrans_t *ctrans = NULL;
 
 	while (1) {
 		int option_index = 0;
@@ -133,78 +163,35 @@ int main(int argc, char *argv[])
 			break;
 
 		case 'l':
-			cli = obexftp_cli_open(info_cb, ctrans, NULL);
-			if(cli == NULL) {
-				g_print("Error opening obexftp-client\n");
-				return -1;
-			}
-
-			// Connect
-			if(obexftp_cli_connect(cli) >= 0) {
+			if(cli_connect ()) {
+				/* List folder */
 				obexftp_list(cli, optarg, optarg);
-
-				// Disconnect
-				obexftp_cli_disconnect(cli);
 			}
-			obexftp_cli_close(cli);
 			most_recent_cmd = c;
 			break;
 
 		case 'g':
-			cli = obexftp_cli_open(info_cb, ctrans, NULL);
-			if(cli == NULL) {
-				g_print("Error opening obexftp-client\n");
-				return -1;
-			}
-			
-			// Connect
-			if(obexftp_cli_connect(cli) >= 0) {
-				// Get all files
+			if(cli_connect ()) {
+				/* Get file */
 				obexftp_get(cli, optarg, optarg);
-
-				// Disconnect
-				obexftp_cli_disconnect(cli);
 			}
-			obexftp_cli_close(cli);
 			most_recent_cmd = c;
 			break;
 
 		case 'p':
-			cli = obexftp_cli_open(info_cb, ctrans, NULL);
-			if(cli == NULL) {
-				g_print("Error opening obexftp-client\n");
-				return -1;
-			}
-			
-			// Connect
-			if(obexftp_cli_connect(cli) >= 0) {
-				// Send all files
+			if(cli_connect ()) {
+				/* Send file */
 				obexftp_put(cli, optarg);
-
-				// Disconnect
-				obexftp_cli_disconnect(cli);
 			}
-			obexftp_cli_close(cli);
 			most_recent_cmd = c;
 			break;
 
 		case 'i':
-			cli = obexftp_cli_open(info_cb, ctrans, NULL);
-			if(cli == NULL) {
-				g_print("Error opening obexftp-client\n");
-				return -1;
-			}
-			
-			// Connect
-			if(obexftp_cli_connect(cli) >= 0) {
-				// Retrieve Info
+			if(cli_connect ()) {
+				/* Retrieve Infos */
 				obexftp_info(cli, 0x01);
 				obexftp_info(cli, 0x02);
-
-				// Disconnect
-				obexftp_cli_disconnect(cli);
 			}
-			obexftp_cli_close(cli);
 			break;
 
 		case 'm':
@@ -214,42 +201,18 @@ int main(int argc, char *argv[])
 				move_src = optarg;
 				break;
 			}
-
-			cli = obexftp_cli_open(info_cb, ctrans, NULL);
-			if(cli == NULL) {
-				g_print("Error opening obexftp-client\n");
-				return -1;
-			}
-			
-			// Connect
-			if(obexftp_cli_connect(cli) >= 0) {
-				// Rename a file
+			if(cli_connect ()) {
+				/* Rename a file */
 				obexftp_rename(cli, move_src, optarg);
-
-				// Disconnect
-				obexftp_cli_disconnect(cli);
 			}
-			obexftp_cli_close(cli);
-
 			move_src = NULL;
 			break;
 
 		case 'k':
-			cli = obexftp_cli_open(info_cb, ctrans, NULL);
-			if(cli == NULL) {
-				g_print("Error opening obexftp-client\n");
-				return -1;
-			}
-			
-			// Connect
-			if(obexftp_cli_connect(cli) >= 0) {
-				// Delete file
+			if(cli_connect ()) {
+				/* Delete file */
 				obexftp_del(cli, optarg);
-
-				// Disconnect
-				obexftp_cli_disconnect(cli);
 			}
-			obexftp_cli_close(cli);
 			most_recent_cmd = c;
 			break;
 
@@ -287,6 +250,8 @@ int main(int argc, char *argv[])
 			g_print ("%s ", argv[optind++]);
 		g_print ("\n");
 	}
+
+	cli_disconnect ();
 
 	exit (0);
 
