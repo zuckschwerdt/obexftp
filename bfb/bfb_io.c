@@ -37,6 +37,7 @@
 #endif
 
 #include "bfb.h"
+#include "bfb_io.h"
 #include <common.h>
 
 /* Write out an IO buffer */
@@ -181,7 +182,7 @@ int do_at_cmd(fd_t fd, char *cmd, char *rspbuf, int rspbuflen)
 	int actual;
 #endif
 
-	char *answer;
+	char *answer = NULL;
 	char *answer_end = NULL;
 	unsigned int answer_size;
 
@@ -299,7 +300,7 @@ fd_t bfb_io_open(const char *ttyname)
 	ttyfd = CreateFile (ttyname, GENERIC_READ | GENERIC_WRITE, 0, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
 	if (ttyfd == INVALID_HANDLE_VALUE) {
 		DEBUG(1, "Error: CreateFile()\n");
-		return NULL;
+		return INVALID_HANDLE_VALUE;
 	}
 
 	if(!GetCommState(ttyfd, &dcb)) {
@@ -379,6 +380,20 @@ fd_t bfb_io_open(const char *ttyname)
 		goto err;
 	}
 
+	if(do_at_cmd(ttyfd, "AT+GMI\r\n", rspbuf, sizeof(rspbuf)) < 0)	{
+		DEBUG(1, "Comm-error\n");
+		goto err;
+	}
+	DEBUG(1, "AT+GMI: %s\n", rspbuf);
+	if(strcasecmp("ERICSSON", rspbuf) == 0) {
+		DEBUG(1, "Ericsson detected\n");
+		goto ericsson;
+	}
+	if(strcasecmp("SIEMENS", rspbuf) != 0) {
+		DEBUG(1, "No Siemens detected\n");
+		goto err;
+	}
+
 	if(do_at_cmd(ttyfd, "AT^SIFS\r\n", rspbuf, sizeof(rspbuf)) < 0)	{
 		DEBUG(1, "Comm-error\n");
 		goto err;
@@ -413,6 +428,22 @@ fd_t bfb_io_open(const char *ttyname)
 	}
 
 	return ttyfd;
+
+ ericsson:
+	if(do_at_cmd(ttyfd, "AT*EOBEX\r\n", rspbuf, sizeof(rspbuf)) < 0) {
+		DEBUG(1, "Comm-error\n");
+		goto err;
+	}
+	if(strcasecmp("CONNECT", rspbuf) != 0)	{
+		DEBUG(1, "Error doing AT*EOBEX (%s)\n", rspbuf);
+		goto err;
+	}
+#ifdef _WIN32
+	return -2; /* works? */
+#else
+	return -2;
+#endif
+
  err:
 	bfb_io_close(ttyfd, TRUE);
 #ifdef _WIN32

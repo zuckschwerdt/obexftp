@@ -45,7 +45,7 @@ void DEBUG(unsigned int n, ...) { }
 void DUMPBUFFER(unsigned int n, char *label, char *msg) { }
 #endif /* _WIN32 */
 
-void info_cb(int event, const char *msg, int len, void *data)
+static void info_cb(int event, const char *msg, int len, void *data)
 {
 	switch (event) {
 

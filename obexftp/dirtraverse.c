@@ -36,7 +36,7 @@
 /*  */
 /* Read all files in a directory. Continue recusively down in directories. */
 /*  */
-int visit_dir(const char *path, const visit_cb cb, void *userdata)
+static int visit_dir(const char *path, const visit_cb cb, void *userdata)
 {
 	struct stat statbuf;
 	DIR *dir;

@@ -1,6 +1,7 @@
 ## Process this file with autoconf to produce a configure script.
-AC_INIT(obexftp, 0.10.0, zany@triq.net)
-AM_INIT_AUTOMAKE(obexftp, 0.10.0)
+# try CFLAGS="$CFLAGS -g -Wall -Wmissing-declarations -Wmissing-prototypes -Werror"
+AC_INIT(obexftp, 0.10.1, zany@triq.net)
+AM_INIT_AUTOMAKE(obexftp, 0.10.1)
 AM_CONFIG_HEADER(config.h)
 
 dnl AM_MAINTAINER_MODE
@@ -28,6 +29,12 @@ AC_TRY_COMPILE([
     [printf(__func__)],,
     [AC_DEFINE(__func__, "", [non-C99 fake support for __func__])])
 
+dnl Turn on debugging and all warnings when using gcc
+if test "$ac_cv_prog_gcc" = "yes"; then
+	CFLAGS="$CFLAGS -g -Wall -Wmissing-declarations -Wmissing-prototypes"
+	LDFLAGS="$LDFLAGS -g -Wall"
+fi
+       
 AC_SUBST(CFLAGS)
 AC_SUBST(CPPFLAGS)
 AC_SUBST(LDFLAGS)
@@ -35,12 +42,13 @@ AC_SUBST(LDFLAGS)
 CFLAGS="$CFLAGS -Wall"
 
 # Project-specific settings
-# VERSION="0.10.0" already set my AM_INIT_AUTOMAKE above
+# VERSION="0.10.1" already set my AM_INIT_AUTOMAKE above
 RELEASE="1"
-OBEXFTP_VERSION="0:10:0"
-COBEXBFB_VERSION="0:7:0"
+# libtool uses current:release:age to produce .c-a.a.r
+OBEXFTP_VERSION="0:11:0"
+COBEXBFB_VERSION="0:8:0"
 COBEXPE_VERSION="0:2:0"
-BFB_VERSION="0:3:0"
+BFB_VERSION="0:4:0"
 AC_SUBST(VERSION)
 AC_SUBST(RELEASE)
 AC_SUBST(OBEXFTP_VERSION)

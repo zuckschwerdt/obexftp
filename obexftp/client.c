@@ -68,6 +68,35 @@ typedef struct { /* fixed to 6 bytes for now */
 	uint8_t info[4];
 } apparam_t;
 
+
+/* recursive SetPath; omit the last component (probably filename) */
+/* return number of setpaths done */
+static int setpath(obexftp_client_t *cli, const char *name)
+{
+	int depth = 0;
+	char *p;
+	char *tail;
+	char *copy;
+
+	return_val_if_fail(cli != NULL, -1);
+	return_val_if_fail(name != NULL, -1);
+
+	while (*name == '/') name++;
+	tail = copy = strdup(name);
+
+	for (p = strchr(tail, '/'); p; p = strchr(p, '/')) {
+		*p = '\0';
+		p++;
+		(void) obexftp_setpath(cli, tail);
+		tail = p;
+		depth++;
+	}
+	free(copy);
+
+	return depth;
+}
+
+
 /* Add more data to stream. */
 static int cli_fillstream(obexftp_client_t *cli, obex_object_t *object)
 {
@@ -176,6 +205,8 @@ static void client_done(obex_t *handle, obex_object_t *object, int obex_cmd, int
 				} else {
 					DEBUG(3, "%s() Error writing body\n", __func__);
 				}
+				free (cli->target_fn);
+				cli->target_fn = NULL;
 			} else {
 				DEBUG(3, "%s() Body not written\n", __func__);
 			}
@@ -439,7 +470,10 @@ int obexftp_list(obexftp_client_t *cli, const char *localname, const char *remot
 
 	DEBUG(2, "%s() Listing %s -> %s\n", __func__, remotename, localname);
 
-	cli->target_fn = localname;
+	if (localname && *localname)
+		cli->target_fn = strdup(localname);
+	else
+		cli->target_fn = NULL;
 
 	while (*remotename == '/') remotename++;
         object = obexftp_build_list (cli->obexhandle, remotename);
@@ -462,33 +496,28 @@ int obexftp_get(obexftp_client_t *cli, const char *localname, const char *remote
 {
 	obex_object_t *object = NULL;
 	int ret;
-	int depth = 0;
-	char *p;
-	char *tail;
-	char *copy;
+	int depth;
+	const char *p;
 
 	return_val_if_fail(cli != NULL, -1);
 	return_val_if_fail(remotename != NULL, -1);
 
 	cli->infocb(OBEXFTP_EV_RECEIVING, remotename, 0, cli->infocb_data);
 
-	while (*remotename == '/') remotename++;
-	tail = copy = strdup(remotename);
-
-	for (p = strchr(tail, '/'); p; p = strchr(p, '/')) {
-		*p = '\0';
+	depth = setpath(cli, remotename);
+	if ((p = strrchr(remotename, '/')))
 		p++;
-		(void) obexftp_setpath(cli, tail);
-		tail = p;
-		depth++;
-	}
+	else
+		p = remotename;
 
-	DEBUG(2, "%s() Getting %s -> %s\n", __func__, tail, localname);
+	DEBUG(2, "%s() Getting %s -> %s\n", __func__, p, localname);
 
-	cli->target_fn = localname; /* strdup ?*/
+	if (localname && *localname)
+		cli->target_fn = strdup(localname);
+	else
+		cli->target_fn = NULL;
 
-        object = obexftp_build_get (cli->obexhandle, tail);
-	free(copy);
+        object = obexftp_build_get (cli->obexhandle, p);
         if(object == NULL)
                 return -1;
 	
@@ -564,7 +593,7 @@ int obexftp_del(obexftp_client_t *cli, const char *name)
 int obexftp_setpath(obexftp_client_t *cli, const char *name)
 {
 	obex_object_t *object;
-	int ret;
+	int ret = 0;
 	char *copy, *tail, *p;
 
 	return_val_if_fail(cli != NULL, -1);
@@ -610,6 +639,8 @@ int obexftp_put_file(obexftp_client_t *cli, const char *localname, const char *r
 {
 	obex_object_t *object;
 	int ret;
+	int depth = 0;
+	const char *p;
 
 	return_val_if_fail(cli != NULL, -1);
 	return_val_if_fail(localname != NULL, -1);
@@ -622,7 +653,11 @@ int obexftp_put_file(obexftp_client_t *cli, const char *localname, const char *r
 			remotename++;
 	}
 
-	obexftp_setpath(cli, remotename);
+	depth = setpath(cli, remotename);
+	if ((p = strrchr(remotename, '/')))
+		p++;
+	else
+		p = remotename;
 
 	while (*remotename == '/') remotename++;
 	DEBUG(2, "%s() Sending %s -> %s\n", __func__, localname, remotename);
@@ -636,6 +671,9 @@ int obexftp_put_file(obexftp_client_t *cli, const char *localname, const char *r
 		ret = cli_sync_request(cli, object);
 	
 	/* close(cli->fd); */
+
+	while (depth-- > 0)
+		(void) obexftp_setpath(cli, NULL);
 		
 	if(ret < 0)
 		cli->infocb(OBEXFTP_EV_ERR, localname, 0, cli->infocb_data);

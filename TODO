@@ -2,8 +2,6 @@
 
 * Tear down BFB connection cleanly - no more cable cycling.
 
-* Stefan Schmidt <stefan@schmidt1.de> promised a KDE VFS layer
-
 * Document the general vs Siemens specific features
 
 * Path parsing

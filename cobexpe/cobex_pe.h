@@ -33,6 +33,10 @@
 
 #include <stdint.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #define	COBEX_PE_LOG_DOMAIN	"cobex-pe"
 
 /* session handling */
@@ -47,5 +51,9 @@ int	cobex_pe_connect (obex_t *self, void *data);
 int	cobex_pe_disconnect (obex_t *self, void *data);
 int	cobex_pe_write (obex_t *self, void *data, uint8_t *buffer, int length);
 int	cobex_pe_handleinput (obex_t *self, void *data, int timeout);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* COBEXPE_H */

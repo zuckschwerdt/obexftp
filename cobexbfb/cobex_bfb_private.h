@@ -1,13 +1,5 @@
 /*
- *                
- * Filename:      cobex_bfb_private.h
- * Version:       
- * Description:   
- * Status:        Experimental.
- * Author:        Christian W. Zuckschwerdt <zany@triq.net>
- * Created at:    Don, 17 Jan 2002 18:27:25 +0100
- * Modified at:   Don, 17 Jan 2002 23:46:52 +0100
- * Modified by:   Christian W. Zuckschwerdt <zany@triq.net>
+ * cobex_bfb_private.h
  *
  *   Copyright (c) 2002 Christian W. Zuckschwerdt <zany@triq.net>
  * 
@@ -36,7 +28,14 @@
 
 #define	RECVSIZE 500	/* Recieve up to this much from socket */
 
+enum cobex_type
+{
+        CT_SIEMENS,
+        CT_ERICSSON
+};
+
 typedef struct {
+	enum cobex_type type;	/* Type of connected mobile */
 	char *tty;
 #ifdef _WIN32
 	HANDLE fd;		/* Socket descriptor */

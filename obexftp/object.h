@@ -25,6 +25,10 @@
 #include <stdint.h>
 #include <openobex/obex.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /* Telecom/IrMC Synchronization Service */
 #define IRMC_NAME_PREFIX "telecom/"
 #define XOBEX_PROFILE "x-obex/object-profile"
@@ -45,5 +49,9 @@ obex_object_t *obexftp_build_rename (obex_t obex, const char *from, const char *
 obex_object_t *obexftp_build_del (obex_t obex, const char *name);
 obex_object_t *obexftp_build_setpath (obex_t obex, const char *name);
 obex_object_t *obexftp_build_put (obex_t obex, const char *name);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* OBEXFTP_OBJECT_H */

@@ -26,6 +26,10 @@
 #include <openobex/obex.h>
 #include "obexftp.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 typedef struct obexftp_client
 {
 	obex_t *obexhandle;
@@ -35,7 +39,7 @@ typedef struct obexftp_client
 	obexftp_info_cb_t infocb;
 	void *infocb_data;
 	int fd; /* used in put body */
-	const char *target_fn; /* used in get body */
+	char *target_fn; /* used in get body */
 	uint8_t *buf;
 } obexftp_client_t;
 
@@ -77,5 +81,9 @@ int obexftp_get(obexftp_client_t *cli,
 int obexftp_rename(obexftp_client_t *cli,
 		   const char *sourcename,
 		   const char *targetname);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* OBEXFTP_CLIENT_H */

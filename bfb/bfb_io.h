@@ -24,11 +24,15 @@
 
 #include <stdint.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /* Write out a BFB buffer */
 int	bfb_io_write(fd_t fd, uint8_t *buffer, int length);
 
 /* Read in a BFB answer */
-int	bfb_io_read(fd_t fd, uint8_t *buffer, int length);
+int	bfb_io_read(fd_t fd, uint8_t *buffer, int length, int timeout);
 
 /* Send an BFB init command an check for a valid answer frame */
 int	bfb_io_init(fd_t fd);
@@ -42,5 +46,9 @@ void	bfb_io_close(fd_t fd, int force);
 /* Init the phone and set it in BFB-mode */
 /* Returns fd or -1 on failure */
 fd_t	bfb_io_open(const char *ttyname);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* BFB_IO_H */

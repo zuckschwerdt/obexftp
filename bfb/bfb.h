@@ -24,6 +24,10 @@
 
 #include <stdint.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #ifdef _WIN32
 #include <windows.h>
 typedef HANDLE fd_t;
@@ -114,5 +118,9 @@ int	bfb_send_data(fd_t fd, uint8_t type, uint8_t *data, int length, int seq);
 	bfb_assemble_data(bfb_data_t **data, int *size, int *len, bfb_frame_t *frame);
 
 int	bfb_check_data(bfb_data_t *data, int len);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* BFB_H */

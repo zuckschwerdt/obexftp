@@ -191,7 +191,7 @@ static int do_at_cmd(fd_t fd, char *cmd, char *rspbuf, int rspbuflen)
 
 /* Init the phone and set it in BFB-mode */
 /* Returns fd or -1 on failure */
-struct mobile_info *probe_tty(const char *ttyname)
+static struct mobile_info *probe_tty(const char *ttyname)
 {
 	int speed;
 	uint8_t rspbuf[200];

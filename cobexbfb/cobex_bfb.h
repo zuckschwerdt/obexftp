@@ -24,6 +24,10 @@
 
 #include <stdint.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #define	COBEX_BFB_LOG_DOMAIN	"cobex-bfb"
 
 /* session handling */
@@ -38,5 +42,9 @@ int	cobex_connect (obex_t *self, void *data);
 int	cobex_disconnect (obex_t *self, void *data);
 int	cobex_write (obex_t *self, void *data, uint8_t *buffer, int length);
 int	cobex_handleinput (obex_t *self, void *data, int timeout);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* COBEXBFB_H */

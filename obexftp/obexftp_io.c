@@ -133,7 +133,7 @@ static int nameok(const char *name)
 /* The first path may be NULL. */
 /* The second path is always treated relative. */
 /* dest must have at least PATH_MAX + 1 chars. */
-char *pathcat(char *dest, const char *path, const char *name)
+static char *pathcat(char *dest, const char *path, const char *name)
 {
 	if(name == NULL)
 		return dest;

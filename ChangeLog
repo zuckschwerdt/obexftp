@@ -1,3 +1,11 @@
+2002-01-26  Christian Zuckschwerdt  <zany@triq.net>
+
+	* Unified BFB and PE;
+
+2002-01-19  Christian Zuckschwerdt  <zany@triq.net>
+
+	* C++ compatible header files (Carsten Pfeiffer)
+
 2002-01-09  Christian Zuckschwerdt  <zany@triq.net>
 
 	* Big file transmission problem solved

@@ -46,7 +46,7 @@
 #include <bfb/bfb_io.h>
 #include <common.h>
 
-void cobex_cleanup(cobex_t *c, int force)
+static void cobex_cleanup(cobex_t *c, int force)
 {
         return_if_fail (c != NULL);
 #ifdef _WIN32
@@ -73,10 +73,16 @@ int cobex_connect(obex_t *self, void *data)
 
 	DEBUG(3, "%s() \n", __func__);
 
+	c->fd = bfb_io_open(c->tty);
+	if(c->fd == -2)
+		c->type = CT_ERICSSON;
+	else
+		c->type = CT_SIEMENS;
+
 #ifdef _WIN32
-	if((c->fd = bfb_io_open(c->tty)) == INVALID_HANDLE_VALUE)
+	if(c->fd == INVALID_HANDLE_VALUE)
 #else
-	if((c->fd = bfb_io_open(c->tty)) < 0)
+	if(c->fd == -1)
 #endif
 		return -1;
 
@@ -108,6 +114,14 @@ int cobex_write(obex_t *self, void *data, uint8_t *buffer, int length)
 
 	DEBUG(3, "%s() Data %d bytes\n", __func__, length);
 
+	if (c->type == CT_ERICSSON) {
+		actual = write(c->fd, buffer, length);
+		if (actual < length)	{
+			DEBUG(1, "Error writing to port\n");
+			return actual; /* or -1? */
+		}
+		return actual;
+	}
 
 	if (c->seq == 0){
 		actual = bfb_send_first(c->fd, buffer, length);
@@ -117,7 +131,6 @@ int cobex_write(obex_t *self, void *data, uint8_t *buffer, int length)
 		DEBUG(2, "%s() Wrote %d packets (%d bytes)\n", __func__, actual, length);
 	}
 	c->seq++;
-
 
 	return actual;
 }
@@ -166,6 +179,14 @@ int cobex_handleinput(obex_t *self, void *data, int timeout)
 	actual = read(c->fd, &(c->recv[c->recv_len]), sizeof(c->recv) - c->recv_len);
 	DEBUG(2, "%s() Read %d bytes (%d bytes already buffered)\n", __func__, actual, c->recv_len);
 #endif
+
+	if (c->type == CT_ERICSSON) {
+		if (actual > 0) {
+			OBEX_CustomDataFeed(self, c->recv, actual);
+			return 1;
+		}
+		return actual;
+	}
 
 	if ((c->data_buf == NULL) || (c->data_size == 0)) {
 		c->data_size = 1024;

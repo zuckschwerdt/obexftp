@@ -25,6 +25,10 @@
 #ifndef OBEXFTP_H
 #define OBEXFTP_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #define	OBEXFTP_LOG_DOMAIN	"obexftp"
 
 typedef void (*obexftp_info_cb_t) (int event, const char *buf, int len, void *data);
@@ -51,5 +55,9 @@ enum {
 
 /* Number of bytes passed at one time to OBEX */
 #define STREAM_CHUNK 4096
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* OBEXFTP */
