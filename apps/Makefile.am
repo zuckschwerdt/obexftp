@@ -1,18 +1,15 @@
 
-INCLUDES =			@GLIB_CFLAGS@ \
-				@OPENOBEX_CFLAGS@ \
+INCLUDES =			@OPENOBEX_CFLAGS@ \
 				-I.. \
 				-I../includes
 
-LDADD =				@GLIB_LIBS@ \
-				@OPENOBEX_LIBS@ \
+LDADD =				@OPENOBEX_LIBS@ \
 				../obexftp/libobexftp.la \
 				../cobexbfb/libcobexbfb.la \
 				../bfb/libbfb.la \
 				../cobexpe/libcobexpe.la
 # need on win32:
 # getopt.o getopt1.o libopenobex.a libwsock32.a
-# glib-1.3.dll iconv-1.3.dll
 
 obexftp_SOURCES =		obexftp_cli.c
 

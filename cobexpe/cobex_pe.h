@@ -37,15 +37,15 @@
 
 /* session handling */
 
-obex_ctrans_t
-	*cobex_pe_ctrans (const char *tty);
+obex_ctrans_t *
+	cobex_pe_ctrans (const char *tty);
 void	cobex_pe_free (obex_ctrans_t * ctrans);
 
 /* callbacks */
 
-int	cobex_pe_connect (obex_t *self, void *userdata);
-int	cobex_pe_disconnect (obex_t *self, void *userdata);
-int	cobex_pe_write (obex_t *self, void *userdata, uint8_t *buffer, int length);
-int	cobex_pe_handleinput (obex_t *self, void *userdata, int timeout);
+int	cobex_pe_connect (obex_t *self, void *data);
+int	cobex_pe_disconnect (obex_t *self, void *data);
+int	cobex_pe_write (obex_t *self, void *data, uint8_t *buffer, int length);
+int	cobex_pe_handleinput (obex_t *self, void *data, int timeout);
 
 #endif /* COBEXPE_H */

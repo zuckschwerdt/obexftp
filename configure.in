@@ -1,6 +1,6 @@
 ## Process this file with autoconf to produce a configure script.
-AC_INIT(obexftp, 0.9.3, zany@triq.net)
-AM_INIT_AUTOMAKE(obexftp, 0.9.3)
+AC_INIT(obexftp, 0.9.4, zany@triq.net)
+AM_INIT_AUTOMAKE(obexftp, 0.9.4)
 AM_CONFIG_HEADER(config.h)
 
 dnl AM_MAINTAINER_MODE
@@ -20,14 +20,7 @@ AC_HEADER_DIRENT
 AC_CHECK_HEADERS([arpa/inet.h errno.h fcntl.h netdb.h netinet/in.h stdlib.h string.h sys/ioctl.h sys/socket.h sys/time.h termios.h unistd.h])
 
 # Checks for libraries.
-AM_PATH_GLIB(1.2.0)
-AM_PATH_OPENOBEX(0.9.8)
-
-dnl Check for C99 __func__
-AC_TRY_COMPILE([
-    #include<stdio.h>],
-    [printf(__func__)],,
-    [AC_DEFINE(__func__, "", [non-C99 fake support for __func__])])
+AM_PATH_OPENOBEX(1.0.0)
 
 AC_SUBST(CFLAGS)
 AC_SUBST(CPPFLAGS)
@@ -36,7 +29,7 @@ AC_SUBST(LDFLAGS)
 CFLAGS="$CFLAGS -Wall"
 
 # Project-specific settings
-# VERSION="0.9.3" already set my AM_INIT_AUTOMAKE above
+# VERSION="0.9.4" already set my AM_INIT_AUTOMAKE above
 RELEASE="1"
 OBEXFTP_VERSION="0:9:0"
 COBEXBFB_VERSION="0:6:0"

@@ -1,11 +1,9 @@
 lib_LTLIBRARIES =		libobexftp.la
 
-INCLUDES =			@GLIB_CFLAGS@ \
-				@OPENOBEX_CFLAGS@ \
+INCLUDES =			@OPENOBEX_CFLAGS@ \
 				-I../includes
 
-LDADD =				@GLIB_LIBS@ \
-				@OPENOBEX_LIBS@
+LDADD =				@OPENOBEX_LIBS@
 
 obexftpincludedir =		$(includedir)/obexftp
 

@@ -53,6 +53,5 @@ rm -rf $RPM_BUILD_ROOT
 %doc README README.bfb README.obexftp README.openobex
 %{_bindir}/*
 %{_libdir}/*
-%{_mandir}/man?/*
 %{_includedir}/*/*
 

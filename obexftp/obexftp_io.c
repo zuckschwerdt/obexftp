@@ -84,7 +84,7 @@ obex_object_t *build_object_from_file(obex_t *handle, const char *localname, con
 	OBEX_ObjectAddHeader(handle, object, OBEX_HDR_BODY,
 				hdd, 0, OBEX_FL_STREAM_START);
 
-	DEBUG(3, "%s() Lastmod = %s", __func__, lastmod);
+	DEBUG(3, __FUNCTION__ "() Lastmod = %s", lastmod);
 	return object;
 
 err:
@@ -98,7 +98,7 @@ err:
 //
 static int nameok(const char *name)
 {
-	DEBUG(3, "%s() ", __func__);
+	DEBUG(3, __FUNCTION__ "() ");
 
         return_val_if_fail (name != NULL, FALSE);
 	
@@ -153,7 +153,7 @@ int open_safe(const char *path, const char *name)
 	char diskname[PATH_MAX + 1] = {0,};
 	int fd;
 
-	DEBUG(3, "%s() ", __func__);
+	DEBUG(3, __FUNCTION__ "() ");
 	
 	/* Check for dangerous filenames */
 	if(nameok(name) == FALSE)
@@ -163,7 +163,7 @@ int open_safe(const char *path, const char *name)
 
 	pathcat(diskname, path, name);
 
-	DEBUG(3, "%s() Creating file %s", __func__, diskname);
+	DEBUG(3, __FUNCTION__ "() Creating file %s", diskname);
 
 	fd = open(diskname, O_RDWR | O_CREAT | O_TRUNC, DEFFILEMOD);
 	return fd;
@@ -185,21 +185,21 @@ int checkdir(const char *path, const char *dir, cd_flags flags)
 
 	pathcat(newpath, path, dir);
 
-	DEBUG(3, "%s() path = %s dir = %s, flags = %d", __func__, path, dir, flags);
+	DEBUG(3, __FUNCTION__ "() path = %s dir = %s, flags = %d", path, dir, flags);
 	if(stat(newpath, &statbuf) == 0) {
 		// If this directory aleady exist we are done
 		if(S_ISDIR(statbuf.st_mode)) {
-			DEBUG(3, "%s() Using existing dir", __func__);
+			DEBUG(3, __FUNCTION__ "() Using existing dir");
 			return 1;
 		}
 		else  {
 			// A non-directory with this name already exist.
-			DEBUG(3, "%s() A non-dir called %s already exist", __func__, newpath);
+			DEBUG(3, __FUNCTION__ "() A non-dir called %s already exist", newpath);
 			return -1;
 		}
 	}
 	if(flags & CD_CREATE) {
-		DEBUG(3, "%s() Will try to create %s", __func__, newpath);
+		DEBUG(3, __FUNCTION__ "() Will try to create %s", newpath);
 #ifdef _WIN32
 		ret = mkdir(newpath);
 #else

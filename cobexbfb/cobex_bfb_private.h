@@ -27,16 +27,25 @@
  *     
  */
 
+#ifndef COBEXBFB_PRIVATE_H
+#define COBEXBFB_PRIVATE_H
+
 #include <bfb/bfb.h>
 
 #define SERPORT "/dev/ttyS0"
 
 typedef struct {
 	char *tty;
-	int fd;
+#ifdef _WIN32
+	HANDLE fd;		/* Socket descriptor */
+#else
+	int fd;			/* Socket descriptor */
+#endif
 	uint8_t recv[500];
 	int recv_len;
 	uint8_t seq;
 	bfb_data_t *data;
 	int data_len;
 } cobex_t;
+
+#endif /* COBEXBFB_PRIVATE_H */

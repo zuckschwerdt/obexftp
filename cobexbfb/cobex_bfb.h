@@ -34,9 +34,9 @@ void	cobex_free (obex_ctrans_t * ctrans);
 
 /* callbacks */
 
-int	cobex_connect (obex_t *self, void *userdata);
-int	cobex_disconnect (obex_t *self, void *userdata);
-int	cobex_write (obex_t *self, void *userdata, uint8_t *buffer, int length);
-int	cobex_handleinput (obex_t *self, void *userdata, int timeout);
+int	cobex_connect (obex_t *self, void *data);
+int	cobex_disconnect (obex_t *self, void *data);
+int	cobex_write (obex_t *self, void *data, uint8_t *buffer, int length);
+int	cobex_handleinput (obex_t *self, void *data, int timeout);
 
-#endif /* COBEXBFB */
+#endif /* COBEXBFB_H */

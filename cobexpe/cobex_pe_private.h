@@ -27,9 +27,18 @@
  *     
  */
 
+#ifndef COBEXPE_PRIVATE_H
+#define COBEXPE_PRIVATE_H
+
 #define SERPORT "/dev/ttyS0"
 
 typedef struct {
 	char *tty;
-	int fd;
+#ifdef _WIN32
+	HANDLE fd;		/* Socket descriptor */
+#else
+	int fd;			/* Socket descriptor */
+#endif
 } cobex_t;
+
+#endif /* COBEXPE_PRIVATE_H */

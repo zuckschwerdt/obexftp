@@ -1,9 +1,8 @@
 lib_LTLIBRARIES =		libbfb.la
 
-INCLUDES =			@GLIB_CFLAGS@ \
-				-I../includes
+INCLUDES =			-I../includes
 
-LDADD =				@GLIB_LIBS@
+LDADD =				
 
 bfbincludedir =			$(includedir)/bfb
 

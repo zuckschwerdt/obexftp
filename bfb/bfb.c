@@ -26,9 +26,7 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <string.h>
-#ifndef S_SPLINT_S
 #include <unistd.h>
-#endif
 
 /* htons */
 #ifdef _WIN32
@@ -52,16 +50,14 @@
 	(*(member_type*) STRUCT_MEMBER_P ((struct_p), (struct_offset)))
 
 /* mobile need little-endianess always */
-/* Solaris: _LITTLE_ENDIAN / _BIG_ENDIAN */
-/* Linux: */
-#if (BYTE_ORDER == LITTLE_ENDIAN) || defined (_LITTLE_ENDIAN)
+#if BYTE_ORDER == LITTLE_ENDIAN
 
 #define htoms(A)	(A)
 #define htoml(A)	(A)
 #define mtohs(A)	(A)
 #define mtohl(A)	(A)
 
-#elif (BYTE_ORDER == BIG_ENDIAN) || defined (_BIG_ENDIAN)
+#elif BYTE_ORDER == BIG_ENDIAN
 
 #define htoms(A)	((((uint16_t)(A) & 0xff00) >> 8) | \
 			 (((uint16_t)(A) & 0x00ff) << 8))
@@ -273,17 +269,9 @@ int bfb_write_packets(FD fd, uint8_t type, uint8_t *buffer, int length)
 #else
 	int actual;
 #endif
-
-#ifdef _WIN32
-        return_val_if_fail (fd != INVALID_HANDLE_VALUE, FALSE);
-#else
-        return_val_if_fail (fd > 0, FALSE);
-#endif
 	
 	// alloc frame buffer
 	frame = malloc((length > MAX_PACKET_DATA ? MAX_PACKET_DATA : length) + sizeof (bfb_frame_t));
-	if (frame == NULL)
-		return -1;
 
 	for(i=0; i <length; i += MAX_PACKET_DATA) {
 
@@ -300,16 +288,16 @@ int bfb_write_packets(FD fd, uint8_t type, uint8_t *buffer, int length)
 		/* actual = bfb_io_write(fd, frame, l + sizeof (bfb_frame_t)); */
 #ifdef _WIN32
 		if(!WriteFile(fd, frame, l + sizeof (bfb_frame_t), &actual, NULL))
-			DEBUG(2, "%s() Write error: %ld", __func__, actual);
-		DEBUG(3, "%s() Wrote %ld bytes (expected %d)", __func__, actual, l + sizeof (bfb_frame_t));
+			DEBUG(2, __FUNCTION__ "() Write error: %ld", actual);
+		DEBUG(3, __FUNCTION__ "() Wrote %ld bytes (expected %d)", actual, l + sizeof (bfb_frame_t));
 #else
 		actual = write(fd, frame, l + sizeof (bfb_frame_t));
-		DEBUG(3, "%s() Wrote %d bytes (expected %d)", __func__, actual, l + sizeof (bfb_frame_t));
+		DEBUG(3, __FUNCTION__ "() Wrote %d bytes (expected %d)", actual, l + sizeof (bfb_frame_t));
 #endif
 
 
 		if (actual < 0 || actual < l + sizeof (bfb_frame_t)) {
-			DEBUG(1, "%s() Write failed", __func__);
+			DEBUG(1, __FUNCTION__ "() Write failed");
 			free(frame);
 			return -1;
 		}
@@ -325,14 +313,12 @@ int bfb_send_data(FD fd, uint8_t type, uint8_t *data, int length, int seq)
 	int actual;
 
 	buffer = malloc(length + 7);
-	if (buffer == NULL)
-		return -1;
 
 	actual = bfb_stuff_data(buffer, type, data, length, seq);
-	DEBUG(3, "%s() Stuffed %d bytes", __func__, actual);
+	DEBUG(3, __FUNCTION__ "() Stuffed %d bytes", actual);
 
 	actual = bfb_write_packets(fd, BFB_FRAME_DATA, buffer, actual);
-	DEBUG(3, "%s() Wrote %d packets", __func__, actual);
+	DEBUG(3, __FUNCTION__ "() Wrote %d packets", actual);
 
 	free(buffer);
 
@@ -341,84 +327,80 @@ int bfb_send_data(FD fd, uint8_t type, uint8_t *data, int length, int seq)
 
 
 /* retrieve actual packets */
-/*@null@*/
 bfb_frame_t *bfb_read_packets(uint8_t *buffer, int *length)
 {
 	bfb_frame_t *frame;
 	int l;
 
-	DEBUG(3, "%s() ", __func__);
+	DEBUG(3, __FUNCTION__ "() ");
 
 	if (*length < 0) {
-		DEBUG(1, "%s() Wrong length?", __func__);
+		DEBUG(1, __FUNCTION__ "() Wrong length?");
 		return NULL;
 	}
 
 	if (*length == 0) {
-		DEBUG(1, "%s() No packet?", __func__);
+		DEBUG(1, __FUNCTION__ "() No packet?");
 		return NULL;
 	}
 
 	if (*length < sizeof(bfb_frame_t)) {
-		DEBUG(1, "%s() Short packet?", __func__);
+		DEBUG(1, __FUNCTION__ "() Short packet?");
 		return NULL;
 	}
 	
 	// temp frame
 	frame = (bfb_frame_t *)buffer;
 	if ((frame->type ^ frame->len) != frame->chk) {
-		DEBUG(1, "%s() Header error?", __func__);
+		DEBUG(1, __FUNCTION__ "() Header error?");
 		return NULL;
 	}
 
 	if (*length < frame->len + sizeof(bfb_frame_t)) {
-		DEBUG(1, "%s() Need more data?", __func__);
+		DEBUG(1, __FUNCTION__ "() Need more data?");
 		return NULL;
 	}
 
 	// copy frame from buffer
 	l = sizeof(bfb_frame_t) + frame->len;
 	frame = malloc(l);
-	if (frame == NULL)
-		return NULL;
 	memcpy(frame, buffer, l);
 
 	// remove frame from buffer
 	*length -= l;
 	memmove(buffer, &buffer[l], *length);
 	
-	DEBUG(3, "%s() Packet %x (%d bytes)", __func__, frame->type, frame->len);
+	DEBUG(3, __FUNCTION__ "() Packet %x (%d bytes)", frame->type, frame->len);
 	return frame;
 }
 
-/*@null@*/
 bfb_data_t *bfb_assemble_data(bfb_data_t *data, int *fraglen, bfb_frame_t *frame)
 {
 	bfb_data_t *ret;
 	int l;
 
-	DEBUG(3, "%s() ", __func__);
+	DEBUG(3, __FUNCTION__ "() ");
 
 	if (frame->type != BFB_FRAME_DATA) {
-		DEBUG(1, "%s() Wrong frame type (%x)?", __func__, frame->type);
+		DEBUG(1, __FUNCTION__ "() Wrong frame type (%x)?", frame->type);
 		return data;
 	}
 
 	// temp data
 	ret = (bfb_data_t *)frame->payload;
 	if (ret->cmd == BFB_DATA_ACK) {
-		DEBUG(3, "%s() Skipping ack", __func__);
+		DEBUG(3, __FUNCTION__ "() Skipping ack");
 		return data;
 	}
 	/*
 	if ((ret->cmd != BFB_DATA_FIRST) && (ret->cmd != BFB_DATA_NEXT)) {
-		DEBUG(1, "%s() Wrong data type (%x)?", __func__, ret->cmd);
+		DEBUG(1, __FUNCTION__ "() Wrong data type (%x)?", ret->cmd);
 		return data;
 	}
 	*/
 
 	// copy frame from buffer
-	DEBUG(3, "%s() data: %d, frame: %d", __func__, *fraglen, frame->len);
+	DEBUG(3, __FUNCTION__ "() data: %d, frame: %d", *fraglen, frame->len);
 	l = *fraglen + frame->len;
 	ret = realloc(data, l);
 	//memcpy(ret, data, *fraglen);
@@ -436,7 +418,7 @@ int bfb_check_data(bfb_data_t *data, int fraglen)
                 uint8_t bytes[2];
         } l;
 
-	DEBUG(3, "%s() ", __func__);
+	DEBUG(3, __FUNCTION__ "() ");
 
 	if (data == NULL)
 		return -1;
@@ -445,11 +427,11 @@ int bfb_check_data(bfb_data_t *data, int fraglen)
 	l.bytes[1] = data->len1;
 	l.value = htons(l.value);
 
-	DEBUG(3, "%s() fragment size is %d", __func__, fraglen);
-	DEBUG(3, "%s() expected len %d", __func__, l.value);
-	DEBUG(3, "%s() data size is %d", __func__, fraglen-sizeof(bfb_data_t));
+	DEBUG(3, __FUNCTION__ "() fragment size is %d", fraglen);
+	DEBUG(3, __FUNCTION__ "() expected len %d", l.value);
+	DEBUG(3, __FUNCTION__ "() data size is %d", fraglen-sizeof(bfb_data_t));
 
-	if (fraglen-sizeof(bfb_data_t) < l.value + /*crc*/ 2)
+	if (fraglen-sizeof(bfb_data_t) + 2 < l.value)
 		return 0;
 
 /*
@@ -458,7 +440,7 @@ int bfb_check_data(bfb_data_t *data, int fraglen)
 		return -1;
 */
 
-	DEBUG(2, "%s() data ready!", __func__);
+	DEBUG(2, __FUNCTION__ "() data ready!");
 	return 1;
 
 }
