@@ -8,8 +8,8 @@
 #include <sys/stat.h>
 
 #include "flexmem.h"
-#include "ircp_client.h"
-#include "ircp_io.h"
+#include "client.h"
+#include "io.h"
 #include "libcobexbfb/cobex_bfb.h"
 
 #include "dirtraverse.h"
@@ -189,7 +189,7 @@ static void cli_obex_event(obex_t *handle, obex_object_t *object, gint mode, gin
 //
 // Do an OBEX request sync.
 //
-gint ircp_sync(ircp_client_t *cli)
+gint flexmem_sync(ircp_client_t *cli)
 {
 	gint ret;
 	DEBUG(4, G_GNUC_FUNCTION "()\n");
@@ -219,24 +219,14 @@ static gint cli_sync_request(ircp_client_t *cli, obex_object_t *object)
 	cli->finished = FALSE;
 	OBEX_Request(cli->obexhandle, object);
 
-	return ircp_sync (cli);
+	return flexmem_sync (cli);
 }
 	
-static gint cli_async_request(ircp_client_t *cli, obex_object_t *object)
-{
-	DEBUG(4, G_GNUC_FUNCTION "()\n");
-
-	cli->finished = FALSE;
-	OBEX_Request(cli->obexhandle, object);
-
-	return 1;
-}
-
 
 //
 // Create an ircp client
 //
-ircp_client_t *ircp_cli_open(ircp_info_cb_t infocb, gchar *tty)
+ircp_client_t *flexmem_cli_open(ircp_info_cb_t infocb, gchar *tty)
 {
 	ircp_client_t *cli;
         obex_ctrans_t *ctrans = NULL;
@@ -293,7 +283,7 @@ out_err:
 //
 // Close an ircp client
 //
-void ircp_cli_close(ircp_client_t *cli)
+void flexmem_cli_close(ircp_client_t *cli)
 {
 	DEBUG(4, G_GNUC_FUNCTION "()\n");
 	g_return_if_fail(cli != NULL);
@@ -306,7 +296,7 @@ void ircp_cli_close(ircp_client_t *cli)
 //
 // Do connect as client
 //
-gint ircp_cli_connect(ircp_client_t *cli)
+gint flexmem_cli_connect(ircp_client_t *cli)
 {
 	obex_object_t *object;
 	int ret;
@@ -363,7 +353,7 @@ gint ircp_cli_connect(ircp_client_t *cli)
 //
 // Do disconnect as client
 //
-gint ircp_cli_disconnect(ircp_client_t *cli)
+gint flexmem_cli_disconnect(ircp_client_t *cli)
 {
 	obex_object_t *object;
 	int ret;
@@ -388,11 +378,9 @@ gint ircp_cli_disconnect(ircp_client_t *cli)
 //
 // Do an OBEX GET with app info opcode.
 //
-gint ircp_info(ircp_client_t *cli, guint8 opcode)
+gint flexmem_info(ircp_client_t *cli, guint8 opcode)
 {
 	obex_object_t *object = NULL;
-        obex_headerdata_t hdd;
-	guint8 cmdstr[] = {APPARAM_INFO_CODE, 0x01, 0x00};
 	int ret;
 
 	g_return_val_if_fail(cli != NULL, -1);
@@ -401,15 +389,11 @@ gint ircp_info(ircp_client_t *cli, guint8 opcode)
 
 	DEBUG(4, G_GNUC_FUNCTION "() Retrieving info %d\n", opcode);
 
-        object = OBEX_ObjectNew(cli->obexhandle, OBEX_CMD_GET);
+        object = flexmem_build_info (cli->obexhandle, opcode);
         if(object == NULL)
                 return -1;
  
-        cmdstr[2] = opcode;
-        hdd.bs = cmdstr;
-	OBEX_ObjectAddHeader(cli->obexhandle, object, OBEX_HDR_APPARAM, hdd, sizeof(cmdstr), OBEX_FL_FIT_ONE_PACKET);
- 
-	ret = cli_async_request(cli, object);
+	ret = cli_sync_request(cli, object);
 		
 	if(ret < 0) 
 		cli->infocb(IRCP_EV_ERR, "info");
@@ -423,13 +407,9 @@ gint ircp_info(ircp_client_t *cli, guint8 opcode)
 //
 // Do an OBEX GET with TYPE.
 //
-gint ircp_list(ircp_client_t *cli, gchar *localname, gchar *remotename)
+gint flexmem_list(ircp_client_t *cli, gchar *localname, gchar *remotename)
 {
 	obex_object_t *object = NULL;
-        obex_headerdata_t hdd;
-        guint8 *ucname;
-        gint ucname_len;
-        char type_name[] = "x-obex/folder-listing";
 	int ret;
 
 	g_return_val_if_fail(cli != NULL, -1);
@@ -440,27 +420,11 @@ gint ircp_list(ircp_client_t *cli, gchar *localname, gchar *remotename)
 
 	cli->out_fd = STDOUT_FILENO;
 
-        object = OBEX_ObjectNew(cli->obexhandle, OBEX_CMD_GET);
+        object = flexmem_build_list (cli->obexhandle, remotename);
         if(object == NULL)
                 return -1;
- 
-        hdd.bs = type_name;
-	OBEX_ObjectAddHeader(cli->obexhandle, object, OBEX_HDR_TYPE, hdd, sizeof(type_name), OBEX_FL_FIT_ONE_PACKET);
- 
-	if (remotename != NULL) {
-		ucname_len = strlen(remotename)*2 + 2;
-		ucname = g_malloc(ucname_len);
-		if(ucname == NULL)
-			goto err;
 
-		ucname_len = OBEX_CharToUnicode(ucname, remotename, ucname_len);
-
-		hdd.bs = ucname;
-		OBEX_ObjectAddHeader(cli->obexhandle, object, OBEX_HDR_NAME, hdd, ucname_len, OBEX_FL_FIT_ONE_PACKET);
-		g_free(ucname);
-	}
-	
-	ret = cli_async_request(cli, object);
+	ret = cli_sync_request(cli, object);
 		
 	if(ret < 0) 
 		cli->infocb(IRCP_EV_ERR, localname);
@@ -469,23 +433,15 @@ gint ircp_list(ircp_client_t *cli, gchar *localname, gchar *remotename)
 	}
 
 	return ret;
-
-err:
-        if(object != NULL)
-                OBEX_ObjectDelete(cli->obexhandle, object);
-        return -1;
 }
 
 
 //
 // Do an OBEX GET.
 //
-gint ircp_get(ircp_client_t *cli, gchar *localname, gchar *remotename)
+gint flexmem_get(ircp_client_t *cli, gchar *localname, gchar *remotename)
 {
 	obex_object_t *object = NULL;
-        obex_headerdata_t hdd;
-        guint8 *ucname;
-        gint ucname_len;
 	int ret;
 
 	g_return_val_if_fail(cli != NULL, -1);
@@ -496,22 +452,11 @@ gint ircp_get(ircp_client_t *cli, gchar *localname, gchar *remotename)
 
 	cli->out_fd = ircp_open_safe("", localname);
 
-        object = OBEX_ObjectNew(cli->obexhandle, OBEX_CMD_GET);
+        object = flexmem_build_get (cli->obexhandle, remotename);
         if(object == NULL)
                 return -1;
-
-        ucname_len = strlen(remotename)*2 + 2;
-        ucname = g_malloc(ucname_len);
-        if(ucname == NULL)
-                goto err;
-
-        ucname_len = OBEX_CharToUnicode(ucname, remotename, ucname_len);
-
-        hdd.bs = ucname;
-        OBEX_ObjectAddHeader(cli->obexhandle, object, OBEX_HDR_NAME, hdd, ucname_len, 0);
-        g_free(ucname);
 	
-	ret = cli_async_request(cli, object);
+	ret = cli_sync_request(cli, object);
 		
 	if(ret < 0)
 		cli->infocb(IRCP_EV_ERR, localname);
@@ -519,27 +464,16 @@ gint ircp_get(ircp_client_t *cli, gchar *localname, gchar *remotename)
 		cli->infocb(IRCP_EV_OK, localname);
 
 	return ret;
-
-err:
-        if(object != NULL)
-                OBEX_ObjectDelete(cli->obexhandle, object);
-        return -1;
 }
 
 
 //
 // Do an OBEX rename.
 //
-gint ircp_rename(ircp_client_t *cli, gchar *sourcename, gchar *targetname)
+gint flexmem_rename(ircp_client_t *cli, gchar *sourcename, gchar *targetname)
 {
 	obex_object_t *object = NULL;
-        obex_headerdata_t hdd;
-        guint8 *appstr;
-        guint8 *appstr_p;
-        gint appstr_len;
-        gint ucname_len;
 	int ret;
-	char opname[] = {'m','o','v','e'};
 
 	g_return_val_if_fail(cli != NULL, -1);
 
@@ -547,37 +481,11 @@ gint ircp_rename(ircp_client_t *cli, gchar *sourcename, gchar *targetname)
 
 	DEBUG(4, G_GNUC_FUNCTION "() Moving %s -> %s\n", sourcename, targetname);
 
-        object = OBEX_ObjectNew(cli->obexhandle, OBEX_CMD_PUT);
+        object = flexmem_build_rename (cli->obexhandle, sourcename, targetname);
         if(object == NULL)
                 return -1;
-
-        appstr_len = 1 + 1 + sizeof(opname) +
-		strlen(sourcename)*2 + 2 +
-		strlen(targetname)*2 + 2 + 2;
-        appstr = g_malloc(appstr_len);
-        if(appstr == NULL)
-                goto err;
-
-	appstr_p = appstr;
-	*appstr_p++ = 0x34;
-	*appstr_p++ = sizeof(opname);
-	memcpy(appstr_p, opname, sizeof(opname));
-	appstr_p += sizeof(opname);
-
-	*appstr_p++ = 0x35;
-        ucname_len = OBEX_CharToUnicode(appstr_p + 1, sourcename, strlen(sourcename)*2 + 2);
-	*appstr_p = ucname_len - 2; // no trailing 0
-	appstr_p += ucname_len - 1;
-
-	*appstr_p++ = 0x36;
-        ucname_len = OBEX_CharToUnicode(appstr_p + 1, targetname, strlen(targetname)*2 + 2);
-	*appstr_p = ucname_len - 2; // no trailing 0
 	
-        hdd.bs = appstr;
-        OBEX_ObjectAddHeader(cli->obexhandle, object, OBEX_HDR_APPARAM, hdd, appstr_len - 2, 0);
-        g_free(appstr);
-	
-	ret = cli_async_request(cli, object);
+	ret = cli_sync_request(cli, object);
 		
 	if(ret < 0)
 		cli->infocb(IRCP_EV_ERR, sourcename);
@@ -585,23 +493,15 @@ gint ircp_rename(ircp_client_t *cli, gchar *sourcename, gchar *targetname)
 		cli->infocb(IRCP_EV_OK, sourcename);
 
 	return ret;
-
-err:
-        if(object != NULL)
-                OBEX_ObjectDelete(cli->obexhandle, object);
-        return -1;
 }
 
 
 //
 // Do an OBEX PUT with empty file (delete)
 //
-gint ircp_del(ircp_client_t *cli, gchar *name)
+gint flexmem_del(ircp_client_t *cli, gchar *name)
 {
 	obex_object_t *object;
-        obex_headerdata_t hdd;
-        guint8 *ucname;
-        gint ucname_len;
 	int ret;
 
 	g_return_val_if_fail(cli != NULL, -1);
@@ -610,22 +510,11 @@ gint ircp_del(ircp_client_t *cli, gchar *name)
 
 	DEBUG(4, G_GNUC_FUNCTION "() Deleting %s\n", name);
 
-        object = OBEX_ObjectNew(cli->obexhandle, OBEX_CMD_PUT);
+        object = flexmem_build_del (cli->obexhandle, name);
         if(object == NULL)
                 return -1;
-
-        ucname_len = strlen(name)*2 + 2;
-        ucname = g_malloc(ucname_len);
-        if(ucname == NULL)
-                goto err;
-
-        ucname_len = OBEX_CharToUnicode(ucname, name, ucname_len);
-
-        hdd.bs = ucname;
-        OBEX_ObjectAddHeader(cli->obexhandle, object, OBEX_HDR_NAME, hdd, ucname_len, OBEX_FL_FIT_ONE_PACKET);
-        g_free(ucname);
 	
-	ret = cli_async_request(cli, object);
+	ret = cli_sync_request(cli, object);
 	
 	if(ret < 0)
 		cli->infocb(IRCP_EV_ERR, name);
@@ -633,18 +522,39 @@ gint ircp_del(ircp_client_t *cli, gchar *name)
 		cli->infocb(IRCP_EV_OK, name);
 
 	return ret;
-
-err:
-        if(object != NULL)
-                OBEX_ObjectDelete(cli->obexhandle, object);
-        return -1;
 }
 
 
 //
+// Do OBEX SetPath
+//
+static gint flexmem_setpath(ircp_client_t *cli, gchar *name, gboolean up)
+{
+	obex_object_t *object;
+	int ret;
+
+	g_return_val_if_fail(cli != NULL, -1);
+
+	cli->infocb(IRCP_EV_SENDING, name); //FIXME
+
+	DEBUG(4, G_GNUC_FUNCTION "() %s\n", name);
+
+	object = flexmem_build_setpath (cli->obexhandle, name, up);
+
+	ret = cli_sync_request(cli, object);
+
+	if(ret < 0)
+		cli->infocb(IRCP_EV_ERR, name);
+	else
+		cli->infocb(IRCP_EV_OK, name);
+
+	return ret;
+}
+
+//
 // Do an OBEX PUT.
 //
-static gint ircp_put_file(ircp_client_t *cli, gchar *localname, gchar *remotename)
+static gint flexmem_put_file(ircp_client_t *cli, gchar *localname, gchar *remotename)
 {
 	obex_object_t *object;
 	int ret;
@@ -655,13 +565,13 @@ static gint ircp_put_file(ircp_client_t *cli, gchar *localname, gchar *remotenam
 
 	DEBUG(4, G_GNUC_FUNCTION "() Sending %s -> %s\n", localname, remotename);
 
-	object = build_object_from_file(cli->obexhandle, localname, remotename);
+	object = build_object_from_file (cli->obexhandle, localname, remotename);
 	
 	cli->fd = open(localname, O_RDONLY, 0);
 	if(cli->fd < 0)
 		ret = -1;
 	else
-		ret = cli_async_request(cli, object);
+		ret = cli_sync_request(cli, object);
 	
 	//close(cli->fd);
 		
@@ -670,45 +580,6 @@ static gint ircp_put_file(ircp_client_t *cli, gchar *localname, gchar *remotenam
 	else
 		cli->infocb(IRCP_EV_OK, localname);
 
-	return ret;
-}
-
-//
-// Do OBEX SetPath
-//
-static gint ircp_setpath(ircp_client_t *cli, gchar *name, gboolean up)
-{
-	obex_object_t *object;
-	obex_headerdata_t hdd;
-
-	guint8 setpath_nohdr_data[2] = {0,};
-	gchar *ucname;
-	gint ucname_len;
-	gint ret;
-
-	DEBUG(4, G_GNUC_FUNCTION "() %s\n", name);
-
-	object = OBEX_ObjectNew(cli->obexhandle, OBEX_CMD_SETPATH);
-
-	if(up) {
-		setpath_nohdr_data[0] = 1;
-	}
-	else {
-		ucname_len = strlen(name)*2 + 2;
-		ucname = g_malloc(ucname_len);
-		if(ucname == NULL) {
-			OBEX_ObjectDelete(cli->obexhandle, object);
-			return -1;
-		}
-		ucname_len = OBEX_CharToUnicode(ucname, name, ucname_len);
-
-		hdd.bs = ucname;
-		OBEX_ObjectAddHeader(cli->obexhandle, object, OBEX_HDR_NAME, hdd, ucname_len, 0);
-		g_free(ucname);
-	}
-
-	OBEX_ObjectSetNonHdrData(object, setpath_nohdr_data, 2);
-	ret = cli_sync_request(cli, object);
 	return ret;
 }
 
@@ -729,15 +600,15 @@ static gint ircp_visit(gint action, gchar *name, gchar *path, gpointer userdata)
 			remotename = name;
 		else
 			remotename++;
-		ret = ircp_put_file(userdata, name, remotename);
+		ret = flexmem_put_file(userdata, name, remotename);
 		break;
 
 	case VISIT_GOING_DEEPER:
-		ret = ircp_setpath(userdata, name, FALSE);
+		ret = flexmem_setpath(userdata, name, FALSE);
 		break;
 
 	case VISIT_GOING_UP:
-		ret = ircp_setpath(userdata, "", TRUE);
+		ret = flexmem_setpath(userdata, "", TRUE);
 		break;
 	}
 	DEBUG(4, G_GNUC_FUNCTION "() returning %d\n", ret);
@@ -747,7 +618,7 @@ static gint ircp_visit(gint action, gchar *name, gchar *path, gpointer userdata)
 //
 // Put file or directory
 //
-gint ircp_put(ircp_client_t *cli, gchar *name)
+gint flexmem_put(ircp_client_t *cli, gchar *name)
 {
 	struct stat statbuf;
 	gchar *origdir;
@@ -774,7 +645,7 @@ gint ircp_put(ircp_client_t *cli, gchar *name)
 		newrealdir = getcwd(NULL, 0);
 		dirname = strrchr(newrealdir, '/') + 1;
 		if(strlen(dirname) != 0)
-			ircp_setpath(cli, dirname, FALSE);
+			flexmem_setpath(cli, dirname, FALSE);
 		
 		free(newrealdir);
 	}
@@ -785,4 +656,210 @@ gint ircp_put(ircp_client_t *cli, gchar *name)
 	free(origdir);
 	return ret;
 
+}
+
+
+obex_object_t *flexmem_build_info (obex_t obex, guint8 opcode)
+{
+	obex_object_t *object = NULL;
+        obex_headerdata_t hdd;
+	guint8 cmdstr[] = {APPARAM_INFO_CODE, 0x01, 0x00};
+
+        object = OBEX_ObjectNew(obex, OBEX_CMD_GET);
+        if(object == NULL)
+                return NULL;
+ 
+        cmdstr[2] = opcode;
+        hdd.bs = cmdstr;
+	OBEX_ObjectAddHeader(obex, object, OBEX_HDR_APPARAM, hdd, sizeof(cmdstr), OBEX_FL_FIT_ONE_PACKET);
+ 
+	return object;
+}
+
+//	cli->out_fd = STDOUT_FILENO;
+obex_object_t *flexmem_build_list (obex_t obex, gchar *name)
+{
+	obex_object_t *object = NULL;
+        obex_headerdata_t hdd;
+        guint8 *ucname;
+        gint ucname_len;
+        char type_name[] = "x-obex/folder-listing";
+
+        object = OBEX_ObjectNew(obex, OBEX_CMD_GET);
+        if(object == NULL)
+                return NULL;
+ 
+        hdd.bs = type_name;
+	OBEX_ObjectAddHeader(obex, object, OBEX_HDR_TYPE, hdd, sizeof(type_name), OBEX_FL_FIT_ONE_PACKET);
+ 
+	if (name != NULL) {
+		ucname_len = strlen(name)*2 + 2;
+		ucname = g_malloc(ucname_len);
+		if(ucname == NULL)
+			goto err;
+
+		ucname_len = OBEX_CharToUnicode(ucname, name, ucname_len);
+
+		hdd.bs = ucname;
+		OBEX_ObjectAddHeader(obex, object, OBEX_HDR_NAME, hdd, ucname_len, OBEX_FL_FIT_ONE_PACKET);
+		g_free(ucname);
+	}
+	
+	return object;
+
+err:
+        if(object != NULL)
+                OBEX_ObjectDelete(obex, object);
+        return NULL;
+}
+
+
+//	cli->out_fd = ircp_open_safe("", localname);
+obex_object_t *flexmem_build_get (obex_t obex, gchar *name)
+{
+	obex_object_t *object = NULL;
+        obex_headerdata_t hdd;
+        guint8 *ucname;
+        gint ucname_len;
+
+        object = OBEX_ObjectNew(obex, OBEX_CMD_GET);
+        if(object == NULL)
+                return NULL;
+
+        ucname_len = strlen(name)*2 + 2;
+        ucname = g_malloc(ucname_len);
+        if(ucname == NULL)
+                goto err;
+
+        ucname_len = OBEX_CharToUnicode(ucname, name, ucname_len);
+
+        hdd.bs = ucname;
+        OBEX_ObjectAddHeader(obex, object, OBEX_HDR_NAME, hdd, ucname_len, 0);
+        g_free(ucname);
+	
+	return object;
+
+err:
+        if(object != NULL)
+                OBEX_ObjectDelete(obex, object);
+        return NULL;
+}
+
+
+obex_object_t *flexmem_build_rename (obex_t obex, gchar *source, gchar *target)
+{
+	obex_object_t *object = NULL;
+        obex_headerdata_t hdd;
+        guint8 *appstr;
+        guint8 *appstr_p;
+        gint appstr_len;
+        gint ucname_len;
+	char opname[] = {'m','o','v','e'};
+
+        object = OBEX_ObjectNew(obex, OBEX_CMD_PUT);
+        if(object == NULL)
+                return NULL;
+
+        appstr_len = 1 + 1 + sizeof(opname) +
+		strlen(source)*2 + 2 +
+		strlen(target)*2 + 2 + 2;
+        appstr = g_malloc(appstr_len);
+        if(appstr == NULL)
+                goto err;
+
+	appstr_p = appstr;
+	*appstr_p++ = 0x34;
+	*appstr_p++ = sizeof(opname);
+	memcpy(appstr_p, opname, sizeof(opname));
+	appstr_p += sizeof(opname);
+
+	*appstr_p++ = 0x35;
+        ucname_len = OBEX_CharToUnicode(appstr_p + 1, source, strlen(source)*2 + 2);
+	*appstr_p = ucname_len - 2; // no trailing 0
+	appstr_p += ucname_len - 1;
+
+	*appstr_p++ = 0x36;
+        ucname_len = OBEX_CharToUnicode(appstr_p + 1, target, strlen(target)*2 + 2);
+	*appstr_p = ucname_len - 2; // no trailing 0
+	
+        hdd.bs = appstr;
+        OBEX_ObjectAddHeader(obex, object, OBEX_HDR_APPARAM, hdd, appstr_len - 2, 0);
+        g_free(appstr);
+	
+	return object;
+
+err:
+        if(object != NULL)
+                OBEX_ObjectDelete(obex, object);
+        return NULL;
+}
+
+
+obex_object_t *flexmem_build_del (obex_t obex, gchar *name)
+{
+	obex_object_t *object;
+        obex_headerdata_t hdd;
+        guint8 *ucname;
+        gint ucname_len;
+
+        object = OBEX_ObjectNew(obex, OBEX_CMD_PUT);
+        if(object == NULL)
+                return NULL;
+
+        ucname_len = strlen(name)*2 + 2;
+        ucname = g_malloc(ucname_len);
+        if(ucname == NULL)
+                goto err;
+
+        ucname_len = OBEX_CharToUnicode(ucname, name, ucname_len);
+
+        hdd.bs = ucname;
+        OBEX_ObjectAddHeader(obex, object, OBEX_HDR_NAME, hdd, ucname_len, OBEX_FL_FIT_ONE_PACKET);
+        g_free(ucname);
+	
+	return object;
+
+err:
+        if(object != NULL)
+                OBEX_ObjectDelete(obex, object);
+        return NULL;
+}
+
+
+obex_object_t *flexmem_build_setpath (obex_t obex, gchar *name, gboolean up)
+{
+	obex_object_t *object;
+	obex_headerdata_t hdd;
+	guint8 setpath_nohdr_data[2] = {0,};
+	gchar *ucname;
+	gint ucname_len;
+
+	object = OBEX_ObjectNew(obex, OBEX_CMD_SETPATH);
+
+	if(up) {
+		setpath_nohdr_data[0] = 1;
+	}
+	else {
+		ucname_len = strlen(name)*2 + 2;
+		ucname = g_malloc(ucname_len);
+		if(ucname == NULL) {
+			OBEX_ObjectDelete(obex, object);
+			return NULL;
+		}
+		ucname_len = OBEX_CharToUnicode(ucname, name, ucname_len);
+
+		hdd.bs = ucname;
+		OBEX_ObjectAddHeader(obex, object, OBEX_HDR_NAME, hdd, ucname_len, 0);
+		g_free(ucname);
+	}
+
+	OBEX_ObjectSetNonHdrData(object, setpath_nohdr_data, 2);
+
+	return object;
+}
+
+
+obex_object_t *flexmem_build_put (obex_t obex, gchar *name)
+{
+	return NULL;
 }

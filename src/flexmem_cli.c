@@ -33,10 +33,9 @@
 #include <getopt.h>
 
 #include "libflexmem/flexmem.h"
-#include "libflexmem/ircp_client.h"
-#include "libflexmem/ircp_server.h"
+#include "libflexmem/client.h"
 
-void ircp_info_cb(gint event, gpointer param)
+void info_cb(gint event, gpointer param)
 {
 	gchar *msg = (gchar *) param;
 	guint32 info = GPOINTER_TO_UINT (param);
@@ -92,7 +91,6 @@ int main(int argc, char *argv[])
 	int most_recent_cmd = 0;
 	gchar *move_src = NULL;
 	ircp_client_t *cli;
-	ircp_server_t *srv;
 	gchar *inbox;
 	gchar *tty = NULL;
 
@@ -100,8 +98,6 @@ int main(int argc, char *argv[])
 		int option_index = 0;
 		static struct option long_options[] = {
 			{"device", 1, 0, 'd'},
-			{"serial", 0, 0, 's'},
-			{"irda", 0, 0, 'a'},
 			{"list", 2, 0, 'l'},
 			{"get", 1, 0, 'g'},
 			{"put", 1, 0, 'p'},
@@ -114,7 +110,7 @@ int main(int argc, char *argv[])
 			{0, 0, 0, 0}
 		};
 		
-		c = getopt_long (argc, argv, "-d:sal::g:p:im:k:rh",
+		c = getopt_long (argc, argv, "-d:l::g:p:im:k:rh",
 				 long_options, &option_index);
 		if (c == -1)
 			break;
@@ -132,83 +128,78 @@ int main(int argc, char *argv[])
 			break;
 
 		case 'l':
-			cli = ircp_cli_open(ircp_info_cb, tty);
+			cli = flexmem_cli_open(info_cb, tty);
 			if(cli == NULL) {
-				g_print("Error opening ircp-client\n");
+				g_print("Error opening flexmem-client\n");
 				return -1;
 			}
 
 			// Connect
-			if(ircp_cli_connect(cli) >= 0) {
-				ircp_list(cli, optarg, optarg);
-				ircp_sync (cli);
+			if(flexmem_cli_connect(cli) >= 0) {
+				flexmem_list(cli, optarg, optarg);
 
 				// Disconnect
-				ircp_cli_disconnect(cli);
+				flexmem_cli_disconnect(cli);
 			}
-			ircp_cli_close(cli);
+			flexmem_cli_close(cli);
 			most_recent_cmd = c;
 			break;
 
 		case 'g':
-			cli = ircp_cli_open(ircp_info_cb, tty);
+			cli = flexmem_cli_open(info_cb, tty);
 			if(cli == NULL) {
-				g_print("Error opening ircp-client\n");
+				g_print("Error opening flexmem-client\n");
 				return -1;
 			}
 			
 			// Connect
-			if(ircp_cli_connect(cli) >= 0) {
+			if(flexmem_cli_connect(cli) >= 0) {
 				// Get all files
-				ircp_get(cli, optarg, optarg);
-				ircp_sync (cli);
+				flexmem_get(cli, optarg, optarg);
 
 				// Disconnect
-				ircp_cli_disconnect(cli);
+				flexmem_cli_disconnect(cli);
 			}
-			ircp_cli_close(cli);
+			flexmem_cli_close(cli);
 			most_recent_cmd = c;
 			break;
 
 		case 'p':
-			cli = ircp_cli_open(ircp_info_cb, tty);
+			cli = flexmem_cli_open(info_cb, tty);
 			if(cli == NULL) {
-				g_print("Error opening ircp-client\n");
+				g_print("Error opening flexmem-client\n");
 				return -1;
 			}
 			
 			// Connect
-			if(ircp_cli_connect(cli) >= 0) {
+			if(flexmem_cli_connect(cli) >= 0) {
 				// Send all files
-				ircp_put(cli, optarg);
-				ircp_sync (cli);
+				flexmem_put(cli, optarg);
 
 				// Disconnect
-				ircp_cli_disconnect(cli);
+				flexmem_cli_disconnect(cli);
 			}
-			ircp_cli_close(cli);
+			flexmem_cli_close(cli);
 			most_recent_cmd = c;
 			break;
 
 		case 'i':
-			cli = ircp_cli_open(ircp_info_cb, tty);
+			cli = flexmem_cli_open(info_cb, tty);
 			if(cli == NULL) {
-				g_print("Error opening ircp-client\n");
+				g_print("Error opening flexmem-client\n");
 				return -1;
 			}
 			
 			// Connect
-			if(ircp_cli_connect(cli) >= 0) {
+			if(flexmem_cli_connect(cli) >= 0) {
 				// Retrieve Info
-				ircp_info(cli, 0x01);
-				ircp_sync (cli);
-				ircp_info(cli, 0x02);
-				ircp_sync (cli);
+				flexmem_info(cli, 0x01);
+				flexmem_info(cli, 0x02);
 
 				// Disconnect
-				ircp_cli_disconnect(cli);
+				flexmem_cli_disconnect(cli);
 			}
-			ircp_cli_close(cli);
+			flexmem_cli_close(cli);
 			break;
 
 		case 'm':
@@ -219,63 +210,42 @@ int main(int argc, char *argv[])
 				break;
 			}
 
-			cli = ircp_cli_open(ircp_info_cb, tty);
+			cli = flexmem_cli_open(info_cb, tty);
 			if(cli == NULL) {
-				g_print("Error opening ircp-client\n");
+				g_print("Error opening flexmem-client\n");
 				return -1;
 			}
 			
 			// Connect
-			if(ircp_cli_connect(cli) >= 0) {
+			if(flexmem_cli_connect(cli) >= 0) {
 				// Rename a file
-				ircp_rename(cli, move_src, optarg);
-				ircp_sync (cli);
+				flexmem_rename(cli, move_src, optarg);
 
 				// Disconnect
-				ircp_cli_disconnect(cli);
+				flexmem_cli_disconnect(cli);
 			}
-			ircp_cli_close(cli);
+			flexmem_cli_close(cli);
 
 			move_src = NULL;
 			break;
 
 		case 'k':
-			cli = ircp_cli_open(ircp_info_cb, tty);
+			cli = flexmem_cli_open(info_cb, tty);
 			if(cli == NULL) {
-				g_print("Error opening ircp-client\n");
+				g_print("Error opening flexmem-client\n");
 				return -1;
 			}
 			
 			// Connect
-			if(ircp_cli_connect(cli) >= 0) {
+			if(flexmem_cli_connect(cli) >= 0) {
 				// Delete file
-				ircp_del(cli, optarg);
-				ircp_sync (cli);
+				flexmem_del(cli, optarg);
 
 				// Disconnect
-				ircp_cli_disconnect(cli);
+				flexmem_cli_disconnect(cli);
 			}
-			ircp_cli_close(cli);
+			flexmem_cli_close(cli);
 			most_recent_cmd = c;
-			break;
-
-		case 'r':
-			srv = ircp_srv_open(ircp_info_cb);
-			if(srv == NULL) {
-				g_print("Error opening ircp-server\n");
-				return -1;
-			}
-
-			if(optarg)
-				inbox = optarg;
-			else
-				inbox = ".";
-
-			ircp_srv_recv(srv, inbox);
-#ifdef DEBUG_TCP
-			sleep(2);
-#endif
-			ircp_srv_close(srv);
 			break;
 
 		case 'h':
@@ -288,8 +258,6 @@ int main(int argc, char *argv[])
 				" -d, --device <device>       connect to this device\n"
 				"                             fallback to $MOBILEPHONE_DEV\n"
 				"                             then /dev/mobilephone and /dev/ttyS0\n"
-				" -s, --serial                use serial cable (default if device is /dev/tty*)\n"
-				" -a, --irda                  use irda (default if device is /dev/ir*)\n"
 				" -l, --list [<FOLDER>]       list a folder\n"
 				" -g, --get <SOURCE>          fetch files\n"
 				" -p, --put <SOURCE>          send files\n"

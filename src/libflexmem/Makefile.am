@@ -10,15 +10,14 @@ LDADD = \
 	libcobexbfb/libcobexbfb.a
 
 libflexmem_a_SOURCES = \
-		ircp_client.c ircp_client.h \
-		ircp_server.c ircp_server.h \
-		ircp_io.c ircp_io.h \
+		client.c client.h \
+		io.c io.h \
 		dirtraverse.c dirtraverse.h \
 		debug.h flexmem.h
 
 pkginclude_HEADERS = \
 		flexmem.h \
-		ircp_client.h
+		client.h
 	
 lib_LIBRARIES = libflexmem.a
 

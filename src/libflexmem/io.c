@@ -9,7 +9,7 @@
 #include <openobex/obex.h>
 
 #include "debug.h"
-#include "ircp_io.h"
+#include "io.h"
 
 //
 // Get some file-info. (size and lastmod)
