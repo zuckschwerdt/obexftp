@@ -1,5 +1,5 @@
 #
-# spec file for package ObexFTP (Version 0.9.2)
+# spec file for package ObexFTP (Version 0.9.4)
 # 
 # Author: Christian W. Zuckschwerdt <zany@triq.net>, Dec 2001 - Feb 2002
 #
@@ -38,8 +38,11 @@ make
 %install
 rm -rf $RPM_BUILD_ROOT
 %makeinstall
-ln -s flexmem $RPM_BUILD_ROOT%{_bindir}/obexls
-ln -s flexmem $RPM_BUILD_ROOT%{_bindir}/obexget
+ln -s obexftp $RPM_BUILD_ROOT%{_bindir}/obexls
+ln -s obexftp $RPM_BUILD_ROOT%{_bindir}/obexget
+ln -s obexftp $RPM_BUILD_ROOT%{_bindir}/obexput
+ln -s obexftp $RPM_BUILD_ROOT%{_bindir}/obexmv
+ln -s obexftp $RPM_BUILD_ROOT%{_bindir}/obexrm
 
 %clean
 rm -rf $RPM_BUILD_ROOT

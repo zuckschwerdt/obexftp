@@ -6,13 +6,18 @@ ObexFTP implements the Object Exchange (OBEX) protocols file transfer feature.
 The standard is defined in more detail in section K12.5 (Profiles: OBEX FTP)
 in Bluetooth V1.1 Profile Specifications.
 
-It's current main use is to access Siemens (S/ME45 and SL45) as well as
-Ericsson T68i user memory.
+ObexFTP works out-of-the-box with all protocols supported by OpenOBEX.
+Currently IrDA and the there is an upcoming BlueTooth support.
+ObexFTP comes with ready to use custom support for some mobile phones serial
+cables.
+
+It's well tested with Siemens (S/ME45 and SL45) as well as
+Ericsson (T68i) mobile phones.
 
 This ObexFTP distribution contains libraries as well as some applications.
 
-Applications to access Flex. Memory on Siemens mobile equipment,
-i.e. S45, ME45 and SL45 are
+Applications to access e.g. Flex. Memory and Multimedia Card memory on Siemens
+mobile equipment, i.e. S45, ME45 and SL42/SL45/SL45i (IrDA only, for now):
 
  - obexls - list the mobiles contents
  - obexcp - copy to/from mobile
@@ -50,9 +55,13 @@ Further Development
 ===================
 
 If you find this tool useful or actually like it let me know.
-Development will ibe slow otherwise. Currently I know of 20 people
+Development will focus on your needs. Currently I know of 20 people
 using this tool (including me). So that proposal is not too
 unfair, see?
+
+This package lacks a full featured GUI. There is some proof of concept
+code for GTK and GNOME-VFS. Somebody needs to work on that or perhaps a
+KDE tool though.
 
 If you are a developer and want to use obexftp library or even
 cobex/bfb library do so. But please keep me informed - I'll send

@@ -52,6 +52,10 @@ struct mobile_info {
    SIEMENS, Gipsy Soft Protocolstack, V2.400
    SIEMENS, S25, 42
  */
+/* T68:
+   Ericsson, T68, R2E006      prgCXC125326_TAE
+   ERICSSON, 1130202-BVT68, R2E006      CXC125319
+ */
 
 /* if auto-baud is enabled this will yoield the highest speed first */
 speed_t speeds[] = {B115200, B57600, B38400, B19200, B9600, B0};
