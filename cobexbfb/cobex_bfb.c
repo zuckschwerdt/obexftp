@@ -1,13 +1,5 @@
 /*
- *                
- * Filename:      cobex_bfb.c
- * Version:       0.6
- * Description:   Talk OBEX over a serial port (Siemens specific)
- * Status:        Experimental.
- * Author:        Christian W. Zuckschwerdt <zany@triq.net>
- * Created at:    Don, 17 Jan 2002 18:27:25 +0100
- * Modified at:   Fre, 15 Feb 2002 15:41:10 +0100
- * Modified by:   Christian W. Zuckschwerdt <zany@triq.net>
+ * cobex_bfb.c - Talk OBEX over a serial port (Siemens specific)
  *
  *   Copyright (c) 2002 Christian W. Zuckschwerdt <zany@triq.net>
  *
@@ -26,6 +18,10 @@
  *   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *     
  */
+/*
+ *       Don, 17 Jan 2002 18:27:25 +0100
+ * v0.6  Fre, 15 Feb 2002 15:41:10 +0100
+ */
 
 #include <sys/types.h>
 #include <sys/time.h>
@@ -41,8 +37,10 @@
 #include "obex_t.h"
 #include "cobex_bfb.h"
 #include "cobex_bfb_private.h"
-#include "debug.h"
+#include <g_debug.h>
 
+#undef G_LOG_DOMAIN
+#define	G_LOG_DOMAIN	COBEX_BFB_LOG_DOMAIN
 
 /* Read a BFB answer */
 static gint cobex_do_bfb_read(int fd, guint8 *buffer, gint length)
@@ -62,11 +60,11 @@ static gint cobex_do_bfb_read(int fd, guint8 *buffer, gint length)
 	if(select(fd+1, &fdset, NULL, NULL, &time)) {
 		actual = read(fd, buffer, length);
 		if(actual < 0)
-			DEBUG(1, G_GNUC_FUNCTION "() Read error: %d\n", actual);
+			g_warning(G_GNUC_FUNCTION "() Read error: %d\n", actual);
 		return actual;
 	}
 	else {
-		DEBUG(1, G_GNUC_FUNCTION "() No data\n");
+		g_info(G_GNUC_FUNCTION "() No data\n");
 		return 0;
 	}
 }
@@ -88,35 +86,35 @@ static gboolean cobex_do_bfb_init(int fd)
         g_return_val_if_fail (fd > 0, FALSE);
 
 	actual = bfb_write_packets (fd, BFB_FRAME_CONNECT, &init_magic, sizeof(init_magic));
-	DEBUG(1, G_GNUC_FUNCTION "() Wrote %d packets\n", actual);
+	g_info(G_GNUC_FUNCTION "() Wrote %d packets\n", actual);
 
 	if (actual < 1) {
-		g_print("BFB port error\n");
+		g_warning("BFB port error");
 		return FALSE;
 	}
 
 	actual = cobex_do_bfb_read(fd, rspbuf, sizeof(rspbuf));
-	DEBUG(1, G_GNUC_FUNCTION  "() Read %d bytes\n", actual);
+	g_info(G_GNUC_FUNCTION  "() Read %d bytes\n", actual);
 
 	if (actual < 1) {
-		g_print("BFB read error\n");
+		g_warning("BFB read error");
 		return FALSE;
 	}
 
 	frame = bfb_read_packets(rspbuf, &actual);
-	DEBUG(2, G_GNUC_FUNCTION  "() Unstuffed, %d bytes remaining\n", actual);
+	g_info(G_GNUC_FUNCTION  "() Unstuffed, %d bytes remaining\n", actual);
 	if (frame == NULL) {
-		g_print("BFB init error\n");
+		g_warning("BFB init error");
 		return FALSE;
 	}
-	g_print("BFB init ok\n");
+	g_info("BFB init ok");
 
 	if ((frame->len == 2) && (frame->payload[0] == init_magic) && (frame->payload[1] == init_magic2)) {
 		g_free(frame);
 		return TRUE;
 	}
 
-	g_print("Error doing BFB init (%d, %x %x)\n",
+	g_warning("Error doing BFB init (%d, %x %x)",
 		frame->len, frame->payload[0], frame->payload[1]);
 
 	g_free(frame);
@@ -146,11 +144,11 @@ static gint cobex_do_at_cmd(int fd, char *cmd, char *rspbuf, int rspbuflen)
 	cmdlen = strlen(cmd);
 
 	rspbuf[0] = 0;
-	DEBUG(4, G_GNUC_FUNCTION "() Sending %d: %s\n", cmdlen, cmd);
+	g_debug(G_GNUC_FUNCTION "() Sending %d: %s\n", cmdlen, cmd);
 
 	// Write command
 	if(write(fd, cmd, cmdlen) < cmdlen)	{
-		g_print("Error writing to port\n");
+		g_warning("Error writing to port");
 		return -1;
 	}
 
@@ -165,7 +163,7 @@ static gint cobex_do_at_cmd(int fd, char *cmd, char *rspbuf, int rspbuflen)
 				return actual;
 			total += actual;
 
-			DEBUG(4, G_GNUC_FUNCTION "() tmpbuf=%d: %s\n", total, tmpbuf);
+			g_debug(G_GNUC_FUNCTION "() tmpbuf=%d: %s\n", total, tmpbuf);
 
 			// Answer not found within 100 bytes. Cancel
 			if(total == sizeof(tmpbuf))
@@ -186,10 +184,10 @@ static gint cobex_do_at_cmd(int fd, char *cmd, char *rspbuf, int rspbuflen)
 	}
 
 
-//	DEBUG(4, G_GNUC_FUNCTION "() buf:%08lx answer:%08lx end:%08lx\n", tmpbuf, answer, answer_end);
+//	g_debug(G_GNUC_FUNCTION "() buf:%08lx answer:%08lx end:%08lx\n", tmpbuf, answer, answer_end);
 
 
-	DEBUG(4, G_GNUC_FUNCTION "() Answer: %s\n", answer);
+	g_debug(G_GNUC_FUNCTION "() Answer: %s\n", answer);
 
 	// Remove heading and trailing \r
 	if((*answer_end == '\r') || (*answer_end == '\n'))
@@ -200,11 +198,11 @@ static gint cobex_do_at_cmd(int fd, char *cmd, char *rspbuf, int rspbuflen)
 		answer++;
 	if((*answer == '\r') || (*answer == '\n'))
 		answer++;
-	DEBUG(4, G_GNUC_FUNCTION "() Answer: %s\n", answer);
+	g_debug(G_GNUC_FUNCTION "() Answer: %s\n", answer);
 
 	answer_size = (answer_end) - answer +1;
 
-	DEBUG(1, G_GNUC_FUNCTION "() Answer size=%d\n", answer_size);
+	g_info(G_GNUC_FUNCTION "() Answer size=%d\n", answer_size);
 	if( (answer_size) >= rspbuflen )
 		return -1;
 
@@ -222,7 +220,7 @@ void cobex_cleanup(obex_t *self, int force)
 	if(force)	{
 		// Send a break to get out of OBEX-mode
 		if(ioctl(OBEX_FD(self), TCSBRKP, 0) < 0)	{
-			g_print("Unable to send break!\n");
+			g_warning("Unable to send break!");
 		}
 		sleep(1);
 	}
@@ -240,7 +238,7 @@ static gint cobex_init(obex_t *self, const gchar *ttyname)
 
         g_return_val_if_fail (self != NULL, -1);
 
-	DEBUG(1, G_GNUC_FUNCTION "() \n");
+	g_debug(G_GNUC_FUNCTION "() \n");
 
 	if( (ttyfd = open(ttyname, O_RDWR | O_NONBLOCK | O_NOCTTY, 0)) < 0 ) {
 		g_error("Can' t open tty");
@@ -257,34 +255,34 @@ static gint cobex_init(obex_t *self, const gchar *ttyname)
 
 	/* do we need to handle an error? */
 	if (cobex_do_bfb_init (ttyfd)) {
-		g_print("Already in BFB mode.\n");
+		g_warning("Already in BFB mode.");
 		goto bfbmode;
 	}
 
 	if(cobex_do_at_cmd(ttyfd, "ATZ\r\n", rspbuf, sizeof(rspbuf)) < 0)	{
-		g_print("Comm-error or already in BFB mode\n");
+		g_warning("Comm-error or already in BFB mode");
 		goto err;
 	}
 	if(strcasecmp("OK", rspbuf) != 0)	{
-		g_print("Error doing ATZ (%s)\n", rspbuf);
+		g_warning("Error doing ATZ (%s)", rspbuf);
 		goto err;
 	}
 
 	if(cobex_do_at_cmd(ttyfd, "AT^SIFS\r\n", rspbuf, sizeof(rspbuf)) < 0)	{
-		g_print("Comm-error\n");
+		g_warning("Comm-error");
 		goto err;
 	}
 	if(strcasecmp("^SIFS: WIRE", rspbuf) != 0)	{ // expect "OK" also!
-		g_print("Error doing AT^SIFS (%s)\n", rspbuf);
+		g_warning("Error doing AT^SIFS (%s)", rspbuf);
 		goto err;
 	}
 
 	if(cobex_do_at_cmd(ttyfd, "AT^SBFB=1\r\n", rspbuf, sizeof(rspbuf)) < 0)	{
-		g_print("Comm-error\n");
+		g_warning("Comm-error");
 		goto err;
 	}
 	if(strcasecmp("OK", rspbuf) != 0)	{
-		g_print("Error doing AT^SBFB=1 (%s)\n", rspbuf);
+		g_warning("Error doing AT^SBFB=1 (%s)", rspbuf);
 		goto err;
 	}
 
@@ -293,7 +291,7 @@ static gint cobex_init(obex_t *self, const gchar *ttyname)
 	if (! cobex_do_bfb_init (ttyfd)) {
 		// well there may be some garbage -- just try again
 		if (! cobex_do_bfb_init (ttyfd)) {
-			g_print("Couldn't init BFB mode.\n");
+			g_warning("Couldn't init BFB mode.");
 			goto err;
 		}
 	}
@@ -312,7 +310,7 @@ gint cobex_connect(obex_t *self, gpointer userdata)
         g_return_val_if_fail (userdata != NULL, -1);
 	c = (cobex_t *) userdata;
 
-	DEBUG(1, G_GNUC_FUNCTION "() \n");
+	g_debug(G_GNUC_FUNCTION "() \n");
 
 	if((OBEX_FD(self) = cobex_init(self, c->tty)) < 0)
 		return -1;
@@ -322,7 +320,7 @@ gint cobex_connect(obex_t *self, gpointer userdata)
 
 gint cobex_disconnect(obex_t *self, gpointer userdata)
 {
-	DEBUG(1, G_GNUC_FUNCTION "() \n");
+	g_debug(G_GNUC_FUNCTION "() \n");
 	cobex_cleanup(self, FALSE);
 	return 1;
 }
@@ -336,17 +334,17 @@ gint cobex_write(obex_t *self, gpointer userdata, guint8 *buffer, gint length)
         g_return_val_if_fail (userdata != NULL, -1);
 	c = (cobex_t *) userdata;
 	
-	DEBUG(1, G_GNUC_FUNCTION "() \n");
+	g_debug(G_GNUC_FUNCTION "() \n");
 
-	DEBUG(1, G_GNUC_FUNCTION "() Data %d bytes\n", length);
+	g_debug(G_GNUC_FUNCTION "() Data %d bytes\n", length);
 
 
 	if (c->seq == 0){
 		actual = bfb_send_first(OBEX_FD(self), buffer, length);
-		DEBUG(2, G_GNUC_FUNCTION "() Wrote %d first packets (%d bytes)\n", actual, length);
+		g_info(G_GNUC_FUNCTION "() Wrote %d first packets (%d bytes)\n", actual, length);
 	} else {
 		actual = bfb_send_next(OBEX_FD(self), buffer, length, c->seq);
-		DEBUG(2, G_GNUC_FUNCTION "() Wrote %d packets (%d bytes)\n", actual, length);
+		g_info(G_GNUC_FUNCTION "() Wrote %d packets (%d bytes)\n", actual, length);
 	}
 	c->seq++;
 
@@ -378,26 +376,26 @@ gint cobex_handleinput(obex_t *self, gpointer userdata, gint timeout)
 	/* Wait for input */
 	ret = select(OBEX_FD(self) + 1, &fdset, NULL, NULL, &time);
 
-	DEBUG(1, G_GNUC_FUNCTION "() There is something (%d)\n", ret);
+	g_info(G_GNUC_FUNCTION "() There is something (%d)\n", ret);
 
 	/* Check if this is a timeout (0) or error (-1) */
 	if(ret <= 0)
 		return ret;
 
 	ret = read(OBEX_FD(self), &(c->recv[c->recv_len]), sizeof(c->recv) - c->recv_len);
-	DEBUG(1, G_GNUC_FUNCTION "() Read %d bytes (%d bytes already buffered)\n", ret, c->recv_len);
+	g_info(G_GNUC_FUNCTION "() Read %d bytes (%d bytes already buffered)\n", ret, c->recv_len);
 
 	if (ret > 0) {
 		c->recv_len += ret;
 
 		while ((frame = bfb_read_packets(c->recv, &(c->recv_len)))) {
-			DEBUG(1, G_GNUC_FUNCTION "() Parsed %x (%d bytes remaining)\n", frame->type, c->recv_len);
+			g_info(G_GNUC_FUNCTION "() Parsed %x (%d bytes remaining)\n", frame->type, c->recv_len);
 
 			c->data = bfb_assemble_data(c->data, &(c->data_len), frame);
 
 			if (bfb_check_data(c->data, c->data_len) == 1) {
 				ret = bfb_send_ack(OBEX_FD(self));
-				DEBUG(2, G_GNUC_FUNCTION "() Wrote ack packet (%d)\n", ret);
+				g_info(G_GNUC_FUNCTION "() Wrote ack packet (%d)\n", ret);
 
 				OBEX_CustomDataFeed(self, c->data->data, c->data_len-7);
 				g_free(c->data);

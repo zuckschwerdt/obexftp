@@ -28,15 +28,20 @@
  *     
  */
 
+#include <glib.h>
+
+#define	COBEX_PE_LOG_DOMAIN	"cobex-pe"
+
 /* session handling */
 
-obex_ctrans_t *cobex_pe_ctrans (const gchar *tty);
-void cobex_pe_free (obex_ctrans_t * ctrans);
+obex_ctrans_t
+	*cobex_pe_ctrans (const gchar *tty);
+void	cobex_pe_free (obex_ctrans_t * ctrans);
 
 /* callbacks */
 
-gint cobex_pe_connect (obex_t *self, gpointer userdata);
-gint cobex_pe_disconnect (obex_t *self, gpointer userdata);
-gint cobex_pe_write (obex_t *self, gpointer userdata, guint8 *buffer, gint length);
-gint cobex_pe_handleinput (obex_t *self, gpointer userdata, gint timeout);
+gint	cobex_pe_connect (obex_t *self, gpointer userdata);
+gint	cobex_pe_disconnect (obex_t *self, gpointer userdata);
+gint	cobex_pe_write (obex_t *self, gpointer userdata, guint8 *buffer, gint length);
+gint	cobex_pe_handleinput (obex_t *self, gpointer userdata, gint timeout);
 

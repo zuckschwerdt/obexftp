@@ -32,6 +32,8 @@
 
 #include <glib.h>
 
+#define	OBEXFTP_LOG_DOMAIN	"obexftp"
+
 typedef void (*obexftp_info_cb_t) (gint event, const gchar *buf, gint len, gpointer data);
 
 enum {

@@ -1,7 +1,8 @@
 lib_LTLIBRARIES =		libobexftp.la
 
 INCLUDES =			@GLIB_CFLAGS@ \
-				@OPENOBEX_CFLAGS@
+				@OPENOBEX_CFLAGS@ \
+				-I../includes
 
 LDADD =				@GLIB_LIBS@ \
 				@OPENOBEX_LIBS@
@@ -12,8 +13,7 @@ libobexftp_la_SOURCES =		object.c object.h \
 				client.c client.h \
 				io.c io.h \
 				dirtraverse.c dirtraverse.h \
-				uuid.h obexftp.h \
-				debug.h
+				uuid.h obexftp.h
 
 obexftpinclude_HEADERS =	obexftp.h \
 				client.h \

@@ -35,7 +35,7 @@
  Types are
   0x02 - single bytes used for connecting and data reading
   0x01 - crc'ed sequence to change interface (speed)
-  0x05 - unkown [S35i]
+  0x05 - Keypress and such
   0x06 - AT-Command
   0x09 - unkown (return code from mobile?)
   0x0E - unkown (return code from mobile?)

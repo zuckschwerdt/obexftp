@@ -1,22 +1,40 @@
 /*
+ * bfb_io.c - BFB transport encapsulation (used for Siemens mobile equipment)
+ *
+ *   Copyright (c) 2002 Christian W. Zuckschwerdt <zany@triq.net>
+ *
+ *   This program is free software; you can redistribute it and/or modify it
+ *   under the terms of the GNU General Public License as published by the Free
+ *   Software Foundation; either version 2 of the License, or (at your option)
+ *   any later version.
+ *
+ *   This program is distributed in the hope that it will be useful, but
+ *   WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+ *   or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
+ *   for more details.
+ *
+ *   You should have received a copy of the GNU General Public License
+ *   along with this program; if not, write to the Free Software
+ *   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
+ *     
+ */
+/*
+ * v0.1:  Don, 25 Jul 2002 03:16:41 +0200
  */
 
 #include <glib.h>
-#include <string.h>
-#define _GNU_SOURCE
 
-#include <sys/types.h>
-#include <sys/time.h>
+#include <string.h>
 #include <sys/ioctl.h>
 #include <fcntl.h>
-#include <errno.h>
-#include <string.h>
 #include <unistd.h>
 #include <termios.h>
 
 #include "bfb.h"
-#include "debug.h"
+#include <g_debug.h>
 
+#undef G_LOG_DOMAIN
+#define	G_LOG_DOMAIN	BFB_LOG_DOMAIN
 
 /* Read a BFB answer */
 gint do_bfb_read(int fd, guint8 *buffer, gint length)
@@ -36,11 +54,11 @@ gint do_bfb_read(int fd, guint8 *buffer, gint length)
 	if(select(fd+1, &fdset, NULL, NULL, &time)) {
 		actual = read(fd, buffer, length);
 		if(actual < 0)
-			DEBUG(1, G_GNUC_FUNCTION "() Read error: %d\n", actual);
+			g_info(G_GNUC_FUNCTION "() Read error: %d", actual);
 		return actual;
 	}
 	else {
-		DEBUG(1, G_GNUC_FUNCTION "() No data\n");
+		g_warning(G_GNUC_FUNCTION "() No data");
 		return 0;
 	}
 }
@@ -52,8 +70,8 @@ gboolean do_bfb_init(int fd)
 	bfb_frame_t *frame;
 	guint8 rspbuf[200];
 
-	guint8 init_magic = 0x14;
-	guint8 init_magic2 = 0xaa;
+	guint8 init_magic = BFB_CONNECT_HELLO;
+	guint8 init_magic2 = BFB_CONNECT_HELLO_ACK;
 	/*
 	guint8 speed115200[] = {0xc0,'1','1','5','2','0','0',0x13,0xd2,0x2b};
 	guint8 sifs[] = {'a','t','^','s','i','f','s',0x13};
@@ -62,35 +80,35 @@ gboolean do_bfb_init(int fd)
         g_return_val_if_fail (fd > 0, FALSE);
 
 	actual = bfb_write_packets (fd, BFB_FRAME_CONNECT, &init_magic, sizeof(init_magic));
-	DEBUG(1, G_GNUC_FUNCTION "() Wrote %d packets\n", actual);
+	g_info(G_GNUC_FUNCTION "() Wrote %d packets", actual);
 
 	if (actual < 1) {
-		g_print("BFB port error\n");
+		g_warning("BFB port error");
 		return FALSE;
 	}
 
 	actual = do_bfb_read(fd, rspbuf, sizeof(rspbuf));
-	DEBUG(1, G_GNUC_FUNCTION  "() Read %d bytes\n", actual);
+	g_info(G_GNUC_FUNCTION  "() Read %d bytes", actual);
 
 	if (actual < 1) {
-		g_print("BFB read error\n");
+		g_warning("BFB read error");
 		return FALSE;
 	}
 
 	frame = bfb_read_packets(rspbuf, &actual);
-	DEBUG(2, G_GNUC_FUNCTION  "() Unstuffed, %d bytes remaining\n", actual);
+	g_info(G_GNUC_FUNCTION  "() Unstuffed, %d bytes remaining", actual);
 	if (frame == NULL) {
-		g_print("BFB init error\n");
+		g_warning("BFB init error");
 		return FALSE;
 	}
-	g_print("BFB init ok\n");
+	g_message("BFB init ok");
 
 	if ((frame->len == 2) && (frame->payload[0] == init_magic) && (frame->payload[1] == init_magic2)) {
 		g_free(frame);
 		return TRUE;
 	}
 
-	g_print("Error doing BFB init (%d, %x %x)\n",
+	g_warning("Error doing BFB init (%d, %x %x)",
 		frame->len, frame->payload[0], frame->payload[1]);
 
 	g_free(frame);
@@ -120,11 +138,11 @@ gint do_at_cmd(int fd, char *cmd, char *rspbuf, int rspbuflen)
 	cmdlen = strlen(cmd);
 
 	rspbuf[0] = 0;
-	DEBUG(4, G_GNUC_FUNCTION "() Sending %d: %s\n", cmdlen, cmd);
+	g_debug(G_GNUC_FUNCTION "() Sending %d: %s", cmdlen, cmd);
 
 	// Write command
 	if(write(fd, cmd, cmdlen) < cmdlen)	{
-		g_print("Error writing to port\n");
+		g_warning("Error writing to port");
 		return -1;
 	}
 
@@ -139,7 +157,7 @@ gint do_at_cmd(int fd, char *cmd, char *rspbuf, int rspbuflen)
 				return actual;
 			total += actual;
 
-			DEBUG(4, G_GNUC_FUNCTION "() tmpbuf=%d: %s\n", total, tmpbuf);
+			g_debug(G_GNUC_FUNCTION "() tmpbuf=%d: %s", total, tmpbuf);
 
 			// Answer not found within 100 bytes. Cancel
 			if(total == sizeof(tmpbuf))
@@ -160,10 +178,10 @@ gint do_at_cmd(int fd, char *cmd, char *rspbuf, int rspbuflen)
 	}
 
 
-//	DEBUG(4, G_GNUC_FUNCTION "() buf:%08lx answer:%08lx end:%08lx\n", tmpbuf, answer, answer_end);
+//	g_debug(G_GNUC_FUNCTION "() buf:%08lx answer:%08lx end:%08lx", tmpbuf, answer, answer_end);
 
 
-	DEBUG(4, G_GNUC_FUNCTION "() Answer: %s\n", answer);
+	g_debug(G_GNUC_FUNCTION "() Answer: %s", answer);
 
 	// Remove heading and trailing \r
 	if((*answer_end == '\r') || (*answer_end == '\n'))
@@ -174,11 +192,11 @@ gint do_at_cmd(int fd, char *cmd, char *rspbuf, int rspbuflen)
 		answer++;
 	if((*answer == '\r') || (*answer == '\n'))
 		answer++;
-	DEBUG(4, G_GNUC_FUNCTION "() Answer: %s\n", answer);
+	g_debug(G_GNUC_FUNCTION "() Answer: %s", answer);
 
 	answer_size = (answer_end) - answer +1;
 
-	DEBUG(1, G_GNUC_FUNCTION "() Answer size=%d\n", answer_size);
+	g_info(G_GNUC_FUNCTION "() Answer size=%d", answer_size);
 	if( (answer_size) >= rspbuflen )
 		return -1;
 
@@ -196,7 +214,7 @@ void bfb_io_close(int fd, int force)
 	if(force)	{
 		// Send a break to get out of OBEX-mode
 		if(ioctl(fd, TCSBRKP, 0) < 0)	{
-			g_print("Unable to send break!\n");
+			g_warning("Unable to send break!");
 		}
 		sleep(1);
 	}
@@ -213,7 +231,7 @@ gint bfb_io_open(const gchar *ttyname)
 
         g_return_val_if_fail (ttyname != NULL, -1);
 
-	DEBUG(1, G_GNUC_FUNCTION "() \n");
+	g_info(G_GNUC_FUNCTION "() ");
 
 	if( (ttyfd = open(ttyname, O_RDWR | O_NONBLOCK | O_NOCTTY, 0)) < 0 ) {
 		g_error("Can' t open tty");
@@ -230,34 +248,34 @@ gint bfb_io_open(const gchar *ttyname)
 
 	/* do we need to handle an error? */
 	if (do_bfb_init (ttyfd)) {
-		g_print("Already in BFB mode.\n");
+		g_warning("Already in BFB mode.");
 		goto bfbmode;
 	}
 
 	if(do_at_cmd(ttyfd, "ATZ\r\n", rspbuf, sizeof(rspbuf)) < 0)	{
-		g_print("Comm-error or already in BFB mode\n");
+		g_warning("Comm-error or already in BFB mode");
 		goto err;
 	}
 	if(strcasecmp("OK", rspbuf) != 0)	{
-		g_print("Error doing ATZ (%s)\n", rspbuf);
+		g_warning("Error doing ATZ (%s)", rspbuf);
 		goto err;
 	}
 
 	if(do_at_cmd(ttyfd, "AT^SIFS\r\n", rspbuf, sizeof(rspbuf)) < 0)	{
-		g_print("Comm-error\n");
+		g_warning("Comm-error");
 		goto err;
 	}
 	if(strcasecmp("^SIFS: WIRE", rspbuf) != 0)	{ // expect "OK" also!
-		g_print("Error doing AT^SIFS (%s)\n", rspbuf);
+		g_warning("Error doing AT^SIFS (%s)", rspbuf);
 		goto err;
 	}
 
 	if(do_at_cmd(ttyfd, "AT^SBFB=1\r\n", rspbuf, sizeof(rspbuf)) < 0)	{
-		g_print("Comm-error\n");
+		g_warning("Comm-error");
 		goto err;
 	}
 	if(strcasecmp("OK", rspbuf) != 0)	{
-		g_print("Error doing AT^SBFB=1 (%s)\n", rspbuf);
+		g_warning("Error doing AT^SBFB=1 (%s)", rspbuf);
 		goto err;
 	}
 
@@ -266,7 +284,7 @@ gint bfb_io_open(const gchar *ttyname)
 	if (! do_bfb_init (ttyfd)) {
 		// well there may be some garbage -- just try again
 		if (! do_bfb_init (ttyfd)) {
-			g_print("Couldn't init BFB mode.\n");
+			g_warning("Couldn't init BFB mode.");
 			goto err;
 		}
 	}

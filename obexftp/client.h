@@ -22,7 +22,7 @@ typedef struct obexftp_client
 gint obexftp_sync(obexftp_client_t *cli);
 
 obexftp_client_t *obexftp_cli_open(/*@null@*/ obexftp_info_cb_t infocb,
-				   /*@null@*/ const obex_ctrans_t *ctrans,
+				   /*@null@*/ /*const*/ obex_ctrans_t *ctrans,
 				   /*@null@*/ gpointer infocb_data);
 
 void obexftp_cli_close(obexftp_client_t *cli);

@@ -8,7 +8,6 @@
 #include <sys/stat.h>
 
 #include "object.h"
-#include "debug.h"
 
 obex_object_t *obexftp_build_info (obex_t obex, guint8 opcode)
 {

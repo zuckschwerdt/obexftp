@@ -5,9 +5,9 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <dirent.h>
-#include "dirtraverse.h"
 
-#include "debug.h"
+#include "dirtraverse.h"
+#include <g_debug.h>
 
 //
 // Read all files in a directory. Continue recusively down in directories.
@@ -82,7 +82,7 @@ gint visit_all_files(const gchar *name, visit_cb cb, gpointer userdata)
 	path = g_string_new("");
 
 	if(stat(name, &statbuf) < 0) {
-		DEBUG(0, "Error stating %s\n", name);
+		g_warning("Error stating %s", name);
 		ret = -1;
 		goto out;
 	}

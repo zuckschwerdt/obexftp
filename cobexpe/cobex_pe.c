@@ -42,8 +42,10 @@
 #include "obex_t.h"
 #include "cobex_pe.h"
 #include "cobex_pe_private.h"
-#include "debug.h"
+#include <g_debug.h>
 
+#undef G_LOG_DOMAIN
+#define	G_LOG_DOMAIN	COBEX_PE_LOG_DOMAIN
 
 /* Send an AT-command an expect 1 line back as answer */
 static gint cobex_do_at_cmd(int fd, char *cmd, char *rspbuf, int rspbuflen)
@@ -67,7 +69,7 @@ static gint cobex_do_at_cmd(int fd, char *cmd, char *rspbuf, int rspbuflen)
 	cmdlen = strlen(cmd);
 
 	rspbuf[0] = 0;
-	DEBUG(4, G_GNUC_FUNCTION "() Sending %d: %s\n", cmdlen, cmd);
+	g_debug(G_GNUC_FUNCTION "() Sending %d: %s\n", cmdlen, cmd);
 
 	// Write command
 	if(write(fd, cmd, cmdlen) < cmdlen)	{
@@ -86,7 +88,7 @@ static gint cobex_do_at_cmd(int fd, char *cmd, char *rspbuf, int rspbuflen)
 				return actual;
 			total += actual;
 
-			DEBUG(4, G_GNUC_FUNCTION "() tmpbuf=%d: %s\n", total, tmpbuf);
+			g_debug(G_GNUC_FUNCTION "() tmpbuf=%d: %s\n", total, tmpbuf);
 
 			// Answer not found within 100 bytes. Cancel
 			if(total == sizeof(tmpbuf))
@@ -107,10 +109,10 @@ static gint cobex_do_at_cmd(int fd, char *cmd, char *rspbuf, int rspbuflen)
 	}
 
 
-//	DEBUG(4, G_GNUC_FUNCTION "() buf:%08lx answer:%08lx end:%08lx\n", tmpbuf, answer, answer_end);
+//	g_debug(G_GNUC_FUNCTION "() buf:%08lx answer:%08lx end:%08lx\n", tmpbuf, answer, answer_end);
 
 
-	DEBUG(4, G_GNUC_FUNCTION "() Answer: %s\n", answer);
+	g_debug(G_GNUC_FUNCTION "() Answer: %s", answer);
 
 	// Remove heading and trailing \r
 	if((*answer_end == '\r') || (*answer_end == '\n'))
@@ -121,11 +123,11 @@ static gint cobex_do_at_cmd(int fd, char *cmd, char *rspbuf, int rspbuflen)
 		answer++;
 	if((*answer == '\r') || (*answer == '\n'))
 		answer++;
-	DEBUG(4, G_GNUC_FUNCTION "() Answer: %s\n", answer);
+	g_debug(G_GNUC_FUNCTION "() Answer: %s", answer);
 
 	answer_size = (answer_end) - answer +1;
 
-	DEBUG(1, G_GNUC_FUNCTION "() Answer size=%d\n", answer_size);
+	g_info(G_GNUC_FUNCTION "() Answer size=%d\n", answer_size);
 	if( (answer_size) >= rspbuflen )
 		return -1;
 
@@ -161,7 +163,7 @@ static gint cobex_pe_init(obex_t *self, const gchar *ttyname)
 
         g_return_val_if_fail (self != NULL, -1);
 
-	DEBUG(1, G_GNUC_FUNCTION "() \n");
+	g_debug(G_GNUC_FUNCTION "() \n");
 
 	if( (ttyfd = open(ttyname, O_RDWR | O_NONBLOCK | O_NOCTTY, 0)) < 0 ) {
 		g_error("Can' t open tty");
@@ -191,7 +193,7 @@ static gint cobex_pe_init(obex_t *self, const gchar *ttyname)
 		goto err;
 	}
 	if(strcasecmp("CONNECT", rspbuf) != 0)	{
-		printf("Error doing AT*EOBEX (%s)\n", rspbuf);
+		g_print("Error doing AT*EOBEX (%s)\n", rspbuf);
 		goto err;
 	}
 
@@ -209,7 +211,7 @@ gint cobex_pe_connect(obex_t *self, gpointer userdata)
         g_return_val_if_fail (userdata != NULL, -1);
 	c = (cobex_t *) userdata;
 
-	DEBUG(1, G_GNUC_FUNCTION "() \n");
+	g_debug(G_GNUC_FUNCTION "() \n");
 
 	if((OBEX_FD(self) = cobex_pe_init(self, c->tty)) < 0)
 		return -1;
@@ -219,7 +221,7 @@ gint cobex_pe_connect(obex_t *self, gpointer userdata)
 
 gint cobex_pe_disconnect(obex_t *self, gpointer userdata)
 {
-	DEBUG(1, G_GNUC_FUNCTION "() \n");
+	g_debug(G_GNUC_FUNCTION "() \n");
 	cobex_pe_cleanup(self, FALSE);
 	return 1;
 }
@@ -233,9 +235,9 @@ gint cobex_pe_write(obex_t *self, gpointer userdata, guint8 *buffer, gint length
         g_return_val_if_fail (userdata != NULL, -1);
 	c = (cobex_t *) userdata;
 	
-	DEBUG(1, G_GNUC_FUNCTION "() \n");
+	g_debug(G_GNUC_FUNCTION "() \n");
 
-	DEBUG(1, G_GNUC_FUNCTION "() Data %d bytes\n", length);
+	g_info(G_GNUC_FUNCTION "() Data %d bytes\n", length);
 
 	actual = write(OBEX_FD(self), buffer, length);
 	if (actual < length)	{
@@ -270,14 +272,14 @@ gint cobex_pe_handleinput(obex_t *self, gpointer userdata, gint timeout)
 	/* Wait for input */
 	ret = select(OBEX_FD(self) + 1, &fdset, NULL, NULL, &time);
 
-	DEBUG(1, G_GNUC_FUNCTION "() There is something (%d)\n", ret);
+	g_info(G_GNUC_FUNCTION "() There is something (%d)\n", ret);
 
 	/* Check if this is a timeout (0) or error (-1) */
 	if(ret <= 0)
 		return ret;
 
 	ret = read(OBEX_FD(self), recv, sizeof(recv));
-	DEBUG(1, G_GNUC_FUNCTION "() Read %d bytes\n", ret);
+	g_info(G_GNUC_FUNCTION "() Read %d bytes\n", ret);
 
 	if (ret > 0) {
 		OBEX_CustomDataFeed(self, recv, ret);

@@ -1,8 +1,37 @@
 Introduction
 ============
 
-flexmem is used to access Flex. Memory on Siemens mobile equipment,
-i.e. S45 and ME45.
+ObexFTP implements the Object Exchange (OBEX) protocols file transfer feature.
+
+The standard is defined in more detail in section K12.5 (Profiles: OBEX FTP)
+in Bluetooth V1.1 Profile Specifications.
+
+It's current main use is to access Siemens (S/ME45 and SL45) as well as
+Ericsson T68i user memory.
+
+This ObexFTP distribution contains libraries as well as some applications.
+
+Applications to access Flex. Memory on Siemens mobile equipment,
+i.e. S45, ME45 and SL45 are
+
+ - obexls - list the mobiles contents
+ - obexcp - copy to/from mobile
+ - obexmd - create a directory on the mobile
+ - obexrd - remove an empty directory on the mobile
+ - obexrm - remove files on the mobile
+ - flexmem - all in one application (heavy on options)
+
+Applications to hack Siemens mobile equipment using datalink cable
+
+ - bfb_keysim - simulate key presses on the mobile
+ - bfb_eeprom - list and examine the user eeprom on the mobile
+
+Library parts to be used in other applications
+
+ - obexftp - high level abstraction of OBEX FTP protocol
+ - cobex_pe - cable OBEX for Ericsson phones (i.e. T68i)
+ - cobex_bfb -  cable OBEX for Siemens phones (i.e. x45, x35, x25)
+ - bfb - Siemens mobile datalink cable protocol layer
 
 
 Short Installation Instructions
@@ -19,12 +48,12 @@ Further Development
 ===================
 
 If you find this tool useful or actually like it let me know.
-Development will cease otherwise. Currently I know of 3 people
+Development will ibe slow otherwise. Currently I know of 20 people
 using this tool (including me). So that proposal is not too
 unfair, see?
 
 If you are a developer and want to use obexftp library or even
-cobex_bfb library do so. But please keep me informed - I'll send
+cobex/bfb library do so. But please keep me informed - I'll send
 you pre-releases. That way your application is able to exploit the
 newest library features.
 
@@ -32,5 +61,5 @@ newest library features.
 Author and Contact
 ==================
 
-Author: Christian W. Zuckschwerdt <zany@triq.net> http://triq.net/gsm.html
-
+Author: Christian W. Zuckschwerdt <zany@triq.net>
+ http://triq.net/obexftp and http://savannah.gnu.org/projects/obexftp/

@@ -5,4 +5,5 @@ EXTRA_DIST =			obexftp.spec.in \
 				README.bfb \
 				README.cobex \
 				README.obexftp \
-				README.openobex
+				README.openobex \
+				includes/g_debug.h

@@ -1,13 +1,5 @@
 /*
- *                
- * Filename:      bfb.c
- * Version:       0.3
- * Description:   BFB transport encapsulation (Siemens specific)
- * Status:        Experimental.
- * Author:        Christian W. Zuckschwerdt <zany@triq.net>
- * Created at:    Die,  5 Feb 2002 22:46:19 +0100
- * Modified at:   Don,  7 Feb 2002 12:24:55 +0100
- * Modified by:   Christian W. Zuckschwerdt <zany@triq.net>
+ * bfb.c - BFB transport encapsulation (used for Siemens mobile equipment)
  *
  *   Copyright (c) 2002 Christian W. Zuckschwerdt <zany@triq.net>
  *
@@ -26,24 +18,22 @@
  *   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *     
  */
-
-#include <stdio.h>
-#include <sys/types.h>
-#include <sys/time.h>
-#include <sys/ioctl.h>
-#include <fcntl.h>
-#include <errno.h>
-#include <string.h>
-#include <signal.h>
-#include <unistd.h>
-#include <termios.h>
+/*
+ * v0.1:  Die,  5 Feb 2002 22:46:19 +0100
+ * v0.4:  Don, 25 Jul 2002 03:16:41 +0200
+ */
 
 #include <glib.h>
 
-#include <netinet/in.h>
+#include <string.h>
+#include <unistd.h>
+
 #include "crc.h"
 #include "bfb.h"
-#include "debug.h"
+#include <g_debug.h>
+
+#undef G_LOG_DOMAIN
+#define	G_LOG_DOMAIN	BFB_LOG_DOMAIN
 
 /* returns the whole buffer folded with xor. */
 guint8 bfb_checksum(guint8 *data, gint len)
@@ -87,7 +77,7 @@ gint bfb_stuff_data(guint8 *buffer, guint8 type, guint8 *data, gint len, gint se
 	buffer[1] = ~buffer[0];
 	buffer[2] = seq;
 
-	fcs.value = htons(len);
+	fcs.value = g_htons(len);
 	buffer[3] = fcs.bytes[0];
 	buffer[4] = fcs.bytes[1];
 
@@ -104,7 +94,7 @@ gint bfb_stuff_data(guint8 *buffer, guint8 type, guint8 *data, gint len, gint se
         fcs.value = ~fcs.value;
 
 	// append CRC to packet
-	//fcs.value = htons(fcs.value);
+	//fcs.value = g_htons(fcs.value);
 	buffer[len+5] = fcs.bytes[0];
 	buffer[len+6] = fcs.bytes[1];
 
@@ -122,25 +112,38 @@ gint bfb_write_subcmd(int fd, guint8 type, guint8 subtype)
 	return bfb_write_packets(fd, type, buffer, 2);
 }
 
+/* send a cmd, subcmd packet */
+gint bfb_write_subcmd0(int fd, guint8 type, guint8 subtype)
+{
+	return bfb_write_packets(fd, type, &subtype, 1);
+}
+
+/* send a cmd, subcmd, data packet */
+gint bfb_write_subcmd8(int fd, guint8 type, guint8 subtype, guint8 p1)
+{
+	guint8 buffer[2];
+
+	buffer[0] = subtype;
+	buffer[1] = p1;
+
+	return bfb_write_packets(fd, type, buffer, 2);
+}
+
 /* send a cmd, subcmd packet, add chk (one word parameter) */
 gint bfb_write_subcmd1(int fd, guint8 type, guint8 subtype, guint16 p1)
 {
 	guint8 buffer[4];
-        union word2byte {
-                guint16 value;
-                guint8 bytes[2];
-        };
 
 	buffer[0] = subtype;
 
-	 /* remember endianess! */
-	buffer[1] = ((union word2byte)p1).bytes[0];
-	buffer[2] = ((union word2byte)p1).bytes[1];
+	p1 = GUINT16_TO_LE(p1);	 /* mobile need little-endianess always */
+	buffer[1] = G_STRUCT_MEMBER(guint8, &p1, 0);
+	buffer[2] = G_STRUCT_MEMBER(guint8, &p1, 1);
 
 	buffer[3] = bfb_checksum(buffer, 3);
 
-	/* printf("buf: %x %x %x %x\n",
-		  buffer[0], buffer[1], buffer[2], buffer[3]); */
+	g_debug("buf: %x %x %x %x",
+	      buffer[0], buffer[1], buffer[2], buffer[3]);
 	return bfb_write_packets(fd, type, buffer, 4);
 }
 
@@ -148,23 +151,20 @@ gint bfb_write_subcmd1(int fd, guint8 type, guint8 subtype, guint16 p1)
 gint bfb_write_subcmd2(int fd, guint8 type, guint8 subtype, guint16 p1, guint16 p2)
 {
 	guint8 buffer[6];
-        union word2byte {
-                guint16 value;
-                guint8 bytes[2];
-        };
 
 	buffer[0] = subtype;
 
-	 /* remember endianess! */
-	buffer[1] = ((union word2byte)p1).bytes[0];
-	buffer[2] = ((union word2byte)p1).bytes[1];
-	buffer[3] = ((union word2byte)p2).bytes[0];
-	buffer[4] = ((union word2byte)p2).bytes[1];
+	p1 = GUINT16_TO_LE(p1);	 /* mobile need little-endianess always */
+	buffer[1] = G_STRUCT_MEMBER(guint8, &p1, 0);
+	buffer[2] = G_STRUCT_MEMBER(guint8, &p1, 1);
+	p2 = GUINT16_TO_LE(p2);	 /* mobile need little-endianess always */
+	buffer[3] = G_STRUCT_MEMBER(guint8, &p2, 0);
+	buffer[4] = G_STRUCT_MEMBER(guint8, &p2, 1);
 
 	buffer[5] = bfb_checksum(buffer, 5);
 
-	/* printf("buf: %x %x %x %x %x %x\n",
-		  buffer[0], buffer[1], buffer[2], buffer[3], buffer[4], buffer[5]); */
+	g_debug("buf: %x %x %x %x %x %x",
+	      buffer[0], buffer[1], buffer[2], buffer[3], buffer[4], buffer[5]);
 
 	return bfb_write_packets(fd, type, buffer, 6);
 }
@@ -173,25 +173,23 @@ gint bfb_write_subcmd2(int fd, guint8 type, guint8 subtype, guint16 p1, guint16 
 gint bfb_write_subcmd3(int fd, guint8 type, guint8 subtype, guint16 p1, guint16 p2, guint16 p3)
 {
 	guint8 buffer[8];
-        union word2byte {
-                guint16 value;
-                guint8 bytes[2];
-        };
 
 	buffer[0] = subtype;
 
-	 /* remember endianess! */
-	buffer[1] = ((union word2byte)p1).bytes[0];
-	buffer[2] = ((union word2byte)p1).bytes[1];
-	buffer[3] = ((union word2byte)p2).bytes[0];
-	buffer[4] = ((union word2byte)p2).bytes[1];
-	buffer[5] = ((union word2byte)p3).bytes[0];
-	buffer[6] = ((union word2byte)p3).bytes[1];
+	p1 = GUINT16_TO_LE(p1);	 /* mobile need little-endianess always */
+	buffer[1] = G_STRUCT_MEMBER(guint8, &p1, 0);
+	buffer[2] = G_STRUCT_MEMBER(guint8, &p1, 1);
+	p2 = GUINT16_TO_LE(p2);	 /* mobile need little-endianess always */
+	buffer[3] = G_STRUCT_MEMBER(guint8, &p2, 0);
+	buffer[4] = G_STRUCT_MEMBER(guint8, &p2, 1);
+	p3 = GUINT16_TO_LE(p3);	 /* mobile need little-endianess always */
+	buffer[5] = G_STRUCT_MEMBER(guint8, &p3, 0);
+	buffer[6] = G_STRUCT_MEMBER(guint8, &p3, 1);
 
 	buffer[7] = bfb_checksum(buffer, 7);
 
-	/* printf("buf: %x %x  %x %x  %x %x  %x %x\n",
-		  buffer[0], buffer[1], buffer[2], buffer[3], buffer[4], buffer[5], buffer[6], buffer[7]); */
+	g_debug("buf: %x %x  %x %x  %x %x  %x %x",
+	      buffer[0], buffer[1], buffer[2], buffer[3], buffer[4], buffer[5], buffer[6], buffer[7]);
 
 	return bfb_write_packets(fd, type, buffer, 8);
 }
@@ -200,30 +198,22 @@ gint bfb_write_subcmd3(int fd, guint8 type, guint8 subtype, guint16 p1, guint16 
 gint bfb_write_subcmd_lw(int fd, guint8 type, guint8 subtype, guint32 p1, guint16 p2)
 {
 	guint8 buffer[8];
-        union word2byte {
-                guint16 value;
-                guint8 bytes[2];
-        };
-        union long2byte {
-		guint32 value;
-                guint16 words[2];
-                guint8 bytes[4];
-        };
 
 	buffer[0] = subtype;
 
-	 /* remember endianess! */
-	buffer[1] = ((union long2byte)p1).bytes[0];
-	buffer[2] = ((union long2byte)p1).bytes[1];
-	buffer[3] = ((union long2byte)p1).bytes[2];
-	buffer[4] = ((union long2byte)p1).bytes[3];
-	buffer[5] = ((union word2byte)p2).bytes[0];
-	buffer[6] = ((union word2byte)p2).bytes[1];
+	p1 = GUINT32_TO_LE(p1);	 /* mobile need little-endianess always */
+	buffer[1] = G_STRUCT_MEMBER(guint8, &p1, 0);
+	buffer[2] = G_STRUCT_MEMBER(guint8, &p1, 1);
+	buffer[3] = G_STRUCT_MEMBER(guint8, &p1, 2);
+	buffer[4] = G_STRUCT_MEMBER(guint8, &p1, 3);
+	p2 = GUINT16_TO_LE(p2);	 /* mobile need little-endianess always */
+	buffer[5] = G_STRUCT_MEMBER(guint8, &p2, 0);
+	buffer[6] = G_STRUCT_MEMBER(guint8, &p2, 1);
 
 	buffer[7] = bfb_checksum(buffer, 7);
 
-	printf("buf: %02x  %02x %02x %02x %02x  %02x %02x\n",
-		  buffer[0], buffer[1], buffer[2], buffer[3], buffer[4], buffer[5], buffer[6]);
+	g_debug("buf: %02x  %02x %02x %02x %02x  %02x %02x",
+	      buffer[0], buffer[1], buffer[2], buffer[3], buffer[4], buffer[5], buffer[6]);
 
 	return bfb_write_packets(fd, type, buffer, 7); /* no chk? */
 }
@@ -254,10 +244,10 @@ gint bfb_write_packets(int fd, guint8 type, guint8 *buffer, gint length)
 
 		actual = write(fd, frame, l + sizeof (bfb_frame_t));
 
-		DEBUG(3, G_GNUC_FUNCTION "() Wrote %d bytes (expected %d)\n", actual, l + sizeof (bfb_frame_t));
+		g_debug(G_GNUC_FUNCTION "() Wrote %d bytes (expected %d)", actual, l + sizeof (bfb_frame_t));
 
 		if (actual < 0 || actual < l + sizeof (bfb_frame_t)) {
-			DEBUG(1, G_GNUC_FUNCTION "() Write failed\n");
+			g_warning(G_GNUC_FUNCTION "() Write failed");
 			g_free(frame);
 			return -1;
 		}
@@ -275,10 +265,10 @@ gint bfb_send_data(int fd, guint8 type, guint8 *data, gint length, gint seq)
 	buffer = g_malloc(length + 7);
 
 	actual = bfb_stuff_data(buffer, type, data, length, seq);
-	DEBUG(3, G_GNUC_FUNCTION "() Stuffed %d bytes\n", actual);
+	g_debug(G_GNUC_FUNCTION "() Stuffed %d bytes", actual);
 
 	actual = bfb_write_packets(fd, BFB_FRAME_DATA, buffer, actual);
-	DEBUG(3, G_GNUC_FUNCTION "() Wrote %d packets\n", actual);
+	g_debug(G_GNUC_FUNCTION "() Wrote %d packets", actual);
 
 	return actual;
 }
@@ -290,32 +280,32 @@ bfb_frame_t *bfb_read_packets(guint8 *buffer, gint *length)
 	bfb_frame_t *frame;
 	gint l;
 
-	DEBUG(3, G_GNUC_FUNCTION "()\n");
+	g_debug(G_GNUC_FUNCTION "() ");
 
 	if (*length < 0) {
-		DEBUG(1, G_GNUC_FUNCTION "() Wrong length?\n");
+		g_warning(G_GNUC_FUNCTION "() Wrong length?");
 		return NULL;
 	}
 
 	if (*length == 0) {
-		DEBUG(1, G_GNUC_FUNCTION "() No packet?\n");
+		g_warning(G_GNUC_FUNCTION "() No packet?");
 		return NULL;
 	}
 
 	if (*length < sizeof(bfb_frame_t)) {
-		DEBUG(1, G_GNUC_FUNCTION "() Short packet?\n");
+		g_warning(G_GNUC_FUNCTION "() Short packet?");
 		return NULL;
 	}
 	
 	// temp frame
 	frame = (bfb_frame_t *)buffer;
 	if ((frame->type ^ frame->len) != frame->chk) {
-		DEBUG(1, G_GNUC_FUNCTION "() Header error?\n");
+		g_warning(G_GNUC_FUNCTION "() Header error?");
 		return NULL;
 	}
 
 	if (*length < frame->len + sizeof(bfb_frame_t)) {
-		DEBUG(2, G_GNUC_FUNCTION "() Need more data?\n");
+		g_warning(G_GNUC_FUNCTION "() Need more data?");
 		return NULL;
 	}
 
@@ -328,7 +318,7 @@ bfb_frame_t *bfb_read_packets(guint8 *buffer, gint *length)
 	*length -= l;
 	memmove(buffer, &buffer[l], *length);
 	
-	DEBUG(3, G_GNUC_FUNCTION "() Packet %x (%d bytes)\n", frame->type, frame->len);
+	g_debug(G_GNUC_FUNCTION "() Packet %x (%d bytes)", frame->type, frame->len);
 	return frame;
 }
 
@@ -337,28 +327,28 @@ bfb_data_t *bfb_assemble_data(bfb_data_t *data, gint *fraglen, bfb_frame_t *fram
 	bfb_data_t *ret;
 	gint l;
 
-	DEBUG(3, G_GNUC_FUNCTION "()\n");
+	g_debug(G_GNUC_FUNCTION "() ");
 
 	if (frame->type != BFB_FRAME_DATA) {
-		g_print(__FUNCTION__ "() Wrong frame type (%x)?\n", frame->type);
+		g_warning(__FUNCTION__ "() Wrong frame type (%x)?", frame->type);
 		return data;
 	}
 
 	// temp data
 	ret = (bfb_data_t *)frame->payload;
 	if (ret->cmd == BFB_DATA_ACK) {
-		DEBUG(3, G_GNUC_FUNCTION "() Skipping ack\n");
+		g_debug(G_GNUC_FUNCTION "() Skipping ack");
 		return data;
 	}
 	/*
 	if ((ret->cmd != BFB_DATA_FIRST) && (ret->cmd != BFB_DATA_NEXT)) {
-		g_print(__FUNCTION__ "() Wrong data type (%x)?\n", ret->cmd);
+		g_warning(__FUNCTION__ "() Wrong data type (%x)?", ret->cmd);
 		return data;
 	}
 	*/
 
 	// copy frame from buffer
-	DEBUG(3, G_GNUC_FUNCTION "() data: %d, frame: %d\n", *fraglen, frame->len);
+	g_debug(G_GNUC_FUNCTION "() data: %d, frame: %d", *fraglen, frame->len);
 	l = *fraglen + frame->len;
 	ret = g_realloc(data, l);
 	//memcpy(ret, data, *fraglen);
@@ -376,18 +366,18 @@ gint bfb_check_data(bfb_data_t *data, gint fraglen)
                 guint8 bytes[2];
         } l;
 
-	DEBUG(3, G_GNUC_FUNCTION "()\n");
+	g_debug(G_GNUC_FUNCTION "() ");
 
 	if (data == NULL)
 		return -1;
 
 	l.bytes[0] = data->len0;
 	l.bytes[1] = data->len1;
-	l.value = htons(l.value);
+	l.value = g_htons(l.value);
 
-	DEBUG(3, G_GNUC_FUNCTION "() fragment size is %d\n", fraglen);
-	DEBUG(3, G_GNUC_FUNCTION "() expected len %d\n", l.value);
-	DEBUG(3, G_GNUC_FUNCTION "() data size is %d\n", fraglen-sizeof(bfb_data_t));
+	g_debug(G_GNUC_FUNCTION "() fragment size is %d", fraglen);
+	g_debug(G_GNUC_FUNCTION "() expected len %d", l.value);
+	g_debug(G_GNUC_FUNCTION "() data size is %d", fraglen-sizeof(bfb_data_t));
 
 	if (fraglen-sizeof(bfb_data_t) + 2 < l.value)
 		return 0;
@@ -398,7 +388,7 @@ gint bfb_check_data(bfb_data_t *data, gint fraglen)
 		return -1;
 */
 
-	DEBUG(2, G_GNUC_FUNCTION "() data ready!\n");
+	g_info(G_GNUC_FUNCTION "() data ready!");
 	return 1;
 
 }

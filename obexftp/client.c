@@ -14,7 +14,7 @@
 #include "uuid.h"
 
 #include "dirtraverse.h"
-#include "debug.h"
+#include <g_debug.h>
 
 #ifdef DEBUG_TCP
 #include <unistd.h>
@@ -40,11 +40,11 @@ static gint cli_fillstream(obexftp_client_t *cli, obex_object_t *object)
 	gint actual;
 	obex_headerdata_t hdd;
 		
-	DEBUG(4, G_GNUC_FUNCTION "()\n");
+	g_debug(G_GNUC_FUNCTION "()");
 	
 	actual = read(cli->fd, cli->buf, STREAM_CHUNK);
 	
-	DEBUG(4, G_GNUC_FUNCTION "() Read %d bytes\n", actual);
+	g_debug(G_GNUC_FUNCTION "() Read %d bytes", actual);
 	
 	if(actual > 0) {
 		/* Read was ok! */
@@ -174,7 +174,7 @@ static void cli_obex_event(obex_t *handle, obex_object_t *object, gint mode, gin
 		break;
 	
 	default:
-		DEBUG(1, G_GNUC_FUNCTION "() Unknown event %d\n", event);
+		g_warning(G_GNUC_FUNCTION "() Unknown event %d", event);
 		break;
 	}
 }
@@ -186,19 +186,19 @@ static void cli_obex_event(obex_t *handle, obex_object_t *object, gint mode, gin
 gint obexftp_sync(obexftp_client_t *cli)
 {
 	gint ret;
-	DEBUG(4, G_GNUC_FUNCTION "()\n");
+	g_debug(G_GNUC_FUNCTION "()");
 
 	// cli->finished = FALSE;
 
 	while(cli->finished == FALSE) {
 		ret = OBEX_HandleInput(cli->obexhandle, 20);
-		DEBUG(4, G_GNUC_FUNCTION "() ret = %d\n", ret);
+		g_debug(G_GNUC_FUNCTION "() ret = %d", ret);
 
 		if (ret <= 0)
 			return -1;
 	}
 
-	DEBUG(4, G_GNUC_FUNCTION "() Done success=%d\n", cli->success);
+	g_debug(G_GNUC_FUNCTION "() Done success=%d", cli->success);
 
 	if(cli->success)
 		return 1;
@@ -208,7 +208,7 @@ gint obexftp_sync(obexftp_client_t *cli)
 	
 static gint cli_sync_request(obexftp_client_t *cli, obex_object_t *object)
 {
-	DEBUG(4, G_GNUC_FUNCTION "()\n");
+	g_debug(G_GNUC_FUNCTION "()");
 
 	cli->finished = FALSE;
 	OBEX_Request(cli->obexhandle, object);
@@ -220,11 +220,11 @@ static gint cli_sync_request(obexftp_client_t *cli, obex_object_t *object)
 //
 // Create an obexftp client
 //
-obexftp_client_t *obexftp_cli_open(obexftp_info_cb_t infocb, const obex_ctrans_t *ctrans, gpointer infocb_data)
+obexftp_client_t *obexftp_cli_open(obexftp_info_cb_t infocb, /*const*/ obex_ctrans_t *ctrans, gpointer infocb_data)
 {
 	obexftp_client_t *cli;
 
-	DEBUG(4, G_GNUC_FUNCTION "()\n");
+	g_debug(G_GNUC_FUNCTION "()");
 	cli = g_new0(obexftp_client_t, 1);
 	if(cli == NULL)
 		return NULL;
@@ -273,7 +273,7 @@ out_err:
 //
 void obexftp_cli_close(obexftp_client_t *cli)
 {
-	DEBUG(4, G_GNUC_FUNCTION "()\n");
+	g_debug(G_GNUC_FUNCTION "()");
 	g_return_if_fail(cli != NULL);
 
 	OBEX_Cleanup(cli->obexhandle);
@@ -289,7 +289,7 @@ gint obexftp_cli_connect(obexftp_client_t *cli)
 	obex_object_t *object;
 	int ret;
 
-	DEBUG(4, G_GNUC_FUNCTION "\n");
+	g_debug(G_GNUC_FUNCTION "()");
 	g_return_val_if_fail(cli != NULL, -1);
 
 	cli->infocb(OBEXFTP_EV_CONNECTING, "", 0, cli->infocb_data);
@@ -341,7 +341,7 @@ gint obexftp_cli_disconnect(obexftp_client_t *cli)
 	obex_object_t *object;
 	int ret;
 
-	DEBUG(4, G_GNUC_FUNCTION "\n");
+	g_debug(G_GNUC_FUNCTION "()");
 	g_return_val_if_fail(cli != NULL, -1);
 
 	cli->infocb(OBEXFTP_EV_DISCONNECTING, "", 0, cli->infocb_data);
@@ -371,7 +371,7 @@ gint obexftp_info(obexftp_client_t *cli, guint8 opcode)
 
 	cli->infocb(OBEXFTP_EV_RECEIVING, "info", 0, cli->infocb_data);
 
-	DEBUG(4, G_GNUC_FUNCTION "() Retrieving info %d\n", opcode);
+	g_info(G_GNUC_FUNCTION "() Retrieving info %d", opcode);
 
         object = obexftp_build_info (cli->obexhandle, opcode);
         if(object == NULL)
@@ -400,7 +400,7 @@ gint obexftp_list(obexftp_client_t *cli, const gchar *localname, const gchar *re
 
 	cli->infocb(OBEXFTP_EV_RECEIVING, localname, 0, cli->infocb_data);
 
-	DEBUG(4, G_GNUC_FUNCTION "() Listing %s -> %s\n", remotename, localname);
+	g_info(G_GNUC_FUNCTION "() Listing %s -> %s", remotename, localname);
 
 	cli->out_fd = STDOUT_FILENO;
 
@@ -432,7 +432,7 @@ gint obexftp_get(obexftp_client_t *cli, const gchar *localname, const gchar *rem
 
 	cli->infocb(OBEXFTP_EV_RECEIVING, localname, 0, cli->infocb_data);
 
-	DEBUG(4, G_GNUC_FUNCTION "() Getting %s -> %s\n", remotename, localname);
+	g_info(G_GNUC_FUNCTION "() Getting %s -> %s", remotename, localname);
 
 	cli->out_fd = open_safe("", localname);
 
@@ -463,7 +463,7 @@ gint obexftp_rename(obexftp_client_t *cli, const gchar *sourcename, const gchar 
 
 	cli->infocb(OBEXFTP_EV_SENDING, sourcename, 0, cli->infocb_data);
 
-	DEBUG(4, G_GNUC_FUNCTION "() Moving %s -> %s\n", sourcename, targetname);
+	g_info(G_GNUC_FUNCTION "() Moving %s -> %s", sourcename, targetname);
 
         object = obexftp_build_rename (cli->obexhandle, sourcename, targetname);
         if(object == NULL)
@@ -492,7 +492,7 @@ gint obexftp_del(obexftp_client_t *cli, const gchar *name)
 
 	cli->infocb(OBEXFTP_EV_SENDING, name, 0, cli->infocb_data);
 
-	DEBUG(4, G_GNUC_FUNCTION "() Deleting %s\n", name);
+	g_info(G_GNUC_FUNCTION "() Deleting %s", name);
 
         object = obexftp_build_del (cli->obexhandle, name);
         if(object == NULL)
@@ -521,7 +521,7 @@ gint obexftp_setpath(obexftp_client_t *cli, const gchar *name, gboolean up)
 
 	cli->infocb(OBEXFTP_EV_SENDING, name, 0, cli->infocb_data); //FIXME
 
-	DEBUG(4, G_GNUC_FUNCTION "() %s\n", name);
+	g_info(G_GNUC_FUNCTION "() %s", name);
 
 	object = obexftp_build_setpath (cli->obexhandle, name, up);
 
@@ -547,7 +547,7 @@ static gint obexftp_put_file(obexftp_client_t *cli, const gchar *localname, cons
 
 	cli->infocb(OBEXFTP_EV_SENDING, localname, 0, cli->infocb_data);
 
-	DEBUG(4, G_GNUC_FUNCTION "() Sending %s -> %s\n", localname, remotename);
+	g_info(G_GNUC_FUNCTION "() Sending %s -> %s", localname, remotename);
 
 	object = build_object_from_file (cli->obexhandle, localname, remotename);
 	
@@ -575,7 +575,7 @@ static gint obexftp_visit(gint action, const gchar *name, const gchar *path, gpo
 	const gchar *remotename;
 	gint ret = -1;
 
-	DEBUG(4, G_GNUC_FUNCTION "()\n");
+	g_debug(G_GNUC_FUNCTION "()\n");
 	switch(action) {
 	case VISIT_FILE:
 		// Strip /'s before sending file
@@ -595,7 +595,7 @@ static gint obexftp_visit(gint action, const gchar *name, const gchar *path, gpo
 		ret = obexftp_setpath(userdata, "", TRUE);
 		break;
 	}
-	DEBUG(4, G_GNUC_FUNCTION "() returning %d\n", ret);
+	g_debug(G_GNUC_FUNCTION "() returning %d", ret);
 	return ret;
 }
 

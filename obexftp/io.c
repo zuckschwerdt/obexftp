@@ -8,8 +8,8 @@
 #include <glib.h>
 #include <openobex/obex.h>
 
-#include "debug.h"
 #include "io.h"
+#include <g_debug.h>
 
 //
 // Get some file-info. (size and lastmod)
@@ -71,7 +71,7 @@ obex_object_t *build_object_from_file(obex_t *handle, const gchar *localname, co
 	OBEX_ObjectAddHeader(handle, object, OBEX_HDR_BODY,
 				hdd, 0, OBEX_FL_STREAM_START);
 
-	DEBUG(4, G_GNUC_FUNCTION "() Lastmod = %s\n", lastmod);
+	g_debug(G_GNUC_FUNCTION "() Lastmod = %s", lastmod);
 	return object;
 
 err:
@@ -85,7 +85,7 @@ err:
 //
 static gboolean nameok(const gchar *name)
 {
-	DEBUG(4, G_GNUC_FUNCTION "()\n");
+	g_debug(G_GNUC_FUNCTION "() ");
 
         g_return_val_if_fail (name != NULL, FALSE);
 	
@@ -112,7 +112,7 @@ gint open_safe(const gchar *path, const gchar *name)
 	GString *diskname;
 	gint fd;
 
-	DEBUG(4, G_GNUC_FUNCTION "()\n");
+	g_debug(G_GNUC_FUNCTION "() ");
 	
 	/* Check for dangerous filenames */
 	if(nameok(name) == FALSE)
@@ -128,7 +128,7 @@ gint open_safe(const gchar *path, const gchar *name)
 		g_string_append(diskname, "/");
 	g_string_append(diskname, name);
 
-	DEBUG(4, G_GNUC_FUNCTION "() Creating file %s\n", diskname->str);
+	g_debug(G_GNUC_FUNCTION "() Creating file %s", diskname->str);
 
 	fd = open(diskname->str, O_RDWR | O_CREAT | O_TRUNC, DEFFILEMODE);
 	g_string_free(diskname, TRUE);
@@ -154,23 +154,23 @@ gint checkdir(const gchar *path, const gchar *dir, cd_flags flags)
 		g_string_append(newpath, "/");
 	g_string_append(newpath, dir);
 
-	DEBUG(4, G_GNUC_FUNCTION "() path = %s dir = %s, flags = %d\n", path, dir, flags);
+	g_debug(G_GNUC_FUNCTION "() path = %s dir = %s, flags = %d", path, dir, flags);
 	if(stat(newpath->str, &statbuf) == 0) {
 		// If this directory aleady exist we are done
 		if(S_ISDIR(statbuf.st_mode)) {
-			DEBUG(4, G_GNUC_FUNCTION "() Using existing dir\n");
+			g_debug(G_GNUC_FUNCTION "() Using existing dir");
 			ret = 1;
 			goto out;
 		}
 		else  {
 			// A non-directory with this name already exist.
-			DEBUG(4, G_GNUC_FUNCTION "() A non-dir called %s already exist\n", newpath->str);
+			g_debug(G_GNUC_FUNCTION "() A non-dir called %s already exist", newpath->str);
 			ret = -1;
 			goto out;
 		}
 	}
 	if(flags & CD_CREATE) {
-		DEBUG(4, G_GNUC_FUNCTION "() Will try to create %s\n", newpath->str);
+		g_debug(G_GNUC_FUNCTION "() Will try to create %s", newpath->str);
 		ret = mkdir(newpath->str, DEFFILEMODE | S_IXGRP | S_IXUSR | S_IXOTH);
 	}
 	else {
