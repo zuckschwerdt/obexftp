@@ -106,10 +106,10 @@ int	bfb_send_data(FD fd, uint8_t type, uint8_t *data, int length, int seq);
 #define bfb_send_next(fd, data, length, seq) \
 	bfb_send_data(fd, BFB_DATA_NEXT, data, length, seq)
 
-bfb_frame_t *
+/*@null@*/ bfb_frame_t *
 	bfb_read_packets(uint8_t *buffer, int *length);
 
-bfb_data_t *
+/*@null@*/ bfb_data_t *
 	bfb_assemble_data(bfb_data_t *data, int *fraglen, bfb_frame_t *frame);
 
 int	bfb_check_data(bfb_data_t *data, int fraglen);

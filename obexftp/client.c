@@ -52,11 +52,11 @@ static int cli_fillstream(obexftp_client_t *cli, obex_object_t *object)
 	int actual;
 	obex_headerdata_t hdd;
 		
-	DEBUG(3, __FUNCTION__ "()");
+	DEBUG(3, "%s()", __func__);
 	
 	actual = read(cli->fd, cli->buf, STREAM_CHUNK);
 	
-	DEBUG(3, __FUNCTION__ "() Read %d bytes", actual);
+	DEBUG(3, "%s() Read %d bytes", __func__, actual);
 	
 	if(actual > 0) {
 		/* Read was ok! */
@@ -104,28 +104,28 @@ static void client_done(obex_t *handle, obex_object_t *object, int obex_cmd, int
 
 	cli = OBEX_GetUserData(handle);
 
-        DEBUG(3, __FUNCTION__ "()\n");
+        DEBUG(3, "%s()\n", __func__);
 
 	if (cli->fd > 0)
 		close(cli->fd);
 
         while(OBEX_ObjectGetNextHeader(handle, object, &hi, &hv, &hlen)) {
                 if(hi == OBEX_HDR_BODY) {
-			DEBUG(3, __FUNCTION__ "() Found body\n");
+			DEBUG(3, "%s() Found body\n", __func__);
                         body = hv.bs;
                         body_len = hlen;
 			cli->infocb(OBEXFTP_EV_BODY, body, body_len, cli->infocb_data);
-			DEBUG(3, __FUNCTION__ "() Done body\n");
+			DEBUG(3, "%s() Done body\n", __func__);
                         //break;
                 }
                 else if(hi == OBEX_HDR_CONNECTION) {
-			DEBUG(3, __FUNCTION__ "() Found connection number: %d\n", hv.bq4);
+			DEBUG(3, "%s() Found connection number: %d\n", __func__, hv.bq4);
 		}
                 else if(hi == OBEX_HDR_WHO) {
-			DEBUG(3, __FUNCTION__ "() Sender identified\n");
+			DEBUG(3, "%s() Sender identified\n", __func__);
 		}
                 else if(hi == OBEX_HDR_APPARAM) {
-			DEBUG(3, __FUNCTION__ "() Found application parameters\n");
+			DEBUG(3, "%s() Found application parameters\n", __func__);
                         if(hlen == sizeof(apparam_t)) {
 				app = (apparam_t *)hv.bs;
 				 // needed for alignment
@@ -134,11 +134,11 @@ static void client_done(obex_t *handle, obex_object_t *object, int obex_cmd, int
 				cli->infocb(OBEXFTP_EV_INFO, (void *)info, 0, cli->infocb_data);
 			}
 			else
-				DEBUG(3, __FUNCTION__ "() Application parameters don't fit %d vs. %d.\n", hlen, sizeof(apparam_t));
+				DEBUG(3, "%s() Application parameters don't fit %d vs. %d.\n", __func__, hlen, sizeof(apparam_t));
                         break;
                 }
                 else    {
-                        DEBUG(3, __FUNCTION__ "() Skipped header %02x\n", hi);
+                        DEBUG(3, "%s() Skipped header %02x\n", __func__, hi);
                 }
         }
 
@@ -147,7 +147,7 @@ static void client_done(obex_t *handle, obex_object_t *object, int obex_cmd, int
 			write(cli->out_fd, body, body_len);
         }
         if(app) {
-		DEBUG(3, __FUNCTION__ "() Appcode %d, data (%d) %d\n",
+		DEBUG(3, "%s() Appcode %d, data (%d) %d\n", __func__,
 			app->code, app->info_len, info);
 
         }
@@ -186,7 +186,7 @@ static void cli_obex_event(obex_t *handle, obex_object_t *object, int mode, int 
 		break;
 	
 	default:
-		DEBUG(1, __FUNCTION__ "() Unknown event %d", event);
+		DEBUG(1, "%s() Unknown event %d", __func__, event);
 		break;
 	}
 }
@@ -198,19 +198,19 @@ static void cli_obex_event(obex_t *handle, obex_object_t *object, int mode, int 
 int obexftp_sync(obexftp_client_t *cli)
 {
 	int ret;
-	DEBUG(3, __FUNCTION__ "()");
+	DEBUG(3, "%s()", __func__);
 
 	// cli->finished = FALSE;
 
 	while(cli->finished == FALSE) {
 		ret = OBEX_HandleInput(cli->obexhandle, 20);
-		DEBUG(3, __FUNCTION__ "() ret = %d", ret);
+		DEBUG(3, "%s() ret = %d", __func__, ret);
 
 		if (ret <= 0)
 			return -1;
 	}
 
-	DEBUG(3, __FUNCTION__ "() Done success=%d", cli->success);
+	DEBUG(3, "%s() Done success=%d", __func__, cli->success);
 
 	if(cli->success)
 		return 1;
@@ -220,7 +220,7 @@ int obexftp_sync(obexftp_client_t *cli)
 	
 static int cli_sync_request(obexftp_client_t *cli, obex_object_t *object)
 {
-	DEBUG(3, __FUNCTION__ "()");
+	DEBUG(3, "%s()", __func__);
 
 	cli->finished = FALSE;
 	OBEX_Request(cli->obexhandle, object);
@@ -236,7 +236,7 @@ obexftp_client_t *obexftp_cli_open(obexftp_info_cb_t infocb, /*const*/ obex_ctra
 {
 	obexftp_client_t *cli;
 
-	DEBUG(3, __FUNCTION__ "()");
+	DEBUG(3, "%s()", __func__);
 	cli = calloc (1, sizeof(obexftp_client_t));
 	if(cli == NULL)
 		return NULL;
@@ -285,7 +285,7 @@ out_err:
 //
 void obexftp_cli_close(obexftp_client_t *cli)
 {
-	DEBUG(3, __FUNCTION__ "()");
+	DEBUG(3, "%s()", __func__);
 	return_if_fail(cli != NULL);
 
 	OBEX_Cleanup(cli->obexhandle);
@@ -301,7 +301,7 @@ int obexftp_cli_connect(obexftp_client_t *cli)
 	obex_object_t *object;
 	int ret;
 
-	DEBUG(3, __FUNCTION__ "()");
+	DEBUG(3, "%s()", __func__);
 	return_val_if_fail(cli != NULL, -1);
 
 	cli->infocb(OBEXFTP_EV_CONNECTING, "", 0, cli->infocb_data);
@@ -356,7 +356,7 @@ int obexftp_cli_disconnect(obexftp_client_t *cli)
 	obex_object_t *object;
 	int ret;
 
-	DEBUG(3, __FUNCTION__ "()");
+	DEBUG(3, "%s()", __func__);
 	return_val_if_fail(cli != NULL, -1);
 
 	cli->infocb(OBEXFTP_EV_DISCONNECTING, "", 0, cli->infocb_data);
@@ -386,7 +386,7 @@ int obexftp_info(obexftp_client_t *cli, uint8_t opcode)
 
 	cli->infocb(OBEXFTP_EV_RECEIVING, "info", 0, cli->infocb_data);
 
-	DEBUG(2, __FUNCTION__ "() Retrieving info %d", opcode);
+	DEBUG(2, "%s() Retrieving info %d", __func__, opcode);
 
         object = obexftp_build_info (cli->obexhandle, opcode);
         if(object == NULL)
@@ -415,7 +415,7 @@ int obexftp_list(obexftp_client_t *cli, const char *localname, const char *remot
 
 	cli->infocb(OBEXFTP_EV_RECEIVING, localname, 0, cli->infocb_data);
 
-	DEBUG(2, __FUNCTION__ "() Listing %s -> %s", remotename, localname);
+	DEBUG(2, "%s() Listing %s -> %s", __func__, remotename, localname);
 
 	cli->out_fd = STDOUT_FILENO;
 
@@ -447,7 +447,7 @@ int obexftp_get(obexftp_client_t *cli, const char *localname, const char *remote
 
 	cli->infocb(OBEXFTP_EV_RECEIVING, localname, 0, cli->infocb_data);
 
-	DEBUG(2, __FUNCTION__ "() Getting %s -> %s", remotename, localname);
+	DEBUG(2, "%s() Getting %s -> %s", __func__, remotename, localname);
 
 	cli->out_fd = open_safe("", localname);
 
@@ -478,7 +478,7 @@ int obexftp_rename(obexftp_client_t *cli, const char *sourcename, const char *ta
 
 	cli->infocb(OBEXFTP_EV_SENDING, sourcename, 0, cli->infocb_data);
 
-	DEBUG(2, __FUNCTION__ "() Moving %s -> %s", sourcename, targetname);
+	DEBUG(2, "%s() Moving %s -> %s", __func__, sourcename, targetname);
 
         object = obexftp_build_rename (cli->obexhandle, sourcename, targetname);
         if(object == NULL)
@@ -507,7 +507,7 @@ int obexftp_del(obexftp_client_t *cli, const char *name)
 
 	cli->infocb(OBEXFTP_EV_SENDING, name, 0, cli->infocb_data);
 
-	DEBUG(2, __FUNCTION__ "() Deleting %s", name);
+	DEBUG(2, "%s() Deleting %s", __func__, name);
 
         object = obexftp_build_del (cli->obexhandle, name);
         if(object == NULL)
@@ -536,7 +536,7 @@ int obexftp_setpath(obexftp_client_t *cli, const char *name, int up)
 
 	cli->infocb(OBEXFTP_EV_SENDING, name, 0, cli->infocb_data); //FIXME
 
-	DEBUG(2, __FUNCTION__ "() %s", name);
+	DEBUG(2, "%s() %s", __func__, name);
 
 	object = obexftp_build_setpath (cli->obexhandle, name, up);
 
@@ -562,7 +562,7 @@ static int obexftp_put_file(obexftp_client_t *cli, const char *localname, const 
 
 	cli->infocb(OBEXFTP_EV_SENDING, localname, 0, cli->infocb_data);
 
-	DEBUG(2, __FUNCTION__ "() Sending %s -> %s", localname, remotename);
+	DEBUG(2, "%s() Sending %s -> %s", __func__, localname, remotename);
 
 	object = build_object_from_file (cli->obexhandle, localname, remotename);
 	
@@ -590,7 +590,7 @@ static int obexftp_visit(int action, const char *name, const char *path, void *u
 	const char *remotename;
 	int ret = -1;
 
-	DEBUG(3, __FUNCTION__ "()\n");
+	DEBUG(3, "%s()\n", __func__);
 	switch(action) {
 	case VISIT_FILE:
 		// Strip /'s before sending file
@@ -610,7 +610,7 @@ static int obexftp_visit(int action, const char *name, const char *path, void *u
 		ret = obexftp_setpath(userdata, "", TRUE);
 		break;
 	}
-	DEBUG(3, __FUNCTION__ "() returning %d", ret);
+	DEBUG(3, "%s() returning %d", __func__, ret);
 	return ret;
 }
 

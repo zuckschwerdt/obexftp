@@ -25,7 +25,9 @@
 #include <stdlib.h>
 #include <string.h>
 #include <fcntl.h>
+#ifndef S_SPLINT_S
 #include <unistd.h>
+#endif
 #ifdef _WIN32
 #include <windows.h>
 #define sleep(n)	_sleep(n*1000)
@@ -42,9 +44,9 @@ int bfb_io_write(FD fd, uint8_t *buffer, int length)
 {
 #ifdef _WIN32
 	DWORD bytes;
-	DEBUG(3, __FUNCTION__ "() WriteFile");
+	DEBUG(3, "%s() WriteFile", __func__);
 	if(!WriteFile(fd, buffer, length, &bytes, NULL))
-		DEBUG(2, __FUNCTION__ "() Write error: %ld", bytes);
+		DEBUG(2, "%s() Write error: %ld", __func__, bytes);
 	return bytes;
 #else
 	return write(fd, buffer, length);
@@ -57,9 +59,9 @@ int do_bfb_read(FD fd, uint8_t *buffer, int length)
 #ifdef _WIN32
 	DWORD bytes;
 
-	DEBUG(3, __FUNCTION__ "() ReadFile");
+	DEBUG(3, "%s() ReadFile", __func__);
 	if (!ReadFile(fd, buffer, length, &bytes, NULL)) {
-		DEBUG(2, __FUNCTION__ "() Read error: %ld", bytes);
+		DEBUG(2, "%s() Read error: %ld", __func__, bytes);
 	}
 
 	return bytes;
@@ -79,11 +81,11 @@ int do_bfb_read(FD fd, uint8_t *buffer, int length)
 	if(select(fd+1, &fdset, NULL, NULL, &time)) {
 		actual = read(fd, buffer, length);
 		if(actual < 0)
-			DEBUG(2, __FUNCTION__ "() Read error: %d", actual);
+			DEBUG(2, "%s() Read error: %d", __func__, actual);
 		return actual;
 	}
 	else {
-		DEBUG(1, __FUNCTION__ "() No data");
+		DEBUG(1, "%s() No data", __func__);
 		return 0;
 	}
 #endif
@@ -93,6 +95,7 @@ int do_bfb_read(FD fd, uint8_t *buffer, int length)
 int do_bfb_init(FD fd)
 {
 	int actual;
+	int tries=3;
 	bfb_frame_t *frame;
 	uint8_t rspbuf[200];
 
@@ -103,31 +106,41 @@ int do_bfb_init(FD fd)
 	uint8_t sifs[] = {'a','t','^','s','i','f','s',0x13};
 	*/
 
+#ifdef _WIN32
+        return_val_if_fail (fd != INVALID_HANDLE_VALUE, FALSE);
+#else
         return_val_if_fail (fd > 0, FALSE);
+#endif
 
-	actual = bfb_write_packets (fd, BFB_FRAME_CONNECT, &init_magic, sizeof(init_magic));
-	DEBUG(2, __FUNCTION__ "() Wrote %d packets", actual);
+	while (tries-- > 0) {
+		actual = bfb_write_packets (fd, BFB_FRAME_CONNECT, &init_magic, sizeof(init_magic));
+		DEBUG(2, "%s() Wrote %d packets", __func__, actual);
 
-	if (actual < 1) {
-		DEBUG(1, "BFB port error");
-		return FALSE;
+		if (actual < 1) {
+			DEBUG(1, "BFB port error");
+			return FALSE;
+		}
+
+		actual = do_bfb_read(fd, rspbuf, sizeof(rspbuf));
+		DEBUG(2, "%s() Read %d bytes", __func__, actual);
+
+		if (actual < 1) {
+			DEBUG(1, "BFB read error");
+			return FALSE;
+		}
+
+		frame = bfb_read_packets(rspbuf, &actual);
+		DEBUG(2, "%s() Unstuffed, %d bytes remaining", __func__, actual);
+
+		if (frame != NULL)
+			break;
 	}
-
-	actual = do_bfb_read(fd, rspbuf, sizeof(rspbuf));
-	DEBUG(2, __FUNCTION__  "() Read %d bytes", actual);
-
-	if (actual < 1) {
-		DEBUG(1, "BFB read error");
-		return FALSE;
-	}
-
-	frame = bfb_read_packets(rspbuf, &actual);
-	DEBUG(2, __FUNCTION__  "() Unstuffed, %d bytes remaining", actual);
+		
 	if (frame == NULL) {
 		DEBUG(1, "BFB init error");
 		return FALSE;
 	}
-	DEBUG(2, "BFB init ok");
+	DEBUG(2, "BFB init ok.");
 
 	if ((frame->len == 2) && (frame->payload[0] == init_magic) && (frame->payload[1] == init_magic2)) {
 		free(frame);
@@ -162,13 +175,17 @@ int do_at_cmd(FD fd, char *cmd, char *rspbuf, int rspbuflen)
 	int done = 0;
 	int cmdlen;
 
+#ifdef _WIN32
+        return_val_if_fail (fd != INVALID_HANDLE_VALUE, -1);
+#else
         return_val_if_fail (fd > 0, -1);
+#endif
         return_val_if_fail (cmd != NULL, -1);
 
 	cmdlen = strlen(cmd);
 
 	rspbuf[0] = 0;
-	DEBUG(3, __FUNCTION__ "() Sending %d: %s", cmdlen, cmd);
+	DEBUG(3, "%s() Sending %d: %s", __func__, cmdlen, cmd);
 
 	// Write command
 #ifdef _WIN32
@@ -183,7 +200,7 @@ int do_at_cmd(FD fd, char *cmd, char *rspbuf, int rspbuflen)
 	while(!done)	{
 #ifdef _WIN32
 			if (!ReadFile(fd, &tmpbuf[total], sizeof(tmpbuf) - total, &actual, NULL))
-				DEBUG(2, __FUNCTION__ "() Read error: %ld", actual);
+				DEBUG(2, "%s() Read error: %ld", __func__, actual);
 #else
 		FD_ZERO(&ttyset);
 		FD_SET(fd, &ttyset);
@@ -196,7 +213,7 @@ int do_at_cmd(FD fd, char *cmd, char *rspbuf, int rspbuflen)
 				return actual;
 			total += actual;
 
-			DEBUG(3, __FUNCTION__ "() tmpbuf=%d: %s", total, tmpbuf);
+			DEBUG(3, "%s() tmpbuf=%d: %s", __func__, total, tmpbuf);
 
 			// Answer not found within 100 bytes. Cancel
 			if(total == sizeof(tmpbuf))
@@ -219,10 +236,10 @@ int do_at_cmd(FD fd, char *cmd, char *rspbuf, int rspbuflen)
 	}
 
 
-//	DEBUG(3, __FUNCTION__ "() buf:%08lx answer:%08lx end:%08lx", tmpbuf, answer, answer_end);
+//	DEBUG(3, "%s() buf:%08lx answer:%08lx end:%08lx", __func__, tmpbuf, answer, answer_end);
 
 
-	DEBUG(3, __FUNCTION__ "() Answer: %s", answer);
+	DEBUG(3, "%s() Answer: %s", __func__, answer);
 
 	// Remove heading and trailing \r
 	if((*answer_end == '\r') || (*answer_end == '\n'))
@@ -233,11 +250,11 @@ int do_at_cmd(FD fd, char *cmd, char *rspbuf, int rspbuflen)
 		answer++;
 	if((*answer == '\r') || (*answer == '\n'))
 		answer++;
-	DEBUG(3, __FUNCTION__ "() Answer: %s", answer);
+	DEBUG(3, "%s() Answer: %s", __func__, answer);
 
 	answer_size = (answer_end) - answer +1;
 
-	DEBUG(2, __FUNCTION__ "() Answer size=%d", answer_size);
+	DEBUG(2, "%s() Answer size=%d", __func__, answer_size);
 	if( (answer_size) >= rspbuflen )
 		return -1;
 
@@ -250,7 +267,7 @@ int do_at_cmd(FD fd, char *cmd, char *rspbuf, int rspbuflen)
 /* close the connection */
 void bfb_io_close(FD fd, int force)
 {
-	DEBUG(3, __FUNCTION__ "()");
+	DEBUG(3, "%s()", __func__);
 #ifdef _WIN32
         return_if_fail (fd != INVALID_HANDLE_VALUE);
 #else
@@ -287,7 +304,7 @@ FD bfb_io_open(const char *ttyname)
 
         return_val_if_fail (ttyname != NULL, INVALID_HANDLE_VALUE);
 
-	DEBUG(3, __FUNCTION__ "() CreateFile");
+	DEBUG(3, "%s() CreateFile", __func__);
 	ttyfd = CreateFile (ttyname, GENERIC_READ | GENERIC_WRITE, 0, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
 	if (ttyfd == INVALID_HANDLE_VALUE) {
 		DEBUG(1, "Error: CreateFile()");
@@ -334,20 +351,20 @@ FD bfb_io_open(const char *ttyname)
 
         return_val_if_fail (ttyname != NULL, -1);
 
-	DEBUG(2, __FUNCTION__ "() ");
+	DEBUG(2, "%s() ", __func__);
 
 	if( (ttyfd = open(ttyname, O_RDWR | O_NONBLOCK | O_NOCTTY, 0)) < 0 ) {
 		DEBUG(1, "Can' t open tty");
 		return -1;
 	}
 
-	tcgetattr(ttyfd, &oldtio);
+	(void) tcgetattr(ttyfd, &oldtio);
 	bzero(&newtio, sizeof(newtio));
 	newtio.c_cflag = B57600 | CS8 | CREAD;
 	newtio.c_iflag = IGNPAR;
 	newtio.c_oflag = 0;
-	tcflush(ttyfd, TCIFLUSH);
-	tcsetattr(ttyfd, TCSANOW, &newtio);
+	(void) tcflush(ttyfd, TCIFLUSH);
+	(void) tcsetattr(ttyfd, TCSANOW, &newtio);
 #endif
 
 	/* do we need to handle an error? */
@@ -356,9 +373,15 @@ FD bfb_io_open(const char *ttyname)
 		goto bfbmode;
 	}
 
-	if(do_at_cmd(ttyfd, "ATZ\r\n", rspbuf, sizeof(rspbuf)) < 0)	{
+	if(do_at_cmd(ttyfd, "ATZ\r\n", rspbuf, sizeof(rspbuf)) < 0) {
 		DEBUG(1, "Comm-error or already in BFB mode");
-		goto err;
+		newtio.c_cflag = B19200 | CS8 | CREAD;
+		(void) tcflush(ttyfd, TCIFLUSH);
+		(void) tcsetattr(ttyfd, TCSANOW, &newtio);
+		if(do_at_cmd(ttyfd, "ATZ\r\n", rspbuf, sizeof(rspbuf)) < 0) {
+			DEBUG(1, "Comm-error or already in BFB mode");
+			goto err;
+		}
 	}
 	if(strcasecmp("OK", rspbuf) != 0)	{
 		DEBUG(1, "Error doing ATZ (%s)", rspbuf);
@@ -384,6 +407,11 @@ FD bfb_io_open(const char *ttyname)
 	}
 
 	sleep(1); // synch a bit
+
+	newtio.c_cflag = B57600 | CS8 | CREAD;
+	(void) tcflush(ttyfd, TCIFLUSH);
+	(void) tcsetattr(ttyfd, TCSANOW, &newtio);
+
  bfbmode:
 	if (! do_bfb_init (ttyfd)) {
 		// well there may be some garbage -- just try again

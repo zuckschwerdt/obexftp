@@ -22,6 +22,12 @@ AC_CHECK_HEADERS([arpa/inet.h errno.h fcntl.h netdb.h netinet/in.h stdlib.h stri
 # Checks for libraries.
 AM_PATH_OPENOBEX(1.0.0)
 
+dnl Check for C99 __func__
+AC_TRY_COMPILE([
+    #include<stdio.h>],
+    [printf(__func__)],,
+    [AC_DEFINE(__func__, "", [non-C99 fake support for __func__])])
+
 AC_SUBST(CFLAGS)
 AC_SUBST(CPPFLAGS)
 AC_SUBST(LDFLAGS)

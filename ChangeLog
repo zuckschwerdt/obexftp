@@ -1,3 +1,8 @@
+2002-11-22  Christian Zuckschwerdt  <zany@triq.net>
+
+	* Jan Metz <metz@jamecs.de> supplied me with his RH8 box and
+	  some SL45i connected to it. Finally S45(i) is working.
+
 2002-11-19  Christian Zuckschwerdt  <zany@triq.net>
 
 	* this is the last release to support OpenOBEX 0.9.8

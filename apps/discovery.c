@@ -98,7 +98,7 @@ static int do_at_cmd(FD fd, char *cmd, char *rspbuf, int rspbuflen)
 	cmdlen = strlen(cmd);
 
 	rspbuf[0] = 0;
-	DEBUG(3, __FUNCTION__ "() Sending %d: %s", cmdlen, cmd);
+	DEBUG(3, "%s() Sending %d: %s", __func__, cmdlen, cmd);
 
 	// Write command
 #ifdef _WIN32
@@ -113,7 +113,7 @@ static int do_at_cmd(FD fd, char *cmd, char *rspbuf, int rspbuflen)
 	while(!done)	{
 #ifdef _WIN32
 		if (!ReadFile(fd, &tmpbuf[total], sizeof(tmpbuf) - total, &actual, NULL)) {
-				DEBUG(2, __FUNCTION__ "() Read error: %ld", actual);
+				DEBUG(2, "%s() Read error: %ld", __func__, actual);
 		}
 #else
 		FD_ZERO(&ttyset);
@@ -128,7 +128,7 @@ static int do_at_cmd(FD fd, char *cmd, char *rspbuf, int rspbuflen)
 				return actual;
 			total += actual;
 
-			DEBUG(3, __FUNCTION__ "() tmpbuf=%d: %s", total, tmpbuf);
+			DEBUG(3, "%s() tmpbuf=%d: %s", __func__, total, tmpbuf);
 
 			// Answer not found within 100 bytes. Cancel
 			if(total == sizeof(tmpbuf))
@@ -150,10 +150,10 @@ static int do_at_cmd(FD fd, char *cmd, char *rspbuf, int rspbuflen)
 #endif
 	}
 
-//	DEBUG(3, __FUNCTION__ "() buf:%08lx answer:%08lx end:%08lx", tmpbuf, answer, answer_end);
+//	DEBUG(3, "%s() buf:%08lx answer:%08lx end:%08lx", __func__, tmpbuf, answer, answer_end);
 
 
-	DEBUG(3, __FUNCTION__ "() Answer: %s", answer);
+	DEBUG(3, "%s() Answer: %s", __func__, answer);
 
 	// Remove heading and trailing \r
 	if((*answer_end == '\r') || (*answer_end == '\n'))
@@ -164,11 +164,11 @@ static int do_at_cmd(FD fd, char *cmd, char *rspbuf, int rspbuflen)
 		answer++;
 	if((*answer == '\r') || (*answer == '\n'))
 		answer++;
-	DEBUG(3, __FUNCTION__ "() Answer: %s", answer);
+	DEBUG(3, "%s() Answer: %s", __func__, answer);
 
 	answer_size = (answer_end) - answer +1;
 
-	DEBUG(2, __FUNCTION__ "() Answer size=%d", answer_size);
+	DEBUG(2, "%s() Answer size=%d", __func__, answer_size);
 	if( (answer_size) >= rspbuflen )
 		return -1;
 
@@ -193,7 +193,7 @@ struct mobile_info *probe_tty(const char *ttyname)
 
         return_val_if_fail (ttyname != NULL, INVALID_HANDLE_VALUE);
 
-	DEBUG(3, __FUNCTION__ "() CreateFile");
+	DEBUG(3, "%s() CreateFile", __func__);
 	ttyfd = CreateFile (ttyname, GENERIC_READ | GENERIC_WRITE, 0, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
 	if (ttyfd == INVALID_HANDLE_VALUE) {
 		fprintf(stderr, "Error: CreateFile()\n");
@@ -237,7 +237,7 @@ struct mobile_info *probe_tty(const char *ttyname)
 
         return_val_if_fail (ttyname != NULL, NULL);
 
-	DEBUG(3, __FUNCTION__ "() ");
+	DEBUG(3, "%s() ", __func__);
 
 	info = calloc(1, sizeof(struct mobile_info));
 	info->ttyname = ttyname;

@@ -45,7 +45,6 @@
 #endif
 
 #include <openobex/obex.h>
-#include "obex_t.h"
 #include "cobex_pe.h"
 #include "cobex_pe_private.h"
 #include <common.h>
@@ -74,7 +73,7 @@ static int cobex_do_at_cmd(int fd, char *cmd, char *rspbuf, int rspbuflen)
 	cmdlen = strlen(cmd);
 
 	rspbuf[0] = 0;
-	DEBUG(3, __FUNCTION__ "() Sending %d: %s\n", cmdlen, cmd);
+	DEBUG(3, "%s() Sending %d: %s\n", __func__, cmdlen, cmd);
 
 	// Write command
 	if(write(fd, cmd, cmdlen) < cmdlen)	{
@@ -93,7 +92,7 @@ static int cobex_do_at_cmd(int fd, char *cmd, char *rspbuf, int rspbuflen)
 				return actual;
 			total += actual;
 
-			DEBUG(3, __FUNCTION__ "() tmpbuf=%d: %s\n", total, tmpbuf);
+			DEBUG(3, "%s() tmpbuf=%d: %s\n", __func__, total, tmpbuf);
 
 			// Answer not found within 100 bytes. Cancel
 			if(total == sizeof(tmpbuf))
@@ -114,10 +113,10 @@ static int cobex_do_at_cmd(int fd, char *cmd, char *rspbuf, int rspbuflen)
 	}
 
 
-//	DEBUG(3, __FUNCTION__ "() buf:%08lx answer:%08lx end:%08lx\n", tmpbuf, answer, answer_end);
+//	DEBUG(3, "%s() buf:%08lx answer:%08lx end:%08lx\n", __func__, tmpbuf, answer, answer_end);
 
 
-	DEBUG(3, __FUNCTION__ "() Answer: %s", answer);
+	DEBUG(3, "%s() Answer: %s", __func__, answer);
 
 	// Remove heading and trailing \r
 	if((*answer_end == '\r') || (*answer_end == '\n'))
@@ -128,11 +127,11 @@ static int cobex_do_at_cmd(int fd, char *cmd, char *rspbuf, int rspbuflen)
 		answer++;
 	if((*answer == '\r') || (*answer == '\n'))
 		answer++;
-	DEBUG(3, __FUNCTION__ "() Answer: %s", answer);
+	DEBUG(3, "%s() Answer: %s", __func__, answer);
 
 	answer_size = (answer_end) - answer +1;
 
-	DEBUG(2, __FUNCTION__ "() Answer size=%d\n", answer_size);
+	DEBUG(2, "%s() Answer size=%d\n", __func__, answer_size);
 	if( (answer_size) >= rspbuflen )
 		return -1;
 
@@ -173,7 +172,7 @@ static int cobex_pe_init(cobex_t *c)
 
         return_val_if_fail (c != NULL, -1);
 
-	DEBUG(3, __FUNCTION__ "() \n");
+	DEBUG(3, "%s() \n", __func__);
 
 	if( (c->fd = open(c->tty, O_RDWR | O_NONBLOCK | O_NOCTTY, 0)) < 0 ) {
 		DEBUG(1, "Can't open tty");
@@ -222,7 +221,7 @@ int cobex_pe_connect(obex_t *self, void *data)
         return_val_if_fail (data != NULL, -1);
 	c = (cobex_t *) data;
 
-	DEBUG(3, __FUNCTION__ "() \n");
+	DEBUG(3, "%s() \n", __func__);
 
 #ifdef _WIN32
 #else
@@ -240,7 +239,7 @@ int cobex_pe_disconnect(obex_t *self, void *data)
         return_val_if_fail (data != NULL, -1);
 	c = (cobex_t *) data;
 
-	DEBUG(3, __FUNCTION__ "() \n");
+	DEBUG(3, "%s() \n", __func__);
 	cobex_pe_cleanup(c, FALSE);
 	return 1;
 }
@@ -257,9 +256,9 @@ int cobex_pe_write(obex_t *self, void *data, uint8_t *buffer, int length)
         return_val_if_fail (data != NULL, -1);
 	c = (cobex_t *) data;
 	
-	DEBUG(3, __FUNCTION__ "() \n");
+	DEBUG(3, "%s() \n", __func__);
 
-	DEBUG(2, __FUNCTION__ "() Data %d bytes\n", length);
+	DEBUG(2, "%s() Data %d bytes\n", __func__, length);
 
 	actual = write(c->fd, buffer, length);
 	if (actual < length)	{
@@ -298,14 +297,14 @@ int cobex_pe_handleinput(obex_t *self, void *data, int timeout)
 	/* Wait for input */
 	ret = select(c->fd + 1, &fdset, NULL, NULL, &time);
 
-	DEBUG(2, __FUNCTION__ "() There is something (%d)\n", ret);
+	DEBUG(2, "%s() There is something (%d)\n", __func__, ret);
 
 	/* Check if this is a timeout (0) or error (-1) */
 	if(ret <= 0)
 		return ret;
 
 	ret = read(c->fd, recv, sizeof(recv));
-	DEBUG(2, __FUNCTION__ "() Read %d bytes\n", ret);
+	DEBUG(2, "%s() Read %d bytes\n", __func__, ret);
 
 	if (ret > 0) {
 		OBEX_CustomDataFeed(self, recv, ret);
