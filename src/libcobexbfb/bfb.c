@@ -102,13 +102,13 @@ gint bfb_stuff_data(guint8 *buffer, guint8 type, guint8 *data, gint len, gint se
 /* send actual packets */
 gint bfb_write_packets(int fd, guint8 type, guint8 *buffer, gint length)
 {
-	guint8 *packet;
+	bfb_frame_t *frame;
 	gint i;
 	gint l;
 	gint actual;
 	
-	// alloc packet buffer
-	packet = g_malloc((length > MAX_PACKET_DATA ? MAX_PACKET_DATA : length) + 3);
+	// alloc frame buffer
+	frame = g_malloc((length > MAX_PACKET_DATA ? MAX_PACKET_DATA : length) + sizeof (bfb_frame_t));
 
 	for(i=0; i <length; i += MAX_PACKET_DATA) {
 
@@ -116,18 +116,24 @@ gint bfb_write_packets(int fd, guint8 type, guint8 *buffer, gint length)
 		if (l > MAX_PACKET_DATA)
 			l = MAX_PACKET_DATA;
 
-		packet[0] = type;
-		packet[1] = l;
-		packet[2] = packet[0] ^ packet[1];
+		frame->type = type;
+		frame->len = l;
+		frame->chk = frame->type ^ frame->len;
 
-		memcpy(&packet[3], &buffer[i], l);
+		memcpy(frame->payload, &buffer[i], l);
 
-		actual = write(fd, packet, l + 3);
-		
-		DEBUG(3, G_GNUC_FUNCTION "() Wrote %d bytes (expected %d)\n", actual, l + 3);
+		actual = write(fd, frame, l + sizeof (bfb_frame_t));
+
+		DEBUG(3, G_GNUC_FUNCTION "() Wrote %d bytes (expected %d)\n", actual, l + sizeof (bfb_frame_t));
+
+		if (actual < 0 || actual < l + sizeof (bfb_frame_t)) {
+			DEBUG(1, G_GNUC_FUNCTION "() Write failed\n");
+			g_free(frame);
+			return -1;
+		}
 
 	}
-	g_free(packet);
+	g_free(frame);
 	return i / MAX_PACKET_DATA;
 }
 

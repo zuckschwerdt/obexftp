@@ -51,7 +51,9 @@ static gint cobex_do_bfb_read(int fd, guint8 *buffer, gint length)
 	fd_set fdset;
 	int actual;
 
-	time.tv_sec = 5;
+        g_return_val_if_fail (fd > 0, -1);
+
+	time.tv_sec = 2;
 	time.tv_usec = 0;
 
 	FD_ZERO(&fdset);
@@ -69,6 +71,58 @@ static gint cobex_do_bfb_read(int fd, guint8 *buffer, gint length)
 	}
 }
 
+/* Send an BFB init command an check for a valid answer frame */
+static gboolean cobex_do_bfb_init(int fd)
+{
+	gint actual;
+	bfb_frame_t *frame;
+	guint8 rspbuf[200];
+
+	guint8 init_magic = 0x14;
+	guint8 init_magic2 = 0xaa;
+	/*
+	guint8 speed115200[] = {0xc0,'1','1','5','2','0','0',0x13,0xd2,0x2b};
+	guint8 sifs[] = {'a','t','^','s','i','f','s',0x13};
+	*/
+
+        g_return_val_if_fail (fd > 0, FALSE);
+
+	actual = bfb_write_packets (fd, BFB_FRAME_CONNECT, &init_magic, sizeof(init_magic));
+	DEBUG(1, G_GNUC_FUNCTION "() Wrote %d packets\n", actual);
+
+	if (actual < 1) {
+		g_print("BFB port error\n");
+		return FALSE;
+	}
+
+	actual = cobex_do_bfb_read(fd, rspbuf, sizeof(rspbuf));
+	DEBUG(1, G_GNUC_FUNCTION  "() Read %d bytes\n", actual);
+
+	if (actual < 1) {
+		g_print("BFB read error\n");
+		return FALSE;
+	}
+
+	frame = bfb_read_packets(rspbuf, &actual);
+	DEBUG(2, G_GNUC_FUNCTION  "() Unstuffed, %d bytes remaining\n", actual);
+	if (frame == NULL) {
+		g_print("BFB init error\n");
+		return FALSE;
+	}
+	g_print("BFB init ok\n");
+
+	if ((frame->len == 2) && (frame->payload[0] == init_magic) && (frame->payload[1] == init_magic2)) {
+		g_free(frame);
+		return TRUE;
+	}
+
+	g_print("Error doing BFB init (%d, %x %x)\n",
+		frame->len, frame->payload[0], frame->payload[1]);
+
+	g_free(frame);
+
+	return FALSE;
+}
 
 /* Send an AT-command an expect 1 line back as answer */
 static gint cobex_do_at_cmd(int fd, char *cmd, char *rspbuf, int rspbuflen)
@@ -86,6 +140,9 @@ static gint cobex_do_at_cmd(int fd, char *cmd, char *rspbuf, int rspbuflen)
 	int done = 0;
 	int cmdlen;
 
+        g_return_val_if_fail (fd > 0, -1);
+        g_return_val_if_fail (cmd != NULL, -1);
+
 	cmdlen = strlen(cmd);
 
 	rspbuf[0] = 0;
@@ -93,7 +150,7 @@ static gint cobex_do_at_cmd(int fd, char *cmd, char *rspbuf, int rspbuflen)
 
 	// Write command
 	if(write(fd, cmd, cmdlen) < cmdlen)	{
-		g_print("Error writing to port");
+		g_print("Error writing to port\n");
 		return -1;
 	}
 
@@ -161,19 +218,9 @@ static gint cobex_do_at_cmd(int fd, char *cmd, char *rspbuf, int rspbuflen)
 /* Returns fd or -1 on failure */
 gint cobex_init(obex_t *self, const gchar *ttyname)
 {
-	int ttyfd;
+	gint ttyfd;
 	struct termios oldtio, newtio;
-
-	int actual;
-	bfb_frame_t *frame;
 	guint8 rspbuf[200];
-
-	guint8 init_magic = 0x14;
-	guint8 init_magic2 = 0xaa;
-	/*
-	guint8 speed[] = {0xc0,'1','1','5','2','0','0',0x13,0xd2,0x2b};
-	guint8 sifs[] = {'a','t','^','s','i','f','s',0x13};
-	*/
 
         g_return_val_if_fail (self != NULL, -1);
 
@@ -192,9 +239,15 @@ gint cobex_init(obex_t *self, const gchar *ttyname)
 	tcflush(ttyfd, TCIFLUSH);
 	tcsetattr(ttyfd, TCSANOW, &newtio);
 
+	/* do we need to handle an error? */
+	if (cobex_do_bfb_init (ttyfd)) {
+		g_print("Already in BFB mode.\n");
+		goto bfbmode;
+	}
+
 	if(cobex_do_at_cmd(ttyfd, "ATZ\r\n", rspbuf, sizeof(rspbuf)) < 0)	{
 		g_print("Comm-error or already in BFB mode\n");
-		goto bfbmode;
+		goto err;
 	}
 	if(strcasecmp("OK", rspbuf) != 0)	{
 		g_print("Error doing ATZ (%s)\n", rspbuf);
@@ -221,26 +274,10 @@ gint cobex_init(obex_t *self, const gchar *ttyname)
 
 	sleep(1); // synch a bit
  bfbmode:
-	actual = bfb_write_packets(ttyfd, BFB_FRAME_CONNECT, &init_magic, sizeof(init_magic));
-	DEBUG(1, G_GNUC_FUNCTION "() Wrote %d packets\n", actual);
-	actual = cobex_do_bfb_read(ttyfd, rspbuf, sizeof(rspbuf));
-	DEBUG(1, G_GNUC_FUNCTION  "() Read %d bytes\n", actual);
-	frame = bfb_read_packets(rspbuf, &actual);
-	DEBUG(2, G_GNUC_FUNCTION  "() Unstuffed, %d bytes remaining\n", actual);
-
-	if ((frame->len != 2) || (frame->payload[0] != init_magic) || (frame->payload[1] != init_magic2)) {
-		g_print("Error doing BFB init (%d, %x %x)\n",
-		       frame->len, frame->payload[0], frame->payload[1]);
+	if (! cobex_do_bfb_init (ttyfd)) {
+		g_print("Couldn't init BFB mode.\n");
 		goto err;
 	}
-	g_free(frame);
-
-
-//	actual = bfb_write_packets(ttyfd, BFB_FRAME_INTERFACE, speed, sizeof(speed));
-
-//	actual = bfb_write_packets(ttyfd, BFB_FRAME_AT, sifs, sizeof(sifs));
-
-
 
 	return ttyfd;
  err:
@@ -374,7 +411,7 @@ gint cobex_handleinput(obex_t *self, gpointer userdata, gint timeout)
 
 
 /* Well, maybe this should be somewhere in the header */
-
+/*
 static obex_ctrans_t _cobex_ctrans = {
 	connect: cobex_connect,
 	disconnect: cobex_disconnect,
@@ -382,7 +419,7 @@ static obex_ctrans_t _cobex_ctrans = {
 	listen: NULL,
 	handleinput: cobex_handleinput,
 };
-
+*/
 obex_ctrans_t *cobex_ctrans (const gchar *tty) {
 	obex_ctrans_t *ctrans;
 	cobex_t *cobex;

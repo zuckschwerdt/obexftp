@@ -128,6 +128,7 @@ int main(int argc, char *argv[])
 		static struct option long_options[] = {
 			{"device", 1, 0, 'd'},
 			{"list", 2, 0, 'l'},
+			{"chdir", 1, 0, 'c'},
 			{"get", 1, 0, 'g'},
 			{"put", 1, 0, 'p'},
 			{"info", 0, 0, 'i'},
@@ -139,7 +140,7 @@ int main(int argc, char *argv[])
 			{0, 0, 0, 0}
 		};
 		
-		c = getopt_long (argc, argv, "-d:l::g:p:im:k:rh",
+		c = getopt_long (argc, argv, "-d:l::c:g:p:im:k:rh",
 				 long_options, &option_index);
 		if (c == -1)
 			break;
@@ -166,6 +167,14 @@ int main(int argc, char *argv[])
 			if(cli_connect ()) {
 				/* List folder */
 				obexftp_list(cli, optarg, optarg);
+			}
+			most_recent_cmd = c;
+			break;
+
+		case 'c':
+			if(cli_connect ()) {
+				/* Get file */
+				obexftp_setpath(cli, optarg, FALSE);
 			}
 			most_recent_cmd = c;
 			break;
@@ -218,7 +227,7 @@ int main(int argc, char *argv[])
 
 		case 'h':
 		case 'u':
-			g_print("Usage: %s [-d <dev>] [-s|-a] [-l <dir> ...]\n"
+			g_print("Usage: %s [-d <dev>] [-s|-a] [-l <dir> ...] [-c <dir>]\n"
 				"[-g <file> ...] [-p <files> ...] [-i] [-m <src> <dest> ...] [-k <files> ...]\n"
 				"Transfer files from/to Siemens Mobile Equipment.\n"
 				"Copyright (c) 2002 Christian W. Zuckschwerdt\n"
@@ -227,6 +236,7 @@ int main(int argc, char *argv[])
 				"                             fallback to $MOBILEPHONE_DEV\n"
 				"                             then /dev/mobilephone and /dev/ttyS0\n"
 				" -l, --list [<FOLDER>]       list a folder\n"
+				" -c, --chdir <DIR>           chdir / mkdir\n"
 				" -g, --get <SOURCE>          fetch files\n"
 				" -p, --put <SOURCE>          send files\n"
 				" -i, --info                  retrieve misc infos\n\n"

@@ -514,7 +514,7 @@ gint obexftp_del(obexftp_client_t *cli, const gchar *name)
 //
 // Do OBEX SetPath
 //
-static gint obexftp_setpath(obexftp_client_t *cli, const gchar *name, gboolean up)
+gint obexftp_setpath(obexftp_client_t *cli, const gchar *name, gboolean up)
 {
 	obex_object_t *object;
 	int ret;

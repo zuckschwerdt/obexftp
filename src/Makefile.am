@@ -12,4 +12,9 @@ LDADD = \
 
 flexmem_SOURCES = flexmem_cli.c
 
+stress_SOURCES = stress.c
+
 bin_PROGRAMS = flexmem 
+
+noinst_PROGRAMS = stress 
+

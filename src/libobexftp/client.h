@@ -25,6 +25,7 @@ void obexftp_cli_close(obexftp_client_t *cli);
 gint obexftp_cli_connect(obexftp_client_t *cli);
 gint obexftp_cli_disconnect(obexftp_client_t *cli);
 
+gint obexftp_setpath(obexftp_client_t *cli, const gchar *name, gboolean up);
 gint obexftp_put(obexftp_client_t *cli, const gchar *name);
 gint obexftp_del(obexftp_client_t *cli, const gchar *name);
 gint obexftp_info(obexftp_client_t *cli, guint8 opcode);
