@@ -142,7 +142,7 @@ int cobex_handleinput(obex_t *self, void *data, int timeout)
 
 #ifdef _WIN32
 	if (!ReadFile(c->fd, &(c->recv[c->recv_len]), sizeof(c->recv) - c->recv_len, &actual, NULL))
-		DEBUG(2, "%s() Read error: %ld", __func__, actual);
+		DEBUG(2, "%s() Read error: %ld\n", __func__, actual);
 
 	DEBUG(2, "%s() Read %ld bytes (%d bytes already buffered)\n", __func__, actual, c->recv_len);
 	/* FIXME ... */
@@ -167,6 +167,11 @@ int cobex_handleinput(obex_t *self, void *data, int timeout)
 	DEBUG(2, "%s() Read %d bytes (%d bytes already buffered)\n", __func__, actual, c->recv_len);
 #endif
 
+	if ((c->data_buf == NULL) || (c->data_size == 0)) {
+		c->data_size = 1024;
+		c->data_buf = malloc(c->data_size);
+	}
+
 	if (actual > 0) {
 		c->recv_len += actual;
 		DEBUGBUFFER(c->recv, c->recv_len);
@@ -174,9 +179,9 @@ int cobex_handleinput(obex_t *self, void *data, int timeout)
 		while ((frame = bfb_read_packets(c->recv, &(c->recv_len)))) {
 			DEBUG(2, "%s() Parsed %x (%d bytes remaining)\n", __func__, frame->type, c->recv_len);
 
-			c->data = bfb_assemble_data(c->data, &(c->data_len), frame);
+			c->data_buf = bfb_assemble_data(&c->data_buf, &c->data_size, &c->data_len, frame);
 
-			if (bfb_check_data(c->data, c->data_len) == 1) {
+			if (bfb_check_data(c->data_buf, c->data_len) == 1) {
 				actual = bfb_send_ack(c->fd);
 #ifdef _WIN32
 				DEBUG(2, "%s() Wrote ack packet (%ld)\n", __func__, actual);
@@ -184,10 +189,17 @@ int cobex_handleinput(obex_t *self, void *data, int timeout)
 				DEBUG(2, "%s() Wrote ack packet (%d)\n", __func__, actual);
 #endif
 
-				OBEX_CustomDataFeed(self, c->data->data, c->data_len-7);
+				OBEX_CustomDataFeed(self, c->data_buf->data, c->data_len-7);
+				/*
 				free(c->data);
 				c->data = NULL;
+				*/
 				c->data_len = 0;
+
+				if (c->recv_len > 0) {
+					DEBUG(2, "%s() Data remaining after feed, this can't be good.\n", __func__);
+					DEBUGBUFFER(c->recv, c->recv_len);
+				}
 
 				return 1;
 			}

@@ -34,6 +34,8 @@
 
 #define SERPORT "/dev/ttyS0"
 
+#define	RECVSIZE 500	/* Recieve up to this much from socket */
+
 typedef struct {
 	char *tty;
 #ifdef _WIN32
@@ -41,11 +43,12 @@ typedef struct {
 #else
 	int fd;			/* Socket descriptor */
 #endif
-	uint8_t recv[500];
+	uint8_t recv[RECVSIZE];	/* Buffer socket input */
 	int recv_len;
 	uint8_t seq;
-	bfb_data_t *data;
-	int data_len;
+	bfb_data_t *data_buf;	/* assembled obex frames */
+	int data_size;		/* max buffer size */
+	int data_len;		/* filled buffer length */
 } cobex_t;
 
 #endif /* COBEXBFB_PRIVATE_H */

@@ -69,6 +69,16 @@ you pre-releases. That way your application is able to exploit the
 newest library features.
 
 
+Debugging
+=========
+
+remove all ObexFTP installations from your system. Build using
+ CFLAGS="-DOBEXFTP_DEBUG=5" ./configure
+ make
+Start debugging using
+ ./apps/obexftp [...]
+
+
 Author and Contact
 ==================
 

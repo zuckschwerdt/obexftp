@@ -1,8 +1,27 @@
+/*
+ *  obexftp/dirtraverse.c: ObexFTP directory recursion helper
+ *
+ *  Copyright (c) 2002 Christian W. Zuckschwerdt <zany@triq.net>
+ *
+ *  This program is free software; you can redistribute it and/or modify it
+ *  under the terms of the GNU General Public License as published by the Free
+ *  Software Foundation; either version 2 of the License, or (at your option)
+ *  any later version.
+ *
+ *  This program is distributed in the hope that it will be useful, but
+ *  WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+ *  or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
+ *  for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with this program; if not, write to the Free Software
+ *  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
+ *     
+ */
 
 #include <string.h>
 #include <unistd.h>
 #include <stdlib.h>
-#include <stdio.h>	/* FIXME: libraries shouldn't do this */
 #include <sys/stat.h>
 #include <sys/types.h>
 #ifdef _WIN32
@@ -14,9 +33,9 @@
 #include "dirtraverse.h"
 #include <common.h>
 
-//
-// Read all files in a directory. Continue recusively down in directories.
-//
+/*  */
+/* Read all files in a directory. Continue recusively down in directories. */
+/*  */
 int visit_dir(const char *path, const visit_cb cb, void *userdata)
 {
 	struct stat statbuf;
@@ -28,127 +47,118 @@ int visit_dir(const char *path, const visit_cb cb, void *userdata)
 
 	if((t = malloc(PATH_MAX + 1)) == NULL)
 		return -1;
+	t[PATH_MAX] = '\0'; /* save guard for strn... */
 	
 	dir = opendir(path);
 	if(dir == NULL) {
 		return -1;
 	}
-	dirent = readdir(dir);
-	while(dirent != NULL) {
-		if(strcmp(".", dirent->d_name) == 0) {
+	while((dirent = readdir(dir)) != NULL) {
+		if((strcmp(".", dirent->d_name) == 0) ||
+		   (strcmp("..", dirent->d_name) == 0)) {
+			continue;
 		}
-		else if(strcmp("..", dirent->d_name) == 0) {
+
+		strncpy(t, path, PATH_MAX);
+		strncat(t, "/", PATH_MAX);
+		strncat(t, dirent->d_name, PATH_MAX);
+		if(lstat(t, &statbuf) < 0) {
+			return -1;
 		}
-		else {
-			snprintf(t, PATH_MAX, "%s/%s", path, dirent->d_name);
-			if(lstat(t, &statbuf) < 0) {
-				return -1;
-			}
-			else if(S_ISREG(statbuf.st_mode)) {
-				ret = cb(VISIT_FILE, t, "", userdata);
-				if( ret  < 0)
-					goto out;
-			}			
-			else if(S_ISDIR(statbuf.st_mode)) {
-				ret = cb(VISIT_GOING_DEEPER, dirent->d_name, path, userdata);
-				if( ret < 0)
-					goto out;
-				len = strlen(t);
-				strncat(t, dirent->d_name, PATH_MAX);
-				strncat(t, "/", PATH_MAX);
-				ret = visit_dir(t, cb, userdata);
-				if(ret < 0)
-					goto out;
-				ret = cb(VISIT_GOING_UP, "", "", userdata);
-				if(ret < 0)
-					goto out;
-				t[len] = '\0';
-			}
-			else {
-				// This was probably a symlink. Just skip
-			}
+		else if(S_ISREG(statbuf.st_mode)) {
+			ret = cb(VISIT_FILE, t, "", userdata);
+			if( ret  < 0)
+				goto out;
+		}			
+		else if(S_ISDIR(statbuf.st_mode)) {
+			ret = cb(VISIT_GOING_DEEPER, dirent->d_name, path, userdata);
+			if( ret < 0)
+				goto out;
+			len = strlen(t);
+			strncat(t, dirent->d_name, PATH_MAX);
+			strncat(t, "/", PATH_MAX);
+			ret = visit_dir(t, cb, userdata);
+			if(ret < 0)
+				goto out;
+			ret = cb(VISIT_GOING_UP, "", "", userdata);
+			if(ret < 0)
+				goto out;
+			t[len] = '\0';
 		}
-		dirent = readdir(dir);
 	}
 
-out:	free(t);
+out:
+	free(t);
 	return ret;
 }
 
-//
-//
-//
+/*  */
 int visit_all_files(const char *path, visit_cb cb, void *userdata)
 {
 	struct stat statbuf;
-	int ret;
 
 	if(stat(path, &statbuf) < 0) {
-		DEBUG(1, "Error stating %s", path);
-		ret = -1;
-		goto out;
+		DEBUG(1, "Error stating %s\n", path);
+		return -1;
 	}
 
 	if(S_ISREG(statbuf.st_mode)) {
 		/* A single file. Just visit it, then we are done. */
-		ret = cb(VISIT_FILE, path, "", userdata);
+		return cb(VISIT_FILE, path, "", userdata);
 	}
-	else if(S_ISDIR(statbuf.st_mode)) {
+
+	if(S_ISDIR(statbuf.st_mode)) {
+		int ret;
 		/* A directory! Enter it */
 		
 		/* Don't notify app if going "down" to "." */
-		if(strcmp(path, ".") == 0)
-			ret = 1;
-		else
+		if(strcmp(path, ".") != 0) {
 			ret = cb(VISIT_GOING_DEEPER, path, "", userdata);
+			if(ret < 0)
+				return ret;
+		}
 
-		if(ret < 0)
-			goto out;
 		ret = visit_dir(path, cb, userdata);
 		if(ret < 0)
-			goto out;
+			return ret;
+
 		ret = cb(VISIT_GOING_UP, "", "", userdata);
 		if(ret < 0)
-			goto out;
-	}
-	else {
-		/* Not file, not dir, don't know what to do */
-		ret = -1;
+			return ret;
+		return 0;
 	}
 
-out:
-	return ret;
+	/* Not file, not dir, don't know what to do */
+	return -1;
 }
 
-#if 0
+#ifdef UNIT_TEST
 int visit(int action, const char *filename, char *path, void *userdata)
 {
 	switch(action) {
 	case VISIT_FILE:
-		DEBUG(2, "Visiting %s", filename);
+		DEBUG(2, "Visiting %s\n", filename);
 		break;
 
 	case VISIT_GOING_DEEPER:
-		DEBUG(2, "Going deeper %s", filename);
+		DEBUG(2, "Going deeper %s\n", filename);
 		break;
 
 	case VISIT_GOING_UP:
-		DEBUG(2, "Going up");
+		DEBUG(2, "Going up\n");
 		break;
 	default:
-		DEBUG(2, "going %d", action);
+		DEBUG(2, "going %d\n", action);
 	}
 	return 1;
 }
 
 
-//
-//
-//
+/*  */
 int main(int argc, char *argv[])
 {
-//	visit_all_files("Makefile", visit);
-//	visit_all_files("/usr/local/apache/", visit);
+/* 	visit_all_files("Makefile", visit); */
+/* 	visit_all_files("/usr/local/apache/", visit); */
 	visit_all_files("testdir", visit);
 	return 0;
 }

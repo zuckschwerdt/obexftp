@@ -1,13 +1,26 @@
+/*
+ *  obexftp/object.c: ObexFTP library
+ *
+ *  Copyright (c) 2002 Christian W. Zuckschwerdt <zany@triq.net>
+ *
+ *  This program is free software; you can redistribute it and/or modify it
+ *  under the terms of the GNU General Public License as published by the Free
+ *  Software Foundation; either version 2 of the License, or (at your option)
+ *  any later version.
+ *
+ *  This program is distributed in the hope that it will be useful, but
+ *  WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+ *  or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
+ *  for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with this program; if not, write to the Free Software
+ *  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
+ *     
+ */
 
 #include <string.h>
 #include <stdlib.h>
-#include <unistd.h>
-#include <fcntl.h>
-#include <sys/stat.h>
-
-#include <openobex/obex.h>
-
-#include <common.h>
 
 #include "object.h"
 
@@ -28,7 +41,7 @@ obex_object_t *obexftp_build_info (obex_t obex, uint8_t opcode)
 	return object;
 }
 
-//	cli->out_fd = STDOUT_FILENO;
+/* name may be null for current directory */
 obex_object_t *obexftp_build_list (obex_t obex, const char *name)
 {
 	obex_object_t *object = NULL;
@@ -46,8 +59,11 @@ obex_object_t *obexftp_build_list (obex_t obex, const char *name)
 	if (name != NULL) {
 		ucname_len = strlen(name)*2 + 2;
 		ucname = malloc(ucname_len);
-		if(ucname == NULL)
-			goto err;
+		if(ucname == NULL) {
+        		if(object != NULL)
+		                OBEX_ObjectDelete(obex, object);
+		        return NULL;
+		}
 
 		ucname_len = OBEX_CharToUnicode(ucname, name, ucname_len);
 
@@ -57,15 +73,10 @@ obex_object_t *obexftp_build_list (obex_t obex, const char *name)
 	}
 	
 	return object;
-
-err:
-        if(object != NULL)
-                OBEX_ObjectDelete(obex, object);
-        return NULL;
 }
 
 
-//	cli->out_fd = open_safe("", localname);
+/* name may not be null */
 obex_object_t *obexftp_build_get (obex_t obex, const char *name)
 {
 	obex_object_t *object = NULL;
@@ -73,14 +84,20 @@ obex_object_t *obexftp_build_get (obex_t obex, const char *name)
         uint8_t *ucname;
         int ucname_len;
 
+        if(name == NULL)
+                return NULL;
+
         object = OBEX_ObjectNew(obex, OBEX_CMD_GET);
         if(object == NULL)
                 return NULL;
 
         ucname_len = strlen(name)*2 + 2;
         ucname = malloc(ucname_len);
-        if(ucname == NULL)
-                goto err;
+        if(ucname == NULL) {
+        	if(object != NULL)
+                	OBEX_ObjectDelete(obex, object);
+	        return NULL;
+	}
 
         ucname_len = OBEX_CharToUnicode(ucname, name, ucname_len);
 
@@ -89,14 +106,10 @@ obex_object_t *obexftp_build_get (obex_t obex, const char *name)
         free(ucname);
 	
 	return object;
-
-err:
-        if(object != NULL)
-                OBEX_ObjectDelete(obex, object);
-        return NULL;
 }
 
 
+/* neither filename may be null */
 obex_object_t *obexftp_build_rename (obex_t obex, const char *from, const char *to)
 {
 	obex_object_t *object = NULL;
@@ -107,6 +120,9 @@ obex_object_t *obexftp_build_rename (obex_t obex, const char *from, const char *
         int ucname_len;
 	char opname[] = {'m','o','v','e'};
 
+        if((from == NULL) || (to == NULL))
+                return NULL;
+
         object = OBEX_ObjectNew(obex, OBEX_CMD_PUT);
         if(object == NULL)
                 return NULL;
@@ -115,8 +131,11 @@ obex_object_t *obexftp_build_rename (obex_t obex, const char *from, const char *
 		strlen(from)*2 + 2 +
 		strlen(to)*2 + 2 + 2;
         appstr = malloc(appstr_len);
-        if(appstr == NULL)
-                goto err;
+        if(appstr == NULL) {
+        	if(object != NULL)
+                	OBEX_ObjectDelete(obex, object);
+	        return NULL;
+	}
 
 	appstr_p = appstr;
 	*appstr_p++ = 0x34;
@@ -126,26 +145,22 @@ obex_object_t *obexftp_build_rename (obex_t obex, const char *from, const char *
 
 	*appstr_p++ = 0x35;
         ucname_len = OBEX_CharToUnicode(appstr_p + 1, from, strlen(from)*2 + 2);
-	*appstr_p = ucname_len - 2; // no trailing 0
+	*appstr_p = ucname_len - 2; /* no trailing 0 */
 	appstr_p += ucname_len - 1;
 
 	*appstr_p++ = 0x36;
         ucname_len = OBEX_CharToUnicode(appstr_p + 1, to, strlen(to)*2 + 2);
-	*appstr_p = ucname_len - 2; // no trailing 0
+	*appstr_p = ucname_len - 2; /* no trailing 0 */
 	
         hdd.bs = appstr;
         OBEX_ObjectAddHeader(obex, object, OBEX_HDR_APPARAM, hdd, appstr_len - 2, 0);
         free(appstr);
 	
 	return object;
-
-err:
-        if(object != NULL)
-                OBEX_ObjectDelete(obex, object);
-        return NULL;
 }
 
 
+/* name may not be null */
 obex_object_t *obexftp_build_del (obex_t obex, const char *name)
 {
 	obex_object_t *object;
@@ -153,14 +168,20 @@ obex_object_t *obexftp_build_del (obex_t obex, const char *name)
         uint8_t *ucname;
         int ucname_len;
 
+        if(name == NULL)
+                return NULL;
+
         object = OBEX_ObjectNew(obex, OBEX_CMD_PUT);
         if(object == NULL)
                 return NULL;
 
         ucname_len = strlen(name)*2 + 2;
         ucname = malloc(ucname_len);
-        if(ucname == NULL)
-                goto err;
+        if(ucname == NULL) {
+        	if(object != NULL)
+                	OBEX_ObjectDelete(obex, object);
+	        return NULL;
+	}
 
         ucname_len = OBEX_CharToUnicode(ucname, name, ucname_len);
 
@@ -169,31 +190,24 @@ obex_object_t *obexftp_build_del (obex_t obex, const char *name)
         free(ucname);
 	
 	return object;
-
-err:
-        if(object != NULL)
-                OBEX_ObjectDelete(obex, object);
-        return NULL;
 }
 
 
-obex_object_t *obexftp_build_setpath (obex_t obex, const char *name, int up)
+/* if name is null ascend one directory */
+obex_object_t *obexftp_build_setpath (obex_t obex, const char *name)
 {
 	obex_object_t *object;
 	obex_headerdata_t hdd;
-	uint8_t setpath_nohdr_data[2] = {0,};
+	uint8_t setpath_nohdr_data[2] = {0,0};
 	char *ucname;
 	int ucname_len;
 
 	object = OBEX_ObjectNew(obex, OBEX_CMD_SETPATH);
 
-	if(up) {
-		setpath_nohdr_data[0] = 1;
-	}
-	else {
+	if (name) {
 		ucname_len = strlen(name)*2 + 2;
 		ucname = malloc(ucname_len);
-		if(ucname == NULL) {
+		if (ucname == NULL) {
 			OBEX_ObjectDelete(obex, object);
 			return NULL;
 		}
@@ -203,6 +217,9 @@ obex_object_t *obexftp_build_setpath (obex_t obex, const char *name, int up)
 		OBEX_ObjectAddHeader(obex, object, OBEX_HDR_NAME, hdd, ucname_len, 0);
 		free(ucname);
 	}
+	else {
+		setpath_nohdr_data[0] = 1;
+	}
 
 	OBEX_ObjectSetNonHdrData(object, setpath_nohdr_data, 2);
 
@@ -210,6 +227,7 @@ obex_object_t *obexftp_build_setpath (obex_t obex, const char *name, int up)
 }
 
 
+/* use build_object_from_file() instead */
 obex_object_t *obexftp_build_put (obex_t obex, const char *name)
 {
 	return NULL;

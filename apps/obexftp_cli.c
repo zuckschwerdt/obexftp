@@ -1,35 +1,31 @@
 /*
- *                
- * Filename:      obexftp_cli.c
- * Version:       0.7
- * Description:   Transfer from/to Siemens Mobile Equipment via OBEX
- * Status:        Experimental.
- * Author:        Christian W. Zuckschwerdt <zany@triq.net>
- * Created at:    Don, 17 Jan 2002 18:27:25 +0100
- * Modified at:   Mon, 29 Apr 2002 22:58:53 +0100
- * Modified by:   Christian W. Zuckschwerdt <zany@triq.net>
+ *  apps/obexftp_cli.c: Transfer from/to Siemens Mobile Equipment via OBEX
  *
- *   Copyright (c) 2002 Christian W. Zuckschwerdt <zany@triq.net>
+ *  Copyright (c) 2002 Christian W. Zuckschwerdt <zany@triq.net>
  *
- *   This program is free software; you can redistribute it and/or modify it
- *   under the terms of the GNU General Public License as published by the Free
- *   Software Foundation; either version 2 of the License, or (at your option)
- *   any later version.
+ *  This program is free software; you can redistribute it and/or modify it
+ *  under the terms of the GNU General Public License as published by the Free
+ *  Software Foundation; either version 2 of the License, or (at your option)
+ *  any later version.
  *
- *   This program is distributed in the hope that it will be useful, but
- *   WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
- *   or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
- *   for more details.
+ *  This program is distributed in the hope that it will be useful, but
+ *  WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+ *  or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
+ *  for more details.
  *
- *   You should have received a copy of the GNU General Public License
- *   along with this program; if not, write to the Free Software
- *   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
+ *  You should have received a copy of the GNU General Public License
+ *  along with this program; if not, write to the Free Software
+ *  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *     
+ */
+/*
+ * Created at:    Don, 17 Jan 2002 18:27:25 +0100
  */
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 #define _GNU_SOURCE
 #include <getopt.h>
 
@@ -62,8 +58,14 @@ void g_log_print_handler (const char *log_domain,
 }
 #endif
 
+/* current command, set my main, read from info_cb */
+int c;
+
 static void info_cb(int event, const char *msg, /*@unused@*/ int len, /*@unused@*/ void *data)
 {
+	char progress[] = "\\|/-";
+	static int i = 0;
+
 	switch (event) {
 
 	case OBEXFTP_EV_ERRMSG:
@@ -84,10 +86,10 @@ static void info_cb(int event, const char *msg, /*@unused@*/ int len, /*@unused@
 		printf("Disconnecting...");
 		break;
 	case OBEXFTP_EV_SENDING:
-		printf("Sending %s...", msg);
+		printf("Sending %s... ", msg);
 		break;
 	case OBEXFTP_EV_RECEIVING:
-		printf("Receiving %s...", msg);
+		printf("Receiving %s... ", msg);
 		break;
 
 	case OBEXFTP_EV_LISTENING:
@@ -103,6 +105,18 @@ static void info_cb(int event, const char *msg, /*@unused@*/ int len, /*@unused@
 
 	case OBEXFTP_EV_INFO:
 		printf("Got info %d: \n", (int)msg);
+		break;
+
+	case OBEXFTP_EV_BODY:
+		if (c == 'l')
+			write(STDOUT_FILENO, msg, len);
+		break;
+
+	case OBEXFTP_EV_PROGRESS:
+		printf("%c%c", 0x08, progress[i++]);
+		fflush(stdout);
+		if (i >= strlen(progress))
+			i = 0;
 		break;
 
 	}
@@ -167,7 +181,6 @@ int main(int argc, char *argv[])
 {
 	/* int verbose=0; */
 	/* guint log_handler; */
-	int c;
 	int most_recent_cmd = 0;
 	char *p;
 	char *move_src = NULL;
@@ -236,7 +249,7 @@ int main(int argc, char *argv[])
 		case 'l':
 			if(cli_connect ()) {
 				/* List folder */
-				(void) obexftp_list(cli, optarg, optarg);
+				(void) obexftp_list(cli, NULL, optarg);
 			}
 			most_recent_cmd = c;
 			break;
@@ -244,7 +257,7 @@ int main(int argc, char *argv[])
 		case 'c':
 			if(cli_connect ()) {
 				/* Get file */
-				(void) obexftp_setpath(cli, optarg, FALSE);
+				(void) obexftp_setpath(cli, optarg);
 			}
 			most_recent_cmd = c;
 			break;
@@ -254,7 +267,7 @@ int main(int argc, char *argv[])
 				/* Get file */
 				if ((p = strrchr(optarg, '/')) != NULL) p++;
 				else p = optarg;
-				(void) obexftp_get(cli, optarg, p);
+				(void) obexftp_get(cli, p, optarg);
 			}
 			most_recent_cmd = c;
 			break;

@@ -1,3 +1,24 @@
+/*
+ *  obexftp/object.h: ObexFTP library
+ *
+ *  Copyright (c) 2002 Christian W. Zuckschwerdt <zany@triq.net>
+ *
+ *  This program is free software; you can redistribute it and/or modify it
+ *  under the terms of the GNU General Public License as published by the Free
+ *  Software Foundation; either version 2 of the License, or (at your option)
+ *  any later version.
+ *
+ *  This program is distributed in the hope that it will be useful, but
+ *  WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+ *  or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
+ *  for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with this program; if not, write to the Free Software
+ *  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
+ *     
+ */
+
 #ifndef OBEXFTP_OBJECT_H
 #define OBEXFTP_OBJECT_H
 
@@ -22,7 +43,7 @@ obex_object_t *obexftp_build_list (obex_t obex, const char *name);
 obex_object_t *obexftp_build_get (obex_t obex, const char *name);
 obex_object_t *obexftp_build_rename (obex_t obex, const char *from, const char *to);
 obex_object_t *obexftp_build_del (obex_t obex, const char *name);
-obex_object_t *obexftp_build_setpath (obex_t obex, const char *name, int up);
+obex_object_t *obexftp_build_setpath (obex_t obex, const char *name);
 obex_object_t *obexftp_build_put (obex_t obex, const char *name);
 
 #endif /* OBEXFTP_OBJECT_H */

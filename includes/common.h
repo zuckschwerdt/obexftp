@@ -51,8 +51,8 @@ DEBUG (int n, const char *format, ...)
 #if OBEXFTP_DEBUG > 4
 #define DEBUGBUFFER(b,l) do { \
 	int i; \
-	for (i=0; i < l; i++) \
-		fprintf (stderr, "%02x ", (unint8_t)b[i]); \
+	for (i=0; i < (l); i++) \
+		fprintf (stderr, "%02x ", ((uint8_t *)(b))[i]); \
 	fprintf (stderr, "\n"); \
 } while (0)
 #else

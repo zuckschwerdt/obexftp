@@ -1,7 +1,7 @@
 #
-# spec file for package ObexFTP (Version 0.9.3)
+# spec file for package ObexFTP (Version 0.10.0)
 # 
-# Author: Christian W. Zuckschwerdt <zany@triq.net>, Dec 2001 - Feb 2002
+# Author: Christian W. Zuckschwerdt <zany@triq.net>, Dec 2001 - Jan 2003
 #
 
 Summary:      Access devices via ObexFTP e.g. Siemens Moblile Equipment

@@ -75,9 +75,9 @@ static int cobex_do_at_cmd(int fd, char *cmd, char *rspbuf, int rspbuflen)
 	rspbuf[0] = 0;
 	DEBUG(3, "%s() Sending %d: %s\n", __func__, cmdlen, cmd);
 
-	// Write command
+	/* Write command */
 	if(write(fd, cmd, cmdlen) < cmdlen)	{
-		DEBUG(1, "Error writing to port");
+		DEBUG(1, "Error writing to port\n");
 		return -1;
 	}
 
@@ -94,31 +94,31 @@ static int cobex_do_at_cmd(int fd, char *cmd, char *rspbuf, int rspbuflen)
 
 			DEBUG(3, "%s() tmpbuf=%d: %s\n", __func__, total, tmpbuf);
 
-			// Answer not found within 100 bytes. Cancel
+			/* Answer not found within 100 bytes. Cancel */
 			if(total == sizeof(tmpbuf))
 				return -1;
 
 			if( (answer = strchr(tmpbuf, '\n')) )	{
-				// Remove first line (echo)
+				/* Remove first line (echo) */
 				if( (answer_end = strchr(answer+1, '\n')) )	{
-					// Found end of answer
+					/* Found end of answer */
 					done = 1;
 				}
 			}
 		}
 		else	{
-			// Anser didn't come in time. Cancel
+			/* Anser didn't come in time. Cancel */
 			return -1;
 		}
 	}
 
 
-//	DEBUG(3, "%s() buf:%08lx answer:%08lx end:%08lx\n", __func__, tmpbuf, answer, answer_end);
+/* 	DEBUG(3, "%s() buf:%08lx answer:%08lx end:%08lx\n", __func__, tmpbuf, answer, answer_end); */
 
 
-	DEBUG(3, "%s() Answer: %s", __func__, answer);
+	DEBUG(3, "%s() Answer: %s\n", __func__, answer);
 
-	// Remove heading and trailing \r
+	/* Remove heading and trailing \r */
 	if((*answer_end == '\r') || (*answer_end == '\n'))
 		answer_end--;
 	if((*answer_end == '\r') || (*answer_end == '\n'))
@@ -127,7 +127,7 @@ static int cobex_do_at_cmd(int fd, char *cmd, char *rspbuf, int rspbuflen)
 		answer++;
 	if((*answer == '\r') || (*answer == '\n'))
 		answer++;
-	DEBUG(3, "%s() Answer: %s", __func__, answer);
+	DEBUG(3, "%s() Answer: %s\n", __func__, answer);
 
 	answer_size = (answer_end) - answer +1;
 
@@ -150,9 +150,9 @@ static void cobex_pe_cleanup(cobex_t *c, int force)
         return_if_fail (c->fd > 0);
 
 	if(force)	{
-		// Send a break to get out of OBEX-mode
+		/* Send a break to get out of OBEX-mode */
 		if(ioctl(c->fd, TCSBRKP, 0) < 0)	{
-			DEBUG(1, "Unable to send break!");
+			DEBUG(1, "Unable to send break!\n");
 		}
 		sleep(1);
 	}
@@ -175,12 +175,12 @@ static int cobex_pe_init(cobex_t *c)
 	DEBUG(3, "%s() \n", __func__);
 
 	if( (c->fd = open(c->tty, O_RDWR | O_NONBLOCK | O_NOCTTY, 0)) < 0 ) {
-		DEBUG(1, "Can't open tty");
+		DEBUG(1, "Can't open tty\n");
 		return -1;
 	}
 
 	tcgetattr(c->fd, &oldtio);
-	bzero(&newtio, sizeof(newtio));
+	memset(&newtio, 0, sizeof(newtio));
 	newtio.c_cflag = B57600 | CS8 | CREAD;
 	newtio.c_iflag = IGNPAR;
 	newtio.c_oflag = 0;
@@ -189,20 +189,20 @@ static int cobex_pe_init(cobex_t *c)
 
 
 	if(cobex_do_at_cmd(c->fd, "ATZ\r\n", rspbuf, sizeof(rspbuf)) < 0)	{
-		DEBUG(1, "Comm-error or already in OBEX mode");
+		DEBUG(1, "Comm-error or already in OBEX mode\n");
 		goto err;
 	}
 	if(strcasecmp("OK", rspbuf) != 0)	{
-		DEBUG(1, "Error doing ATZ (%s)", rspbuf);
+		DEBUG(1, "Error doing ATZ (%s)\n", rspbuf);
 		goto err;
 	}
 
 	if(cobex_do_at_cmd(c->fd, "AT*EOBEX\r\n", rspbuf, sizeof(rspbuf)) < 0)	{
-		DEBUG(1, "Comm-error");
+		DEBUG(1, "Comm-error\n");
 		goto err;
 	}
 	if(strcasecmp("CONNECT", rspbuf) != 0)	{
-		DEBUG(1, "Error doing AT*EOBEX (%s)", rspbuf);
+		DEBUG(1, "Error doing AT*EOBEX (%s)\n", rspbuf);
 		goto err;
 	}
 
@@ -262,7 +262,7 @@ int cobex_pe_write(obex_t *self, void *data, uint8_t *buffer, int length)
 
 	actual = write(c->fd, buffer, length);
 	if (actual < length)	{
-		DEBUG(1, "Error writing to port");
+		DEBUG(1, "Error writing to port\n");
 		return -1;
 	}
 

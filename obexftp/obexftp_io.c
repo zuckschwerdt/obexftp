@@ -1,3 +1,23 @@
+/*
+ *  obexftp/obexftp_io.c: ObexFTP IO abstraction
+ *
+ *  Copyright (c) 2002 Christian W. Zuckschwerdt <zany@triq.net>
+ *
+ *  This program is free software; you can redistribute it and/or modify it
+ *  under the terms of the GNU General Public License as published by the Free
+ *  Software Foundation; either version 2 of the License, or (at your option)
+ *  any later version.
+ *
+ *  This program is distributed in the hope that it will be useful, but
+ *  WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+ *  or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
+ *  for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with this program; if not, write to the Free Software
+ *  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
+ *     
+ */
 
 #include <stdint.h>
 #include <stdlib.h>
@@ -24,9 +44,7 @@
 #define DEFFILEMOD (S_IRUSR|S_IWUSR|S_IRGRP|S_IROTH) /* 0644 */
 #define DEFXFILEMOD (DEFFILEMOD | S_IXGRP | S_IXUSR | S_IXOTH) /* 0755 */
 
-//
-// Get some file-info. (size and lastmod)
-//
+/* Get some file-info. (size and lastmod) */
 static int get_fileinfo(const char *name, char *lastmod)
 {
 	struct stat stats;
@@ -41,9 +59,7 @@ static int get_fileinfo(const char *name, char *lastmod)
 }
 
 
-//
-// Create an object from a file. Attach some info-headers to it
-//
+/* Create an object from a file. Attach some info-headers to it */
 obex_object_t *build_object_from_file(obex_t *handle, const char *localname, const char *remotename)
 {
 	obex_object_t *object = NULL;
@@ -61,8 +77,11 @@ obex_object_t *build_object_from_file(obex_t *handle, const char *localname, con
 
 	ucname_len = strlen(remotename)*2 + 2;
 	ucname = malloc(ucname_len);
-	if(ucname == NULL)
-		goto err;
+	if(ucname == NULL) {
+		if(object != NULL)
+			OBEX_ObjectDelete(handle, object);
+		return NULL;
+	}
 
 	ucname_len = OBEX_CharToUnicode(ucname, remotename, ucname_len);
 
@@ -84,21 +103,14 @@ obex_object_t *build_object_from_file(obex_t *handle, const char *localname, con
 	OBEX_ObjectAddHeader(handle, object, OBEX_HDR_BODY,
 				hdd, 0, OBEX_FL_STREAM_START);
 
-	DEBUG(3, "%s() Lastmod = %s", __func__, lastmod);
+	DEBUG(3, "%s() Lastmod = %s\n", __func__, lastmod);
 	return object;
-
-err:
-	if(object != NULL)
-		OBEX_ObjectDelete(handle, object);
-	return NULL;
 }
 
-//
-// Check for dangerous filenames.
-//
+/* Check for dangerous filenames. */
 static int nameok(const char *name)
 {
-	DEBUG(3, "%s() ", __func__);
+	DEBUG(3, "%s() \n", __func__);
 
         return_val_if_fail (name != NULL, FALSE);
 	
@@ -117,12 +129,10 @@ static int nameok(const char *name)
 	return TRUE;
 }
 
-//
-// Concatenate two pathnames.
-// The first path may be NULL.
-// The second path is always treated relative.
-// dest must have at least PATH_MAX + 1 chars.
-//
+/* Concatenate two pathnames. */
+/* The first path may be NULL. */
+/* The second path is always treated relative. */
+/* dest must have at least PATH_MAX + 1 chars. */
 char *pathcat(char *dest, const char *path, const char *name)
 {
 	if(name == NULL)
@@ -145,33 +155,29 @@ char *pathcat(char *dest, const char *path, const char *name)
 	return dest;
 }
 	
-//
-// Open a file, but do some sanity-checking first.
-//
+/* Open a file, but do some sanity-checking first. */
 int open_safe(const char *path, const char *name)
 {
 	char diskname[PATH_MAX + 1] = {0,};
 	int fd;
 
-	DEBUG(3, "%s() ", __func__);
+	DEBUG(3, "%s() \n", __func__);
 	
 	/* Check for dangerous filenames */
 	if(nameok(name) == FALSE)
 		return -1;
 
-	//TODO! Rename file if already exist.
+	/* TODO! Rename file if already exist. */
 
 	pathcat(diskname, path, name);
 
-	DEBUG(3, "%s() Creating file %s", __func__, diskname);
+	DEBUG(3, "%s() Creating file %s\n", __func__, diskname);
 
 	fd = open(diskname, O_RDWR | O_CREAT | O_TRUNC, DEFFILEMOD);
 	return fd;
 }
 
-//
-// Go to a directory. Create if not exists and create is true.
-//
+/* Go to a directory. Create if not exists and create is true. */
 int checkdir(const char *path, const char *dir, cd_flags flags)
 {
 	char newpath[PATH_MAX + 1] = {0,};
@@ -185,21 +191,21 @@ int checkdir(const char *path, const char *dir, cd_flags flags)
 
 	pathcat(newpath, path, dir);
 
-	DEBUG(3, "%s() path = %s dir = %s, flags = %d", __func__, path, dir, flags);
+	DEBUG(3, "%s() path = %s dir = %s, flags = %d\n", __func__, path, dir, flags);
 	if(stat(newpath, &statbuf) == 0) {
-		// If this directory aleady exist we are done
+		/* If this directory aleady exist we are done */
 		if(S_ISDIR(statbuf.st_mode)) {
-			DEBUG(3, "%s() Using existing dir", __func__);
+			DEBUG(3, "%s() Using existing dir\n", __func__);
 			return 1;
 		}
 		else  {
-			// A non-directory with this name already exist.
-			DEBUG(3, "%s() A non-dir called %s already exist", __func__, newpath);
+			/* A non-directory with this name already exist. */
+			DEBUG(3, "%s() A non-dir called %s already exist\n", __func__, newpath);
 			return -1;
 		}
 	}
 	if(flags & CD_CREATE) {
-		DEBUG(3, "%s() Will try to create %s", __func__, newpath);
+		DEBUG(3, "%s() Will try to create %s\n", __func__, newpath);
 #ifdef _WIN32
 		ret = mkdir(newpath);
 #else

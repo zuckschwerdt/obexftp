@@ -104,14 +104,14 @@ int bfb_stuff_data(uint8_t *buffer, uint8_t type, uint8_t *data, int len, int se
                 uint8_t bytes[2];
         } fcs;
 
-	// special case: "attention" packet
+	/* special case: "attention" packet */
 	if (type == 1) {
 		buffer[0] = 0x01;
 		buffer[1] = ~buffer[0];
 		return 2;
 	}
 
-	// error
+	/* error */
 	if (type != 2 && type != 3) {
 		return 0;
 	}
@@ -124,10 +124,10 @@ int bfb_stuff_data(uint8_t *buffer, uint8_t type, uint8_t *data, int len, int se
 	buffer[3] = fcs.bytes[0];
 	buffer[4] = fcs.bytes[1];
 
-	// copy data
+	/* copy data */
 	memcpy(&buffer[5], data, len);
 
-	// gen CRC
+	/* gen CRC */
         fcs.value = INIT_FCS;
 
         for (i=2; i < len+5; i++) {
@@ -136,8 +136,8 @@ int bfb_stuff_data(uint8_t *buffer, uint8_t type, uint8_t *data, int len, int se
         
         fcs.value = ~fcs.value;
 
-	// append CRC to packet
-	//fcs.value = htons(fcs.value);
+	/* append CRC to packet */
+	/* fcs.value = htons(fcs.value); */
 	buffer[len+5] = fcs.bytes[0];
 	buffer[len+6] = fcs.bytes[1];
 
@@ -145,7 +145,7 @@ int bfb_stuff_data(uint8_t *buffer, uint8_t type, uint8_t *data, int len, int se
 }
 
 /* send a cmd, subcmd packet, add chk (no parameters) */
-int bfb_write_subcmd(FD fd, uint8_t type, uint8_t subtype)
+int bfb_write_subcmd(fd_t fd, uint8_t type, uint8_t subtype)
 {
 	uint8_t buffer[2];
 
@@ -156,13 +156,13 @@ int bfb_write_subcmd(FD fd, uint8_t type, uint8_t subtype)
 }
 
 /* send a cmd, subcmd packet */
-int bfb_write_subcmd0(FD fd, uint8_t type, uint8_t subtype)
+int bfb_write_subcmd0(fd_t fd, uint8_t type, uint8_t subtype)
 {
 	return bfb_write_packets(fd, type, &subtype, 1);
 }
 
 /* send a cmd, subcmd, data packet */
-int bfb_write_subcmd8(FD fd, uint8_t type, uint8_t subtype, uint8_t p1)
+int bfb_write_subcmd8(fd_t fd, uint8_t type, uint8_t subtype, uint8_t p1)
 {
 	uint8_t buffer[2];
 
@@ -173,7 +173,7 @@ int bfb_write_subcmd8(FD fd, uint8_t type, uint8_t subtype, uint8_t p1)
 }
 
 /* send a cmd, subcmd packet, add chk (one word parameter) */
-int bfb_write_subcmd1(FD fd, uint8_t type, uint8_t subtype, uint16_t p1)
+int bfb_write_subcmd1(fd_t fd, uint8_t type, uint8_t subtype, uint16_t p1)
 {
 	uint8_t buffer[4];
 
@@ -185,13 +185,13 @@ int bfb_write_subcmd1(FD fd, uint8_t type, uint8_t subtype, uint16_t p1)
 
 	buffer[3] = bfb_checksum(buffer, 3);
 
-	DEBUG(3, "buf: %x %x %x %x",
+	DEBUG(3, "buf: %x %x %x %x\n",
 	      buffer[0], buffer[1], buffer[2], buffer[3]);
 	return bfb_write_packets(fd, type, buffer, 4);
 }
 
 /* send a cmd, subcmd packet, add chk (two word parameter) */
-int bfb_write_subcmd2(FD fd, uint8_t type, uint8_t subtype, uint16_t p1, uint16_t p2)
+int bfb_write_subcmd2(fd_t fd, uint8_t type, uint8_t subtype, uint16_t p1, uint16_t p2)
 {
 	uint8_t buffer[6];
 
@@ -206,14 +206,14 @@ int bfb_write_subcmd2(FD fd, uint8_t type, uint8_t subtype, uint16_t p1, uint16_
 
 	buffer[5] = bfb_checksum(buffer, 5);
 
-	DEBUG(3, "buf: %x %x %x %x %x %x",
+	DEBUG(3, "buf: %x %x %x %x %x %x\n",
 	      buffer[0], buffer[1], buffer[2], buffer[3], buffer[4], buffer[5]);
 
 	return bfb_write_packets(fd, type, buffer, 6);
 }
 
 /* send a cmd, subcmd packet, add chk (three word parameter) */
-int bfb_write_subcmd3(FD fd, uint8_t type, uint8_t subtype, uint16_t p1, uint16_t p2, uint16_t p3)
+int bfb_write_subcmd3(fd_t fd, uint8_t type, uint8_t subtype, uint16_t p1, uint16_t p2, uint16_t p3)
 {
 	uint8_t buffer[8];
 
@@ -231,14 +231,14 @@ int bfb_write_subcmd3(FD fd, uint8_t type, uint8_t subtype, uint16_t p1, uint16_
 
 	buffer[7] = bfb_checksum(buffer, 7);
 
-	DEBUG(3, "buf: %x %x  %x %x  %x %x  %x %x",
+	DEBUG(3, "buf: %x %x  %x %x  %x %x  %x %x\n",
 	      buffer[0], buffer[1], buffer[2], buffer[3], buffer[4], buffer[5], buffer[6], buffer[7]);
 
 	return bfb_write_packets(fd, type, buffer, 8);
 }
 
 /* send a cmd, subcmd packet, add long, word parameter */
-int bfb_write_subcmd_lw(FD fd, uint8_t type, uint8_t subtype, uint32_t p1, uint16_t p2)
+int bfb_write_subcmd_lw(fd_t fd, uint8_t type, uint8_t subtype, uint32_t p1, uint16_t p2)
 {
 	uint8_t buffer[8];
 
@@ -255,7 +255,7 @@ int bfb_write_subcmd_lw(FD fd, uint8_t type, uint8_t subtype, uint32_t p1, uint1
 
 	buffer[7] = bfb_checksum(buffer, 7);
 
-	DEBUG(3, "buf: %02x  %02x %02x %02x %02x  %02x %02x",
+	DEBUG(3, "buf: %02x  %02x %02x %02x %02x  %02x %02x\n",
 	      buffer[0], buffer[1], buffer[2], buffer[3], buffer[4], buffer[5], buffer[6]);
 
 	return bfb_write_packets(fd, type, buffer, 7); /* no chk? */
@@ -263,7 +263,7 @@ int bfb_write_subcmd_lw(FD fd, uint8_t type, uint8_t subtype, uint32_t p1, uint1
 
 
 /* send actual packets */
-int bfb_write_packets(FD fd, uint8_t type, uint8_t *buffer, int length)
+int bfb_write_packets(fd_t fd, uint8_t type, uint8_t *buffer, int length)
 {
 	bfb_frame_t *frame;
 	int i;
@@ -280,7 +280,7 @@ int bfb_write_packets(FD fd, uint8_t type, uint8_t *buffer, int length)
         return_val_if_fail (fd > 0, FALSE);
 #endif
 	
-	// alloc frame buffer
+	/* alloc frame buffer */
 	frame = malloc((length > MAX_PACKET_DATA ? MAX_PACKET_DATA : length) + sizeof (bfb_frame_t));
 	if (frame == NULL)
 		return -1;
@@ -300,16 +300,16 @@ int bfb_write_packets(FD fd, uint8_t type, uint8_t *buffer, int length)
 		/* actual = bfb_io_write(fd, frame, l + sizeof (bfb_frame_t)); */
 #ifdef _WIN32
 		if(!WriteFile(fd, frame, l + sizeof (bfb_frame_t), &actual, NULL))
-			DEBUG(2, "%s() Write error: %ld", __func__, actual);
-		DEBUG(3, "%s() Wrote %ld bytes (expected %d)", __func__, actual, l + sizeof (bfb_frame_t));
+			DEBUG(2, "%s() Write error: %ld\n", __func__, actual);
+		DEBUG(3, "%s() Wrote %ld bytes (expected %d)\n", __func__, actual, l + sizeof (bfb_frame_t));
 #else
 		actual = write(fd, frame, l + sizeof (bfb_frame_t));
-		DEBUG(3, "%s() Wrote %d bytes (expected %d)", __func__, actual, l + sizeof (bfb_frame_t));
+		DEBUG(3, "%s() Wrote %d bytes (expected %d)\n", __func__, actual, l + sizeof (bfb_frame_t));
 #endif
 
 
 		if (actual < 0 || actual < l + sizeof (bfb_frame_t)) {
-			DEBUG(1, "%s() Write failed", __func__);
+			DEBUG(1, "%s() Write failed\n", __func__);
 			free(frame);
 			return -1;
 		}
@@ -319,7 +319,7 @@ int bfb_write_packets(FD fd, uint8_t type, uint8_t *buffer, int length)
 	return i / MAX_PACKET_DATA;
 }
 
-int bfb_send_data(FD fd, uint8_t type, uint8_t *data, int length, int seq)
+int bfb_send_data(fd_t fd, uint8_t type, uint8_t *data, int length, int seq)
 {
 	uint8_t *buffer;
 	int actual;
@@ -329,10 +329,10 @@ int bfb_send_data(FD fd, uint8_t type, uint8_t *data, int length, int seq)
 		return -1;
 
 	actual = bfb_stuff_data(buffer, type, data, length, seq);
-	DEBUG(3, "%s() Stuffed %d bytes", __func__, actual);
+	DEBUG(3, "%s() Stuffed %d bytes\n", __func__, actual);
 
 	actual = bfb_write_packets(fd, BFB_FRAME_DATA, buffer, actual);
-	DEBUG(3, "%s() Wrote %d packets", __func__, actual);
+	DEBUG(3, "%s() Wrote %d packets\n", __func__, actual);
 
 	free(buffer);
 
@@ -347,118 +347,144 @@ bfb_frame_t *bfb_read_packets(uint8_t *buffer, int *length)
 	bfb_frame_t *frame;
 	int l;
 
-	DEBUG(3, "%s() ", __func__);
+	DEBUG(3, "%s() \n", __func__);
 
 	if (*length < 0) {
-		DEBUG(1, "%s() Wrong length?", __func__);
+		DEBUG(1, "%s() Wrong length?\n", __func__);
 		return NULL;
 	}
 
 	if (*length == 0) {
-		DEBUG(1, "%s() No packet?", __func__);
+		DEBUG(1, "%s() No packet?\n", __func__);
 		return NULL;
 	}
 
 	if (*length < sizeof(bfb_frame_t)) {
-		DEBUG(1, "%s() Short packet?", __func__);
+		DEBUG(1, "%s() Short packet?\n", __func__);
 		return NULL;
 	}
 	
-	// temp frame
+	/* temp frame */
 	frame = (bfb_frame_t *)buffer;
 	if ((frame->type ^ frame->len) != frame->chk) {
-		DEBUG(1, "%s() Header error?", __func__);
+		DEBUG(1, "%s() Header error?\n", __func__);
+
+		DEBUGBUFFER(buffer, *length);
+
 		return NULL;
 	}
 
 	if (*length < frame->len + sizeof(bfb_frame_t)) {
-		DEBUG(1, "%s() Need more data?", __func__);
+		DEBUG(2, "%s() Need more data?\n", __func__);
 		return NULL;
 	}
 
-	// copy frame from buffer
+	/* copy frame from buffer */
 	l = sizeof(bfb_frame_t) + frame->len;
 	frame = malloc(l);
 	if (frame == NULL)
 		return NULL;
 	memcpy(frame, buffer, l);
 
-	// remove frame from buffer
+	/* remove frame from buffer */
 	*length -= l;
 	memmove(buffer, &buffer[l], *length);
 	
-	DEBUG(3, "%s() Packet %x (%d bytes)", __func__, frame->type, frame->len);
+	DEBUG(3, "%s() Packet 0x%02x (%d bytes)\n", __func__, frame->type, frame->len);
 	return frame;
 }
 
 /*@null@*/
-bfb_data_t *bfb_assemble_data(bfb_data_t *data, int *fraglen, bfb_frame_t *frame)
+bfb_data_t *bfb_assemble_data(bfb_data_t **data, int *size, int *len, bfb_frame_t *frame)
 {
-	bfb_data_t *ret;
+	bfb_data_t *tmp;
 	int l;
 
-	DEBUG(3, "%s() ", __func__);
+	DEBUG(3, "%s() \n", __func__);
 
 	if (frame->type != BFB_FRAME_DATA) {
-		DEBUG(1, "%s() Wrong frame type (%x)?", __func__, frame->type);
-		return data;
+		DEBUG(1, "%s() Wrong frame type (0x%02x)?\n", __func__, frame->type);
+		return *data;
 	}
 
-	// temp data
-	ret = (bfb_data_t *)frame->payload;
-	if (ret->cmd == BFB_DATA_ACK) {
-		DEBUG(3, "%s() Skipping ack", __func__);
-		return data;
+	/* temp data */
+	tmp = (bfb_data_t *)frame->payload;
+	if ((*len == 0) && (tmp->cmd == BFB_DATA_ACK)) {
+		DEBUG(3, "%s() Skipping ack\n", __func__);
+		return *data;
 	}
-	/*
-	if ((ret->cmd != BFB_DATA_FIRST) && (ret->cmd != BFB_DATA_NEXT)) {
-		DEBUG(1, "%s() Wrong data type (%x)?", __func__, ret->cmd);
-		return data;
+
+	/* copy frame from buffer */
+	DEBUG(3, "%s() data: %d + frame: %d\n", __func__, *len, frame->len);
+	l = *len + frame->len;
+
+	if (l > *size) {
+		DEBUG(1, "%s() data buffer to small, realloc'ing\n", __func__);
+		*data = realloc(*data, l);
+		*size = l;
 	}
-	*/
+	/* memcpy(ret, *data, *len); */
+	memcpy(&((uint8_t *)*data)[*len], frame->payload, frame->len);
 
-	// copy frame from buffer
-	DEBUG(3, "%s() data: %d, frame: %d", __func__, *fraglen, frame->len);
-	l = *fraglen + frame->len;
-	ret = realloc(data, l);
-	//memcpy(ret, data, *fraglen);
-	memcpy(&((uint8_t *)ret)[*fraglen], frame->payload, frame->len);
-
-	//free(data);
-	*fraglen = l;
-	return ret;
+	/* free(*data); */
+	*len = l;
+	return *data;
 }
 
-int bfb_check_data(bfb_data_t *data, int fraglen)
+int bfb_check_data(bfb_data_t *data, int len)
 {
+	int i;
         union {
                 uint16_t value;
                 uint8_t bytes[2];
         } l;
 
-	DEBUG(3, "%s() ", __func__);
+	DEBUG(3, "%s() \n", __func__);
 
 	if (data == NULL)
 		return -1;
+
+	if (len < sizeof(bfb_data_t))
+		return 0;
+
+	if (data->cmd != (uint8_t)~data->chk) {
+		DEBUG(1, "%s() Broken data? 0x%02x, 0x%02x\n", __func__, data->cmd, (uint8_t)~data->chk);
+		DEBUGBUFFER(data, len);
+	}
+
+	DEBUG(3, "%s() cmd: 0x%02x, chk: 0x%02x, seq: %d\n", __func__, data->cmd, data->chk, data->seq);
+
+	if ((data->cmd != BFB_DATA_FIRST) && (data->cmd != BFB_DATA_NEXT)) {
+		DEBUG(1, "%s() Wrong data type (0x%02x)?\n", __func__, data->cmd);
+		return -1;
+	}
 
 	l.bytes[0] = data->len0;
 	l.bytes[1] = data->len1;
 	l.value = htons(l.value);
 
-	DEBUG(3, "%s() fragment size is %d", __func__, fraglen);
-	DEBUG(3, "%s() expected len %d", __func__, l.value);
-	DEBUG(3, "%s() data size is %d", __func__, fraglen-sizeof(bfb_data_t));
+	DEBUG(3, "%s() fragment size %d, payload %d of indicated %d\n", __func__, len, len-sizeof(bfb_data_t), l.value);
 
-	if (fraglen-sizeof(bfb_data_t) < l.value + /*crc*/ 2)
+	if (len-(int)sizeof(bfb_data_t) < (int)(l.value) + /*crc*/ 2)
 		return 0;
 
-/*
-	// check CRC
-	if (sizeof(data) < l.value)
-		return -1;
-*/
+	/* check CRC */
+        l.value = INIT_FCS;
 
-	DEBUG(2, "%s() data ready!", __func__);
+        for (i=2; i < len-2; i++) {
+                l.value = irda_fcs(l.value, ((uint8_t *)data)[i]);
+        }
+        
+        l.value = ~l.value;
+
+	if ((((uint8_t *)data)[len-2] != l.bytes[0]) ||
+	    (((uint8_t *)data)[len-1] != l.bytes[1])) {
+		DEBUG(1, "%s() CRC-ERROR %02x %02x vs %02x %02x\n", __func__,
+		      ((uint8_t *)data)[len-2], ((uint8_t *)data)[len-1],
+		      l.bytes[0], l.bytes[1]);
+	}
+
+	DEBUG(2, "%s() data ready!\n", __func__);
 	return 1;
 
 }
