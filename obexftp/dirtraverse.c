@@ -4,6 +4,9 @@
 #include <unistd.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+#ifdef _WIN32
+#define lstat(f,b) stat(f,b)
+#endif /* _WIN32 */
 #include <dirent.h>
 
 #include "dirtraverse.h"

@@ -60,7 +60,7 @@
  Cmd 0x03: continued transmission. Sequence counter is incremented with each
 	subsequent packet
 
- Seq is 1 byte. TA increments, ME replys.
+ Seq is 1 byte. TA increments, ME replies.
 
  Len is 2 bytes in network byte order.
 

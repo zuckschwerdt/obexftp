@@ -25,10 +25,18 @@
 #include <glib.h>
 
 #include <string.h>
-#include <sys/ioctl.h>
 #include <fcntl.h>
 #include <unistd.h>
+#ifdef _WIN32
+#include <stdlib.h>
+#include <winsock.h>
+#define ioctl(s,c,a)	ioctlsocket(s,c, (long *) a)
+#define sleep(n)	_sleep(n)
+#define index(s,c)	strchr(s,c)
+#else /* _WIN32 */
+#include <sys/ioctl.h>
 #include <termios.h>
+#endif /* _WIN32 */
 
 #include "bfb.h"
 #include <g_debug.h>
@@ -209,6 +217,9 @@ gint do_at_cmd(int fd, char *cmd, char *rspbuf, int rspbuflen)
 /* close the connection */
 void bfb_io_close(int fd, int force)
 {
+#ifdef _WIN32
+	g_error("Someone needs to implement win32 serial io.");
+#else /* _WIN32 */
         g_return_if_fail (fd > 0);
 
 	if(force)	{
@@ -219,12 +230,16 @@ void bfb_io_close(int fd, int force)
 		sleep(1);
 	}
 	close(fd);
+#endif /* _WIN32 */
 }
 
 /* Init the phone and set it in BFB-mode */
 /* Returns fd or -1 on failure */
 gint bfb_io_open(const gchar *ttyname)
 {
+#ifdef _WIN32
+	g_error("Someone needs to implement win32 serial io.");
+#else /* _WIN32 */
 	gint ttyfd;
 	struct termios oldtio, newtio;
 	guint8 rspbuf[200];
@@ -293,5 +308,6 @@ gint bfb_io_open(const gchar *ttyname)
  err:
 	bfb_io_close(ttyfd, TRUE);
 	return -1;
+#endif /* _WIN32 */
 }
 

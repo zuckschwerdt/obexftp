@@ -1,3 +1,8 @@
+2002-10-17  Christian Zuckschwerdt  <zany@triq.net>
+
+	* Removed Siemens references in favor of OBEX enabled devices
+	* Enhancements for upcoming OpenOBEX 1.0.0
+	
 2002-04-29  Christian Zuckschwerdt  <zany@triq.net>
 
 	* Erricsson T39m support, req. by Ole Streicher <ole.streicher@gmx.de>

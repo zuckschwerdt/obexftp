@@ -1,5 +1,5 @@
 #
-# spec file for package ObexFTP (Version 0.9.4)
+# spec file for package ObexFTP (Version 0.9.3)
 # 
 # Author: Christian W. Zuckschwerdt <zany@triq.net>, Dec 2001 - Feb 2002
 #
@@ -18,9 +18,9 @@ Packager:     Christian W. Zuckschwerdt <zany@triq.net>
 
 
 %description
-This package contains a library for ObexFTP and a library to access
-Siemens Mobile Equipment via serial port.
-A simple command line client is included too.
+This package contains some command line tools and the ObexFTP library.
+Using OpenOBEX it enables you to transfer data via IrDA, BlueTooth
+as well as some custom (Siemens, Ericsson) serial port protocols.
 
 Authors:
 --------
