@@ -1,4 +1,9 @@
-* Resolve unified cable support problems with Ericsson phones.
+ObexFTP to do list
+==================
+
+* "Something went wrong" -- help texts
+
+* Debbug unified cable support problems with Ericsson phones.
 
 * Discover port and protocol to use (i.e. IrDA, Ericsson or Siemens)
 
@@ -9,4 +14,6 @@
 * Path parsing
 
 * Error hanling on missing files (either TA or M)
+
+* Use the TAC (Type Approval Code) perhaps. (http://www.nobbi.com/glossar.htm#imei)
 

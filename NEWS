@@ -1,3 +1,12 @@
-VMO converter (gsm and wav)
-C55 support (should work for M50 and MT50 too)
-Ericsson and Siemens cable support unified (broken)
+ObexFTP recent NEWS
+===================
+
+* You can use the environment variable OBEXFTP_PORT to specify a default tty.
+
+* Everything but data goes to stderr for more simple redirection.
+
+* VMO converter (gsm and wav).
+
+* C55 support (should work for M50 and MT50 too).
+
+* Ericsson and Siemens cable support unified (broken).

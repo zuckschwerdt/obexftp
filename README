@@ -1,5 +1,8 @@
+ObexFTP Readme
+==============
+
 Introduction
-============
+------------
 
 ObexFTP implements the Object Exchange (OBEX) protocols file transfer feature.
 
@@ -7,9 +10,9 @@ The standard is defined in more detail in section K12.5 (Profiles: OBEX FTP)
 in Bluetooth V1.1 Profile Specifications.
 
 ObexFTP works out-of-the-box with all protocols supported by OpenOBEX.
-Currently IrDA and the there is an upcoming BlueTooth support.
-ObexFTP comes with ready to use custom support for some mobile phones serial
-cables.
+Currently IrDA and there is an upcoming BlueTooth support.
+ObexFTP comes with ready to use custom transport support for some mobile
+phones serial cables.
 
 It's well tested with Siemens (S/ME45 and SL45) as well as
 Ericsson (T68i) mobile phones.
@@ -40,19 +43,19 @@ Library parts to be used in other applications
 
 
 Short Installation Instructions
-===============================
+-------------------------------
 
 To compile and install:
-# ./configure
-# make
-# make install (as superuser)
+	# ./configure
+	# make
+	# make install (as superuser)
 
 Consider using pedantic error checking:
- CFLAGS="$CFLAGS -Werror" ./configure
+	CFLAGS="$CFLAGS -Werror" ./configure
 
 
 Further Development
-===================
+-------------------
 
 If you find this tool useful or actually like it let me know.
 Development will focus on your needs. Currently I know of very few
@@ -69,21 +72,27 @@ newest library features.
 
 
 Debugging
-=========
+---------
 
 remove all ObexFTP installations from your system. Build using
- CFLAGS="-DOBEXFTP_DEBUG=5" ./configure
- make
+	CFLAGS="-DOBEXFTP_DEBUG=5" ./configure
+	make clean ; make
 Start debugging using
- ./apps/obexftp [...]
+	./apps/obexftp [...]
+
+You might want to try picking up compiler warnings too (and mail them to me)
+	CFLAGS="$CFLAGS -g -Wall -Wmissing-declarations -Wmissing-prototypes \
+		-Werror" ./configure
+	make clean ; make
+Please mail me all warnings and error, if any.
 
 
 Author and Contact
-==================
+------------------
 
 Author: Christian W. Zuckschwerdt <zany@triq.net>
- http://triq.net/obexftp
- http://openobex.sourceforge.net/
- http://sourceforge.net/tracker/?group_id=8960
- http://sourceforge.net/forum/?group_id=8960
+     http://triq.net/obexftp
+     http://openobex.sourceforge.net/
+     http://sourceforge.net/tracker/?group_id=8960
+     http://sourceforge.net/forum/?group_id=8960
  

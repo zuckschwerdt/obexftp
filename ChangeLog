@@ -1,3 +1,8 @@
+2003-04-11  Christian W. Zuckschwerdt  <zany@triq.net>
+
+	* all but data output goes to stderr now (suggested by Heiko)
+	* The environment variable OBEXFTP_PORT is used as a default.
+
 2003-02-17  Christian W. Zuckschwerdt  <zany@triq.net>
 
 	* Added vmo converters (suggested by Dmitry Zakharov)

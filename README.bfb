@@ -1,20 +1,22 @@
-================================================================
-                           BFB protocol
- as used by Siemens Mobile Equipment (e.g. S45/ME45) over a
-                        serial connection
-================================================================
+BFB PROTOCOL
+============
+ 
+Used for serial cable connection to Siemens Mobile Equipment 
+============================================================
 
-  Christian Zuckschwerdt  <zany@triq.net>  2002-02-06
-  added unknown S35i commands from Thierry's logs 2002-06-22
+ - 2002-02-06 Christian Zuckschwerdt  <zany@triq.net>
+ - 2002-06-22 added unknown S35i commands from Thierry's logs
 
 
-0. Disclaimer
+(0) Disclaimer
+--------------
 
  It is possible to harm your mobile phone.
  Use the information in this document at your own risk.
 
 
-1. Preface
+(1) Preface
+-----------
 
  This document is a result of many hours of studying the
  Siemens Mobile Equipment BFB protocol
@@ -28,26 +30,28 @@
  to its accuracy.
 
 
-2. Transport encapsulation:
+(2) Transport encapsulation
+---------------------------
 
  [ type ][ len ][ chk ][ payload ]
 
  Types are
-  0x02 - single bytes used for connecting and data reading
-  0x01 - crc'ed sequence to change interface (speed)
-  0x05 - Keypress and such
-  0x06 - AT-Command
-  0x09 - unkown (return code from mobile?)
-  0x0E - unkown (return code from mobile?)
-  0x14 - EEPROM block manipulation
-  0x16 - crc'ed generic data (like OBEX)
+ - 0x02  single bytes used for connecting and data reading
+ - 0x01  crc'ed sequence to change interface (speed)
+ - 0x05  Keypress and such
+ - 0x06  AT-Command
+ - 0x09  unkown (return code from mobile?)
+ - 0x0E  unkown (return code from mobile?)
+ - 0x14  EEPROM block manipulation
+ - 0x16  crc'ed generic data (like OBEX)
 
  Len is from 1 to max 32 for a max MTU of 35 bytes.
 
  Chk equals type xor len.
 
 
-3. OBEX encapsulation (transport type = 0x16):
+(3) OBEX encapsulation (transport type = 0x16)
+----------------------------------------------
 
  [ cmd ][ chk ] for cmd 0x01
 
@@ -55,10 +59,10 @@
 
  Chk is ~cmd (bitwise not cmd)
 
- Cmd 0x01: "ack" command. If some packet isn't acknowledged it will be resend.
- Cmd 0x02: first transmission in a row. Sequence counter is 0
- Cmd 0x03: continued transmission. Sequence counter is incremented with each
-	subsequent packet
+ = Cmd 0x01: "ack" command. If some packet isn't acknowledged it will be resend.
+ = Cmd 0x02: first transmission in a row. Sequence counter is 0
+ = Cmd 0x03: continued transmission. Sequence counter is incremented with each
+    subsequent packet
 
  Seq is 1 byte. TA increments, ME replies.
 
@@ -70,7 +74,8 @@
  whole packet except for cmd and chk.
 
 
-4. Conclusion
+(4) Conclusion
+--------------
 
  This seems to cover all the bits.
  My test-implementation works great -- YMMV.

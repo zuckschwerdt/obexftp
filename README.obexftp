@@ -1,18 +1,21 @@
-================================================================
-            Siemens Mobile Equipment (e.g. S45/ME45)
-                         OBEX profiles
-================================================================
+SIEMENS MOBILE EQUIPMENT
+========================
 
-  Christian Zuckschwerdt  <zany@triq.net>  2002-02-06
+OBEX profiles
+=============
+
+  2002-02-06  Christian Zuckschwerdt  <zany@triq.net>
 
 
-0. Disclaimer
+(0) Disclaimer
+--------------
 
  It is possible to harm your mobile phone.
  Use the information in this document at your own risk.
 
 
-1. Preface
+(1) Preface
+-----------
 
  This document is a result of many hours of studying the
  Siemens Mobile Equipment BFB protocol
@@ -26,22 +29,24 @@
  to its accuracy.
 
 
-2. Siemens Mobile Equipment
+(2) Siemens Mobile Equipment
+----------------------------
 
- S45/ME45 seem to adhere to Bluetooth V1.1 Profile Specifications
- - Section K12.5 OBEX
+ S45/ME45 seem to adhere to Bluetooth V1.1 Profile
+ Specifications - Section K12.5 OBEX
 
 
-A. Biography
+(A) Bibliography
+----------------
 
-Object Exchange (OBEX) protocol
-http://www.irda.org/standards/pubs/IrOBEX12.pdf
+= Object Exchange (OBEX) protocol
+  http://www.irda.org/standards/pubs/IrOBEX12.pdf
 
-Bluetooth V1.1 Profile Specifications - Section K12.5 OBEX:
-http://www.bluetooth.org/specifications.htm
+= Bluetooth V1.1 Profile Specifications - Section K12.5 OBEX:
+  http://www.bluetooth.org/specifications.htm
 
-Tutorial:
-http://www.palowireless.com/infotooth/tutorial.asp
-http://www.palowireless.com/infotooth/tutorial/profiles.asp
-http://www.palowireless.com/infotooth/tutorial/k12_ftp.asp
+= Tutorial:
+  http://www.palowireless.com/infotooth/tutorial.asp
+  http://www.palowireless.com/infotooth/tutorial/profiles.asp
+  http://www.palowireless.com/infotooth/tutorial/k12_ftp.asp
 

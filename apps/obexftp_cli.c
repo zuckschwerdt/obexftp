@@ -43,6 +43,8 @@ void DUMPBUFFER(unsigned int n, char *label, char *msg) { }
 
 #include <common.h>
 
+#define OBEXFTP_PORT "OBEXFTP_PORT"
+
 #if 0
 void g_log_null_handler (const char *log_domain,
 			 GLogLevelFlags log_level,
@@ -69,42 +71,42 @@ static void info_cb(int event, const char *msg, /*@unused@*/ int len, /*@unused@
 	switch (event) {
 
 	case OBEXFTP_EV_ERRMSG:
-		printf("Error: %s\n", msg);
+		fprintf(stderr, "Error: %s\n", msg);
 		break;
 
 	case OBEXFTP_EV_ERR:
-		printf("failed: %s\n", msg);
+		fprintf(stderr, "failed: %s\n", msg);
 		break;
 	case OBEXFTP_EV_OK:
-		printf("done\n");
+		fprintf(stderr, "done\n");
 		break;
 
 	case OBEXFTP_EV_CONNECTING:
-		printf("Connecting...");
+		fprintf(stderr, "Connecting...");
 		break;
 	case OBEXFTP_EV_DISCONNECTING:
-		printf("Disconnecting...");
+		fprintf(stderr, "Disconnecting...");
 		break;
 	case OBEXFTP_EV_SENDING:
-		printf("Sending %s... ", msg);
+		fprintf(stderr, "Sending %s... ", msg);
 		break;
 	case OBEXFTP_EV_RECEIVING:
-		printf("Receiving %s... ", msg);
+		fprintf(stderr, "Receiving %s... ", msg);
 		break;
 
 	case OBEXFTP_EV_LISTENING:
-		printf("Waiting for incoming connection\n");
+		fprintf(stderr, "Waiting for incoming connection\n");
 		break;
 
 	case OBEXFTP_EV_CONNECTIND:
-		printf("Incoming connection\n");
+		fprintf(stderr, "Incoming connection\n");
 		break;
 	case OBEXFTP_EV_DISCONNECTIND:
-		printf("Disconnecting\n");
+		fprintf(stderr, "Disconnecting\n");
 		break;
 
 	case OBEXFTP_EV_INFO:
-		printf("Got info %d: \n", (int)msg);
+		fprintf(stderr, "Got info %d: \n", (int)msg);
 		break;
 
 	case OBEXFTP_EV_BODY:
@@ -113,7 +115,7 @@ static void info_cb(int event, const char *msg, /*@unused@*/ int len, /*@unused@
 		break;
 
 	case OBEXFTP_EV_PROGRESS:
-		printf("%c%c", 0x08, progress[i++]);
+		fprintf(stderr, "%c%c", 0x08, progress[i++]);
 		fflush(stdout);
 		if (i >= strlen(progress))
 			i = 0;
@@ -136,22 +138,22 @@ static int cli_connect()
 
 	if (tty != NULL) {
 		if ((transport != NULL) && !strcasecmp(transport, "ericsson")) {
-			printf("Custom transport set to 'Ericsson'\n");
+			fprintf(stderr, "Custom transport set to 'Old/Ericsson'\n");
 			ctrans = cobex_pe_ctrans (tty);
 		} else {
 			ctrans = cobex_ctrans (tty);
-			printf("Custom transport set to 'Siemens'\n");
+			fprintf(stderr, "Custom transport set to 'Universal/Siemens'\n");
 		}
 	}
 	else {
 		ctrans = NULL;
-		printf("No custom transport\n");
+		fprintf(stderr, "No custom transport\n");
 	}
 
 	/* Open */
 	cli = obexftp_cli_open (info_cb, ctrans, NULL);
 	if(cli == NULL) {
-		printf("Error opening obexftp-client\n");
+		fprintf(stderr, "Error opening obexftp-client\n");
 		return FALSE;
 	}
 
@@ -160,7 +162,7 @@ static int cli_connect()
 		/* Connect */
 		if (obexftp_cli_connect (cli) >= 0)
 			return TRUE;
-		printf("Still trying to connect\n");
+		fprintf(stderr, "Still trying to connect\n");
 	}
 
 	cli = NULL;
@@ -192,6 +194,12 @@ int main(int argc, char *argv[])
 	if (strstr(argv[0], "put") != NULL)	most_recent_cmd = 'p';
 	if (strstr(argv[0], "mv") != NULL)	most_recent_cmd = 'm';
 	if (strstr(argv[0], "rm") != NULL)	most_recent_cmd = 'k';
+
+	/* preset the port for environment */
+	tty = getenv(OBEXFTP_PORT);
+	if (tty != NULL)
+		tty = strdup(tty);
+	       
 
 	/* by default don't debug anything */
 	/*
@@ -353,10 +361,10 @@ int main(int argc, char *argv[])
 	}
 
 	if (optind < argc) {
-		printf("non-option ARGV-elements: ");
+		fprintf(stderr, "non-option ARGV-elements: ");
 		while (optind < argc)
-			printf("%s ", argv[optind++]);
-		printf("\n");
+			fprintf(stderr, "%s ", argv[optind++]);
+		fprintf(stderr, "\n");
 	}
 
 	cli_disconnect ();
