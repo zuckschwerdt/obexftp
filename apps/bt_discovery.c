@@ -1,5 +1,6 @@
 #include <common.h>
 #ifdef HAVE_BLUETOOTH
+#ifdef HAVE_SDPLIB
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -151,4 +152,5 @@ int discover_bt(char *addr, char **res_bdaddr, int *res_channel)
     return -1;
 }
 
+#endif /* HAVE_SDPLIB */
 #endif /* HAVE_BLUETOOTH */

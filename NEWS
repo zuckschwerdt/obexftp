@@ -1,6 +1,8 @@
 ObexFTP recent NEWS
 ===================
 
+* Nokia support via IrDA and Bluetooth
+
 * Siemens S65 support
 
 * Everything but data goes to stderr for more simple redirection.

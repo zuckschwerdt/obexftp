@@ -233,6 +233,8 @@ int do_at_cmd(fd_t fd, char *cmd, char *rspbuf, int rspbuflen)
        			return -1;
 
        		if( (answer = strchr(tmpbuf, '\n')) )	{
+			while((*answer == '\r') || (*answer == '\n'))
+				answer++;
        			/* Remove first line (echo) */
        			if( (answer_end = strchr(answer+1, '\n')) )	{
        				/* Found end of answer */
@@ -247,14 +249,8 @@ int do_at_cmd(fd_t fd, char *cmd, char *rspbuf, int rspbuflen)
 	DEBUG(3, "%s() Answer: %s\n", __func__, answer);
 
 	/* Remove heading and trailing \r */
-	if((*answer_end == '\r') || (*answer_end == '\n'))
+	while((*answer_end == '\r') || (*answer_end == '\n'))
 		answer_end--;
-	if((*answer_end == '\r') || (*answer_end == '\n'))
-		answer_end--;
-	if((*answer == '\r') || (*answer == '\n'))
-		answer++;
-	if((*answer == '\r') || (*answer == '\n'))
-		answer++;
 	DEBUG(3, "%s() Answer: %s\n", __func__, answer);
 
 	answer_size = (answer_end) - answer +1;

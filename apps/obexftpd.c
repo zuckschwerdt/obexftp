@@ -29,6 +29,9 @@
 #define _GNU_SOURCE
 #include <getopt.h>
 
+/* just until there is a server layer in obexftp */
+#include <openobex/obex.h>
+
 #include <obexftp/obexftp.h>
 #include <obexftp/client.h>
 #include <cobexbfb/cobex_bfb.h>
@@ -175,13 +178,14 @@ int main(int argc, char *argv[])
 			break;
 
 		case 'V':
-			printf("ObexFTPd 0.10.4-rc3\n");
+			printf("ObexFTPd 0.10.7\n");
 			most_recent_cmd = 'h'; // not really
 			break;
 
 		case 'h':
 		case 'u':
-			printf("Usage: %s [-v] [-c <path>] [-i] [-b] [-t <dev>]\n"
+			printf("ObexFTPd 0.10.7\n"
+				"Usage: %s [-v] [-c <path>] [-i] [-b] [-t <dev>]\n"
 				"Recieve files from/to Mobile Equipment.\n"
 				"Copyright (c) 2003 Christian W. Zuckschwerdt\n"
 				"\n"
@@ -192,6 +196,8 @@ int main(int argc, char *argv[])
 				" -t, --tty <device>          accept connections from this tty\n"
 				" -V, --version               print version info\n"
 				" -h, --help, --usage         this help text\n"
+				"\n",
+				"THIS PROGRAMM IS NOT WORKING YET\n",
 				"\n",
 				argv[0]);
 			exit(0);

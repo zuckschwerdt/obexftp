@@ -52,6 +52,8 @@ void DUMPBUFFER(unsigned int n, char *label, char *msg) { }
 #define OBEXFTP_PORT "OBEXFTP_PORT"
 #define OBEXFTP_ADDR "OBEXFTP_ADDR"
 
+#define OBEXVERSION "ObexFTP 0.10.7\n"
+
 /* current command, set by main, read from info_cb */
 int c;
 
@@ -403,13 +405,13 @@ int main(int argc, char *argv[])
 			break;
 			
 		case 'V':
-			printf("ObexFTP 0.10.4\n");
+			printf(OBEXVERSION);
 			most_recent_cmd = 'h'; // not really
 			break;
 
 		case 'h':
 		case 'u':
-			printf("ObexFTP 0.10.4\n");
+			printf(OBEXVERSION);
 			printf("Usage: %s [-i | -b <dev> [-B <chan>] | -t <dev>] [-l <dir> ...] [-c <dir>]\n"
 				"[-g <file> ...] [-p <files> ...] [-k <files> ...] [-x] [-m <src> <dest> ...]\n"
 				"Transfer files from/to Mobile Equipment.\n"

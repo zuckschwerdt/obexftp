@@ -66,3 +66,31 @@ AC_DEFUN([BLUETOOTH_CHECK],[
 	AC_SUBST(BLUETOOTH_LIBS)
 	AC_MSG_RESULT($am_cv_bluetooth_found)
 ])
+
+
+dnl
+dnl Check for Bluetooth SDP library
+dnl
+
+AC_DEFUN([SDPLIB_CHECK],[
+	AC_MSG_CHECKING(for Bluetooth SDP support)
+
+	AC_TRY_COMPILE(	[
+				#include <bluetooth/sdp.h>
+				#include <bluetooth/sdp_lib.h>
+			],[
+				bdaddr_t *src;
+				bdaddr_t *dst;
+				sdp_connect(src, dst, 0);
+			],
+				am_cv_sdplib_found=yes,
+				am_cv_sdplib_found=no
+			)
+
+	if test $am_cv_sdplib_found = yes; then
+		AC_DEFINE(HAVE_SDPLIB,1,[Define if system supports Bluetooth SDP])
+
+	fi
+
+	AC_MSG_RESULT($am_cv_sdplib_found)
+])
