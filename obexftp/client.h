@@ -22,6 +22,15 @@
 #ifndef OBEXFTP_CLIENT_H
 #define OBEXFTP_CLIENT_H
 
+#ifdef SWIG
+%module example
+%{
+#include "obexftp.h"
+#include "client.h"
+#include <stdint.h>
+%}
+#endif
+     
 #include <stdint.h>
 #include <openobex/obex.h>
 #include "obexftp.h"
