@@ -27,9 +27,8 @@
 #include <fcntl.h>
 #include <sys/time.h>
 #include <sys/types.h>
-#ifndef S_SPLINT_S
 #include <unistd.h>
-#endif
+#include <sys/select.h>
 #ifdef _WIN32
 #include <windows.h>
 #define sleep(n)	_sleep(n*1000)
@@ -176,6 +175,7 @@ int bfb_io_init(fd_t fd)
 }
 
 /* Send an AT-command an expect 1 line back as answer */
+/* Ericsson may choose to answer one line, blank one line and then send OK */
 int do_at_cmd(fd_t fd, char *cmd, char *rspbuf, int rspbuflen)
 {
 #ifdef _WIN32
@@ -186,7 +186,7 @@ int do_at_cmd(fd_t fd, char *cmd, char *rspbuf, int rspbuflen)
 
 	char *answer = NULL;
 	char *answer_end = NULL;
-	unsigned int answer_size;
+	int answer_size;
 
 	char tmpbuf[100] = {0,};
 	int total = 0;
@@ -288,7 +288,7 @@ void bfb_io_close(fd_t fd, int force)
 
 /* Init the phone and set it in BFB-mode */
 /* Returns fd or -1 on failure */
-fd_t bfb_io_open(const char *ttyname)
+fd_t bfb_io_open(const char *ttyname, int *typeinfo)
 {
 	uint8_t rspbuf[200];
 #ifdef _WIN32
@@ -362,10 +362,10 @@ fd_t bfb_io_open(const char *ttyname)
 #endif
 
 	/* do we need to handle an error? */
-	if (bfb_io_init (ttyfd)) {
-		DEBUG(1, "Already in BFB mode.\n");
-		goto bfbmode;
-	}
+	//if (bfb_io_init (ttyfd)) {
+	//	DEBUG(1, "Already in BFB mode.\n");
+	//	goto bfbmode;
+	//}
 
 	if(do_at_cmd(ttyfd, "ATZ\r\n", rspbuf, sizeof(rspbuf)) < 0) {
 		DEBUG(1, "Comm-error or already in BFB mode\n");
@@ -387,11 +387,11 @@ fd_t bfb_io_open(const char *ttyname)
 		goto err;
 	}
 	DEBUG(1, "AT+GMI: %s\n", rspbuf);
-	if(strcasecmp("ERICSSON", rspbuf) == 0) {
+	if(strncasecmp("ERICSSON", rspbuf, 8) == 0) {
 		DEBUG(1, "Ericsson detected\n");
 		goto ericsson;
 	}
-	if(strcasecmp("SIEMENS", rspbuf) != 0) {
+	if(strncasecmp("SIEMENS", rspbuf, 7) != 0) {
 		DEBUG(1, "No Siemens detected\n");
 		goto err;
 	}
@@ -420,7 +420,7 @@ fd_t bfb_io_open(const char *ttyname)
 	(void) tcflush(ttyfd, TCIFLUSH);
 	(void) tcsetattr(ttyfd, TCSANOW, &newtio);
 
- bfbmode:
+ //bfbmode:
 	if (! bfb_io_init (ttyfd)) {
 		/* well there may be some garbage -- just try again */
 		if (! bfb_io_init (ttyfd)) {
@@ -429,22 +429,30 @@ fd_t bfb_io_open(const char *ttyname)
 		}
 	}
 
+	*typeinfo = 1; // SIEMENS
 	return ttyfd;
 
  ericsson:
+	if(do_at_cmd(ttyfd, "", rspbuf, sizeof(rspbuf)) < 0)	{
+		DEBUG(1, "Comm-error\n");
+		goto err;
+	}
+	if(strcasecmp("OK", rspbuf) != 0)	{
+		DEBUG(1, "Error completing AT+GMI (%s)\n", rspbuf);
+		goto err;
+	}
+
 	if(do_at_cmd(ttyfd, "AT*EOBEX\r\n", rspbuf, sizeof(rspbuf)) < 0) {
 		DEBUG(1, "Comm-error\n");
 		goto err;
 	}
 	if(strcasecmp("CONNECT", rspbuf) != 0)	{
 		DEBUG(1, "Error doing AT*EOBEX (%s)\n", rspbuf);
-		goto err;
+	       	goto err;
 	}
-#ifdef _WIN32
-	return -2; /* works? */
-#else
-	return -2;
-#endif
+	
+	*typeinfo = 2; // ERICSSON
+	return ttyfd;
 
  err:
 	bfb_io_close(ttyfd, TRUE);

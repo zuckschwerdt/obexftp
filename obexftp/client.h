@@ -23,7 +23,7 @@
 #define OBEXFTP_CLIENT_H
 
 #ifdef SWIG
-%module example
+%module obexftp
 %{
 #include "obexftp.h"
 #include "client.h"
@@ -39,6 +39,15 @@
 extern "C" {
 #endif
 
+typedef struct obexlist obexlist_t;
+struct obexlist
+{
+	char *name;
+	char *content;
+	obexlist_t *sibling;
+	obexlist_t *child;
+};
+
 typedef struct obexftp_client
 {
 	obex_t *obexhandle;
@@ -49,18 +58,19 @@ typedef struct obexftp_client
 	void *infocb_data;
 	int fd; /* used in put body */
 	char *target_fn; /* used in get body */
-	uint8_t *buf;
+	uint8_t *stream_chunk;
+	uint8_t *body_content;
+	char *cwd;
+	obexlist_t *list_root;
 } obexftp_client_t;
 
 /* session */
 
-int obexftp_sync(obexftp_client_t *cli);
-
-obexftp_client_t *obexftp_cli_open(/*@null@*/ obexftp_info_cb_t infocb,
+/*@null@*/ obexftp_client_t *obexftp_cli_open(/*@null@*/ obexftp_info_cb_t infocb,
 				   /*@null@*/ /*const*/ obex_ctrans_t *ctrans,
 				   /*@null@*/ void *infocb_data);
 
-void obexftp_cli_close(obexftp_client_t *cli);
+void obexftp_cli_close(/*@only@*/ /*@out@*/ /*@null@*/ obexftp_client_t *cli);
 
 int obexftp_cli_connect(obexftp_client_t *cli);
 
@@ -90,6 +100,11 @@ int obexftp_get(obexftp_client_t *cli,
 int obexftp_rename(obexftp_client_t *cli,
 		   const char *sourcename,
 		   const char *targetname);
+
+/* cache wrapper */
+
+/*@null@*/ char *obexftp_fast_list(obexftp_client_t *cli,
+		 /*@null@*/ const char *name);
 
 #ifdef __cplusplus
 }

@@ -43,7 +43,7 @@ extern "C" {
 
 obex_ctrans_t *
 	cobex_pe_ctrans (const char *tty);
-void	cobex_pe_free (obex_ctrans_t * ctrans);
+void	cobex_pe_free (/*@only@*/ /*@null@*/ obex_ctrans_t * ctrans);
 
 /* callbacks */
 

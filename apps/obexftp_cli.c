@@ -44,6 +44,7 @@ void DUMPBUFFER(unsigned int n, char *label, char *msg) { }
 #include <common.h>
 
 #define OBEXFTP_PORT "OBEXFTP_PORT"
+#define OBEXFTP_ADDR "OBEXFTP_ADDR"
 
 #if 0
 void g_log_null_handler (const char *log_domain,
@@ -66,7 +67,7 @@ int c;
 static void info_cb(int event, const char *msg, /*@unused@*/ int len, /*@unused@*/ void *data)
 {
 	char progress[] = "\\|/-";
-	static int i = 0;
+	static unsigned int i = 0;
 
 	switch (event) {
 
@@ -126,7 +127,7 @@ static void info_cb(int event, const char *msg, /*@unused@*/ int len, /*@unused@
 
 /*@only@*/ /*@null@*/ static obexftp_client_t *cli = NULL;
 /*@only@*/ /*@null@*/ static char *tty = NULL;
-/*@only@*/ /*@null@*/ static char *transport = NULL;
+/*@only@*/ /*@null@*/ static char *btaddr = NULL;
 
 static int cli_connect()
 {
@@ -137,13 +138,8 @@ static int cli_connect()
 		return TRUE;
 
 	if (tty != NULL) {
-		if ((transport != NULL) && !strcasecmp(transport, "ericsson")) {
-			fprintf(stderr, "Custom transport set to 'Old/Ericsson'\n");
-			ctrans = cobex_pe_ctrans (tty);
-		} else {
-			ctrans = cobex_ctrans (tty);
-			fprintf(stderr, "Custom transport set to 'Universal/Siemens'\n");
-		}
+       		ctrans = cobex_ctrans (tty);
+       		fprintf(stderr, "Custom transport set to 'Siemens/Ericsson'\n");
 	}
 	else {
 		ctrans = NULL;
@@ -199,6 +195,9 @@ int main(int argc, char *argv[])
 	tty = getenv(OBEXFTP_PORT);
 	if (tty != NULL)
 		tty = strdup(tty);
+	btaddr = getenv(OBEXFTP_ADDR);
+	if (btaddr != NULL)
+		btaddr = strdup(btaddr);
 	       
 
 	/* by default don't debug anything */
@@ -210,22 +209,23 @@ int main(int argc, char *argv[])
 	while (1) {
 		int option_index = 0;
 		static struct option long_options[] = {
-			{"device",	required_argument, NULL, 'd'},
-			{"transport",	required_argument, NULL, 't'},
+			{"irda",	no_argument, NULL, 'i'},
+			{"bluetooth",	required_argument, NULL, 'b'},
+			{"tty",		required_argument, NULL, 't'},
 			{"list",	optional_argument, NULL, 'l'},
 			{"chdir",	required_argument, NULL, 'c'},
 			{"get",		required_argument, NULL, 'g'},
 			{"put",		required_argument, NULL, 'p'},
-			{"info",	no_argument, NULL, 'i'},
-			{"move",	required_argument, NULL, 'm'},
 			{"delete",	required_argument, NULL, 'k'},
+			{"info",	no_argument, NULL, 'x'},
+			{"move",	required_argument, NULL, 'm'},
 			{"verbose",	no_argument, NULL, 'v'},
 			{"help",	no_argument, NULL, 'h'},
 			{"usage",	no_argument, NULL, 'u'},
 			{0, 0, 0, 0}
 		};
 		
-		c = getopt_long (argc, argv, "-d:t:l::c:g:p:im:k:vh",
+		c = getopt_long (argc, argv, "-ib:t:l::c:g:p:k:xm:vh",
 				 long_options, &option_index);
 		if (c == -1)
 			break;
@@ -235,7 +235,21 @@ int main(int argc, char *argv[])
 
 		switch (c) {
 		
-		case 'd':
+		case 'i':
+
+			/*	irda = "on";	*/
+
+			break;
+		
+		case 'b':
+
+			printf("No bluetooth support in this preview!");
+			exit(-1);
+			/*	destaddr = optarg;	*/
+
+			break;
+		
+		case 't':
 			if (tty != NULL)
 				free (tty);
 
@@ -243,14 +257,6 @@ int main(int argc, char *argv[])
 				tty = NULL;
 			else
 				tty = optarg;
-
-			break;
-		
-		case 't':
-			if (transport != NULL)
-				free (transport);
-
-			transport = optarg;
 
 			break;
 
@@ -283,12 +289,20 @@ int main(int argc, char *argv[])
 		case 'p':
 			if(cli_connect ()) {
 				/* Send file */
-				(void) obexftp_put(cli, optarg);
+				(void) obexftp_put_file(cli, optarg, optarg);
 			}
 			most_recent_cmd = c;
 			break;
 
-		case 'i':
+		case 'k':
+			if(cli_connect ()) {
+				/* Delete file */
+				(void) obexftp_del(cli, optarg);
+			}
+			most_recent_cmd = c;
+			break;
+
+		case 'x':
 			if(cli_connect ()) {
 				/* Retrieve Infos */
 				(void) obexftp_info(cli, 0x01);
@@ -310,14 +324,6 @@ int main(int argc, char *argv[])
 			move_src = NULL;
 			break;
 
-		case 'k':
-			if(cli_connect ()) {
-				/* Delete file */
-				(void) obexftp_del(cli, optarg);
-			}
-			most_recent_cmd = c;
-			break;
-
 		case 'v':
 #if 0
 			if (verbose++ > 0)
@@ -337,18 +343,19 @@ int main(int argc, char *argv[])
 			printf("Usage: %s [-d <dev>] [-s|-a] [-l <dir> ...] [-c <dir>]\n"
 				"[-g <file> ...] [-p <files> ...] [-i] [-m <src> <dest> ...] [-k <files> ...]\n"
 				"Transfer files from/to Siemens Mobile Equipment.\n"
-				"Copyright (c) 2002 Christian W. Zuckschwerdt\n"
+				"Copyright (c) 2002-2003 Christian W. Zuckschwerdt\n"
 				"\n"
-				" -d, --device <device>       connect to this device\n"
-				" -t, --transport <type>      use a custom transport\n"
+				" -i, --irda                  connect using IrDA transport\n"
+				" -b, --bluetooth <device>    connect to this bluetooth device\n"
+				" -t, --tty <device>          connect to this tty using a custom transport\n"
 				" -l, --list [<FOLDER>]       list a folder\n"
 				" -c, --chdir <DIR>           chdir / mkdir\n"
 				" -g, --get <SOURCE>          fetch files\n"
 				" -p, --put <SOURCE>          send files\n"
-				" -i, --info                  retrieve misc infos\n\n"
-				" -m, --move <SRC> <DEST>     move files\n"
-				" -v, --verbose               verbose messages\n"
 				" -k, --delete <SOURCE>       delete files\n"
+				" -x, --info                  retrieve infos (Siemens)\n\n"
+				" -m, --move <SRC> <DEST>     move files (Siemens)\n"
+				" -v, --verbose               verbose messages\n"
 				" -h, --help, --usage         this help text\n"
 				"\n",
 				argv[0]);

@@ -33,6 +33,7 @@
 #include <sys/time.h>
 #include <sys/types.h>
 #include <unistd.h>
+#include <sys/select.h>
 #include <fcntl.h>
 #include <errno.h>
 #ifdef _WIN32
@@ -59,7 +60,7 @@ static int cobex_do_at_cmd(int fd, char *cmd, char *rspbuf, int rspbuflen)
 
 	char *answer;
 	char *answer_end = NULL;
-	unsigned int answer_size;
+	int answer_size;
 
 	char tmpbuf[100] = {0,};
 	int actual;
@@ -354,13 +355,14 @@ void cobex_pe_free (obex_ctrans_t *ctrans)
 
 	cobex = (cobex_t *)ctrans->customdata;
 
-	return_if_fail (cobex != NULL);
+	if (cobex != NULL) {
+		if (cobex->tty != NULL)
+			free (cobex->tty);
+		/* maybe there is a socket left? */
+		/* close(cobex->fd); */
 
-	free (cobex->tty);
-	/* maybe there is a socket left? */
-	/* close(cobex->fd); */
-
-	free (cobex);
+		free (cobex);
+	}
 	free (ctrans);
 
 	return;

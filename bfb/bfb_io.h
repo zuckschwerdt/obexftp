@@ -45,7 +45,7 @@ void	bfb_io_close(fd_t fd, int force);
 
 /* Init the phone and set it in BFB-mode */
 /* Returns fd or -1 on failure */
-fd_t	bfb_io_open(const char *ttyname);
+fd_t	bfb_io_open(const char *ttyname, int *typeinfo);
 
 #ifdef __cplusplus
 }

@@ -98,7 +98,7 @@ static int do_at_cmd(fd_t fd, char *cmd, char *rspbuf, int rspbuflen)
 
 	char *answer;
 	char *answer_end = NULL;
-	unsigned int answer_size;
+	int answer_size;
 
 	char tmpbuf[200] = {0,};
 	int total = 0;

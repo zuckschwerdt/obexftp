@@ -1,24 +1,29 @@
 NAME
-    flexmem - Siemens Mobile Equipment Flex.Mem tool
+    obexftp - Mobile Equipment file transfer tool
 
 SYNOPSIS
-    flexmem [*OPTION*] [*COMMANDS*]
+    obexftp [*OPTION*] [*COMMANDS*]
 
 DESCRIPTION
-    flexmem is used to access Flex. Memory on Siemens mobile equipment, i.e.
-    S45 and ME45.
+    obexftp is used to access files on mobile equipment, i.e. cell phones.
 
     This tool lets you access the ObexFTP library by the means of a command
     line interface. You might consider using the other means available. E.g.
-    GTK Client gObexFtp, Gnome-VFS-Module vfs-obexftp and soon KDE VFS.
+    GTK Client gObexFtp, Gnome-VFS-Module vfs-obexftp and some others.
 
 OPTIONS
     The ordering of options is important. Every command will use the most
     recent device set. Every file without command switch will apply to the
     command given most recent. See EXAMPLES
 
-    -d *device*, --device *device*
-            Connect to this device.
+    -i, --irda
+            Connect using the IrDA protocol.
+
+    -b *device*, --bluetooth *device*
+            Connect to this bluetooth device.
+
+    -t *device*, --tty *device*
+            Connect to this tty device.
 
     -l *folder*, --list *folder*
             List a folder.
@@ -33,28 +38,32 @@ OPTIONS
     -p *source*, --put *source*
             Send files to the mobile.
 
-    -i, --info
-            Retrieve misc infos from mobile. I.e. memory size and free
-            memory.
-
-    -m *src* *dest*, --move *src* *dest*
-            Move (rename) files on the mobile.
-
     -k *source*, --kill *source*
             Delete files from the mobile.
+
+    -x, --info
+            Retrieve misc infos from mobile. I.e. memory size and free
+            memory. Siemens specific for now.
+
+    -m *src* *dest*, --move *src* *dest*
+            Move (rename) files on the mobile. Siemens specific for now.
+
+    -v, --verbose
+            Be verbose and give some additional infos.
 
     -h, --help, --usage
             Print short usage instructions.
 
 SEE ALSO
-    the openobex manpage, the obexftp manpage, the cobexbfb manpage.
+    openobex, obexftp, cobex, libbfb.
 
 BUGS
     Bugs ? Features !
 
 NOTES
-    It's written with S45/ME45 in mind. Tell me if something goes wrong
-    using different mobiles.
+    The software is tailored for Siemens mobiles like the S45/ME45. Ericsson
+    phones are tested and supported too. Tell me if something goes / goes
+    wrong using different mobiles.
 
 AUTHOR
     Christian W. Zuckschwerdt <zany@triq.net>

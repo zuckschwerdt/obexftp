@@ -50,12 +50,14 @@ static int get_fileinfo(const char *name, char *lastmod)
 	struct stat stats;
 	struct tm *tm;
 	
-	stat(name, &stats);
-	tm = gmtime(&stats.st_mtime);
-	snprintf(lastmod, 21, "%04d-%02d-%02dT%02d:%02d:%02dZ",
+	if ((0 == stat(name, &stats)) &&
+		((tm = gmtime(&stats.st_mtime)) != NULL)) {
+		(void) snprintf(lastmod, 21, "%04d-%02d-%02dT%02d:%02d:%02dZ",
 			tm->tm_year+1900, tm->tm_mon+1, tm->tm_mday,
 			tm->tm_hour, tm->tm_min, tm->tm_sec);
-	return (int) stats.st_size;
+		return (int) stats.st_size;
+	}
+	return -1;
 }
 
 
@@ -63,10 +65,9 @@ static int get_fileinfo(const char *name, char *lastmod)
 obex_object_t *build_object_from_file(obex_t *handle, const char *localname, const char *remotename)
 {
 	obex_object_t *object = NULL;
-	obex_headerdata_t hdd;
 	uint8_t *ucname;
 	int ucname_len, size;
-	char lastmod[21*2] = {"1970-01-01T00:00:00Z"};
+	char lastmod[] = "11997700--0011--0011TT0000::0000::0000ZZ.";
 		
 	/* Get filesize and modification-time */
 	size = get_fileinfo(localname, lastmod);
@@ -79,29 +80,26 @@ obex_object_t *build_object_from_file(obex_t *handle, const char *localname, con
 	ucname = malloc(ucname_len);
 	if(ucname == NULL) {
 		if(object != NULL)
-			OBEX_ObjectDelete(handle, object);
+			(void) OBEX_ObjectDelete(handle, object);
 		return NULL;
 	}
 
 	ucname_len = OBEX_CharToUnicode(ucname, remotename, ucname_len);
 
-	hdd.bs = ucname;
-	OBEX_ObjectAddHeader(handle, object, OBEX_HDR_NAME, hdd, ucname_len, 0);
+	(void ) OBEX_ObjectAddHeader(handle, object, OBEX_HDR_NAME, (obex_headerdata_t) (const uint8_t *) ucname, ucname_len, 0);
 	free(ucname);
 
-	hdd.bq4 = size;
-	OBEX_ObjectAddHeader(handle, object, OBEX_HDR_LENGTH, hdd, sizeof(uint32_t), 0);
+	(void) OBEX_ObjectAddHeader(handle, object, OBEX_HDR_LENGTH, (obex_headerdata_t) (const uint32_t)size, sizeof(uint32_t), 0);
 
 #if 0
 	/* Win2k excpects this header to be in unicode. I suspect this in
 	   incorrect so this will have to wait until that's investigated */
-	hdd.bs = lastmod;
-	OBEX_ObjectAddHeader(handle, object, OBEX_HDR_TIME, hdd, strlen(lastmod)+1, 0);
+	OBEX_ObjectAddHeader(handle, object, OBEX_HDR_TIME, (obex_headerdata_t) (const uint8_t *) lastmod, strlen(lastmod)+1, 0);
 #endif
 		
-	hdd.bs = NULL;
-	OBEX_ObjectAddHeader(handle, object, OBEX_HDR_BODY,
-				hdd, 0, OBEX_FL_STREAM_START);
+	(void) OBEX_ObjectAddHeader(handle, object, OBEX_HDR_BODY,
+				(obex_headerdata_t) (const uint8_t *) NULL,
+				0, OBEX_FL_STREAM_START);
 
 	DEBUG(3, "%s() Lastmod = %s\n", __func__, lastmod);
 	return object;
@@ -133,10 +131,10 @@ static int nameok(const char *name)
 /* The first path may be NULL. */
 /* The second path is always treated relative. */
 /* dest must have at least PATH_MAX + 1 chars. */
-static char *pathcat(char *dest, const char *path, const char *name)
+static int pathcat(/*@unique@*/ char *dest, const char *path, const char *name)
 {
 	if(name == NULL)
-		return dest;
+		return 1;
 		
 	while(*name == '/')
 		name++;
@@ -152,7 +150,7 @@ static char *pathcat(char *dest, const char *path, const char *name)
 		strncat(dest, name, PATH_MAX-strlen(dest));
 	}
 
-	return dest;
+	return 0;
 }
 	
 /* Open a file, but do some sanity-checking first. */
@@ -169,7 +167,7 @@ int open_safe(const char *path, const char *name)
 
 	/* TODO! Rename file if already exist. */
 
-	pathcat(diskname, path, name);
+	(void) pathcat(diskname, path, name);
 
 	DEBUG(3, "%s() Creating file %s\n", __func__, diskname);
 
@@ -178,20 +176,20 @@ int open_safe(const char *path, const char *name)
 }
 
 /* Go to a directory. Create if not exists and create is true. */
-int checkdir(const char *path, const char *dir, cd_flags flags)
+int checkdir(const char *path, const char *dir, int create, int allowabs)
 {
 	char newpath[PATH_MAX + 1] = {0,};
 	struct stat statbuf;
 	int ret = -1;
 
-	if(!(flags & CD_ALLOWABS))	{
+	if(!allowabs)	{
 		if(nameok(dir) == FALSE)
 			return -1;
 	}
 
-	pathcat(newpath, path, dir);
+	(void) pathcat(newpath, path, dir);
 
-	DEBUG(3, "%s() path = %s dir = %s, flags = %d\n", __func__, path, dir, flags);
+	DEBUG(3, "%s() path = %s dir = %s, create = %d, allowabs = %d\n", __func__, path, dir, create, allowabs);
 	if(stat(newpath, &statbuf) == 0) {
 		/* If this directory aleady exist we are done */
 		if(S_ISDIR(statbuf.st_mode)) {
@@ -204,7 +202,7 @@ int checkdir(const char *path, const char *dir, cd_flags flags)
 			return -1;
 		}
 	}
-	if(flags & CD_CREATE) {
+	if(create) {
 		DEBUG(3, "%s() Will try to create %s\n", __func__, newpath);
 #ifdef _WIN32
 		ret = mkdir(newpath);

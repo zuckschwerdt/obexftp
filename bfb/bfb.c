@@ -26,9 +26,7 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <string.h>
-#ifndef S_SPLINT_S
 #include <unistd.h>
-#endif
 
 /* htons */
 #ifdef _WIN32
@@ -113,6 +111,7 @@ int bfb_stuff_data(uint8_t *buffer, uint8_t type, uint8_t *data, int len, int se
 
 	/* error */
 	if (type != 2 && type != 3) {
+		buffer[0] = 0x00; /* just terminate the buffer */
 		return 0;
 	}
 
@@ -308,7 +307,7 @@ int bfb_write_packets(fd_t fd, uint8_t type, uint8_t *buffer, int length)
 #endif
 
 
-		if (actual < 0 || actual < l + sizeof (bfb_frame_t)) {
+		if (actual < 0 || actual < l + (int) sizeof (bfb_frame_t)) {
 			DEBUG(1, "%s() Write failed\n", __func__);
 			free(frame);
 			return -1;
@@ -359,7 +358,7 @@ bfb_frame_t *bfb_read_packets(uint8_t *buffer, int *length)
 		return NULL;
 	}
 
-	if (*length < sizeof(bfb_frame_t)) {
+	if (*length < (int) sizeof(bfb_frame_t)) {
 		DEBUG(1, "%s() Short packet?\n", __func__);
 		return NULL;
 	}
@@ -374,7 +373,7 @@ bfb_frame_t *bfb_read_packets(uint8_t *buffer, int *length)
 		return NULL;
 	}
 
-	if (*length < frame->len + sizeof(bfb_frame_t)) {
+	if (*length < frame->len + (int) sizeof(bfb_frame_t)) {
 		DEBUG(2, "%s() Need more data?\n", __func__);
 		return NULL;
 	}
@@ -394,8 +393,7 @@ bfb_frame_t *bfb_read_packets(uint8_t *buffer, int *length)
 	return frame;
 }
 
-/*@null@*/
-bfb_data_t *bfb_assemble_data(bfb_data_t **data, int *size, int *len, bfb_frame_t *frame)
+int	bfb_assemble_data(bfb_data_t **data, int *size, int *len, bfb_frame_t *frame)
 {
 	bfb_data_t *tmp;
 	int l;
@@ -404,14 +402,14 @@ bfb_data_t *bfb_assemble_data(bfb_data_t **data, int *size, int *len, bfb_frame_
 
 	if (frame->type != BFB_FRAME_DATA) {
 		DEBUG(1, "%s() Wrong frame type (0x%02x)?\n", __func__, frame->type);
-		return *data;
+		return -1;
 	}
 
 	/* temp data */
 	tmp = (bfb_data_t *)frame->payload;
 	if ((*len == 0) && (tmp->cmd == BFB_DATA_ACK)) {
 		DEBUG(3, "%s() Skipping ack\n", __func__);
-		return *data;
+		return 0;
 	}
 
 	/* copy frame from buffer */
@@ -428,7 +426,7 @@ bfb_data_t *bfb_assemble_data(bfb_data_t **data, int *size, int *len, bfb_frame_
 
 	/* free(*data); */
 	*len = l;
-	return *data;
+	return 1;
 }
 
 int bfb_check_data(bfb_data_t *data, int len)
@@ -444,7 +442,7 @@ int bfb_check_data(bfb_data_t *data, int len)
 	if (data == NULL)
 		return -1;
 
-	if (len < sizeof(bfb_data_t))
+	if (len < (int) sizeof(bfb_data_t))
 		return 0;
 
 	if (data->cmd != (uint8_t)~data->chk) {

@@ -24,7 +24,7 @@
  * vmo format courtesty of Dmitry Zakharov <dmit@crp.bank.gov.ua>
  *
  * The file consists of 34-byte frames in network byte order.
- * 12 bit header and 260 bits standart GSM frame, as described
+ * 12 bit header and 260 bits standard GSM frame, as described
  * in GSM 06.10 and GSM 06.12. The header is 0x2010 always.
  */
 

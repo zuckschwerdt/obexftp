@@ -28,12 +28,12 @@
 #include <sys/time.h>
 #include <sys/types.h>
 #include <unistd.h>
+#include <sys/select.h>
 #include <fcntl.h>
 #include <errno.h>
 #ifdef _WIN32
 #include <windows.h>
 #include <stdlib.h>
-#define sleep(n)        _sleep(n*1000)
 #else
 #include <sys/ioctl.h>
 #include <termios.h>
@@ -67,14 +67,15 @@ static void cobex_cleanup(cobex_t *c, int force)
 int cobex_connect(obex_t *self, void *data)
 {
 	cobex_t *c;
+	int typeinfo;
         return_val_if_fail (self != NULL, -1);
         return_val_if_fail (data != NULL, -1);
 	c = (cobex_t *) data;
 
 	DEBUG(3, "%s() \n", __func__);
 
-	c->fd = bfb_io_open(c->tty);
-	if(c->fd == -2)
+	c->fd = bfb_io_open(c->tty, &typeinfo);
+	if(typeinfo == 2)
 		c->type = CT_ERICSSON;
 	else
 		c->type = CT_SIEMENS;
@@ -117,7 +118,7 @@ int cobex_write(obex_t *self, void *data, uint8_t *buffer, int length)
 	if (c->type == CT_ERICSSON) {
 		actual = write(c->fd, buffer, length);
 		if (actual < length)	{
-			DEBUG(1, "Error writing to port\n");
+			DEBUG(1, "Error writing to port (%d expected %d)\n", actual, length);
 			return actual; /* or -1? */
 		}
 		return actual;
@@ -200,7 +201,7 @@ int cobex_handleinput(obex_t *self, void *data, int timeout)
 		while ((frame = bfb_read_packets(c->recv, &(c->recv_len)))) {
 			DEBUG(2, "%s() Parsed %x (%d bytes remaining)\n", __func__, frame->type, c->recv_len);
 
-			c->data_buf = bfb_assemble_data(&c->data_buf, &c->data_size, &c->data_len, frame);
+			(void) bfb_assemble_data(&c->data_buf, &c->data_size, &c->data_len, frame);
 
 			if (bfb_check_data(c->data_buf, c->data_len) == 1) {
 				actual = bfb_send_ack(c->fd);

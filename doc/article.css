@@ -27,8 +27,7 @@ html,body {	margin: 0;
 		padding: 10px 30px;
 		color: white;
 		text-shadow: black;
-		background: url(verlauf.gif) #4e8541;
-		background-repeat: repeat-y; }
+		background: #4e8541; }
 
 .footer {	clear: both; 
 		color: white;

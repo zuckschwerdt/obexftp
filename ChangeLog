@@ -1,3 +1,13 @@
+2003-09-24  Christian W. Zuckschwerdt  <zany@triq.net>
+
+	* Ericsson phones are now working with the unified cobex.
+	* removed the automatic directory parsing, please just the -c switch.
+	* Shuffled the option names for obexftp to counter missunderstandings.
+
+2003-07-18  Christian W. Zuckschwerdt  <zany@triq.net>
+
+	* fixed a Makefile bug reported by Carwyn Edwards
+
 2003-04-11  Christian W. Zuckschwerdt  <zany@triq.net>
 
 	* all but data output goes to stderr now (suggested by Heiko)

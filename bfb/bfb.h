@@ -89,7 +89,7 @@ int	bfb_write_subcmd3(fd_t fd, uint8_t type, uint8_t subtype, uint16_t p1, uint1
 /* send a cmd, subcmd packet, add long, word parameter */
 int	bfb_write_subcmd_lw(fd_t fd, uint8_t type, uint8_t subtype, uint32_t p1, uint16_t p2);
 
-int	bfb_stuff_data(uint8_t *buffer, uint8_t type, uint8_t *data, int len, int seq);
+int	bfb_stuff_data(/*@out@*/ uint8_t *buffer, uint8_t type, uint8_t *data, int len, int seq);
 
 int	bfb_write_packets(fd_t fd, uint8_t type, uint8_t *buffer, int length);
 
@@ -114,8 +114,7 @@ int	bfb_send_data(fd_t fd, uint8_t type, uint8_t *data, int length, int seq);
 /*@null@*/ bfb_frame_t *
 	bfb_read_packets(uint8_t *buffer, int *length);
 
-/*@null@*/ bfb_data_t *
-	bfb_assemble_data(bfb_data_t **data, int *size, int *len, bfb_frame_t *frame);
+int	bfb_assemble_data(/*@null@*/ /*@out@*/ bfb_data_t **data, int *size, int *len, bfb_frame_t *frame);
 
 int	bfb_check_data(bfb_data_t *data, int len);
 
