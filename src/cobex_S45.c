@@ -38,7 +38,6 @@
 #include <fcntl.h>
 #include <errno.h>
 #include <string.h>
-#include <signal.h>
 #include <unistd.h>
 #include <termios.h>
 
@@ -49,6 +48,7 @@
 
 
 obex_t *cobex_handle;
+cobex_t *c;
 
 /* Read a BFB answer */
 gint cobex_do_bfb_read(int fd, guint8 *buffer, gint length)
@@ -66,41 +66,13 @@ gint cobex_do_bfb_read(int fd, guint8 *buffer, gint length)
 	if(select(fd+1, &fdset, NULL, NULL, &time)) {
 		actual = read(fd, buffer, length);
 		if(actual < 0)
-			g_print(__FUNCTION__ "() Read error: %d\n", actual);
+			DEBUG(1, G_GNUC_FUNCTION "() Read error: %d\n", actual);
 		return actual;
 	}
 	else {
-		g_print(__FUNCTION__ "() No data\n");
+		DEBUG(1, G_GNUC_FUNCTION "() No data\n");
 		return 0;
 	}
-}
-
-
-/* Called when data arrives */
-void cobex_input_handler(int signal)
-{
-	cobex_t *c = (cobex_t *)OBEX_GetUserData(cobex_handle);
-	int actual;
-	gint i;
-
-	g_print(__FUNCTION__ "()\n");
-
-	g_print(__FUNCTION__ "() Buffer size %d\n", c->recv_len);
-
-	actual = read(c->fd, &(c->recv[c->recv_len]), sizeof(c->recv)-c->recv_len);
-	c->recv_len += actual;
-	g_print(__FUNCTION__ "() Read %d bytes\n", actual);
-
-	for(i = 0; i < c->recv_len; i++) {
-		g_print("%02x ", c->recv[i]);
-	}
-	g_print("\n");
-
-/*
-	actual = bfb_read_packets(c->recv, actual);
-
-	OBEX_CustomDataFeed(cobex_handle, inputbuf, actual);
-*/
 }
 
 
@@ -278,26 +250,8 @@ gint cobex_init(char *ttyname)
 	return -1;
 }
 
-/* Set up input-handler */
-int cobex_start_io(void)
-{
-	cobex_t *c = (cobex_t *)OBEX_GetUserData(cobex_handle);
-	int oflags;
-	int ret;
-
-	signal(SIGIO, &cobex_input_handler);
-	fcntl(c->fd, F_SETOWN, getpid());
-	oflags = fcntl(0, F_GETFL);
-	ret = fcntl(c->fd, F_SETFL, oflags | FASYNC);
-	if(ret < 0)
-		return ret;
-	return 0;
-}
-
 void cobex_cleanup(int force)
 {
-	cobex_t *c = (cobex_t *)OBEX_GetUserData(cobex_handle);
-	signal(SIGIO, SIG_IGN);
 	if(force)	{
 		// Send a break to get out of OBEX-mode
 		if(ioctl(c->fd, TCSBRKP, 0) < 0)	{
@@ -312,21 +266,15 @@ void cobex_cleanup(int force)
 
 gint cobex_connect(obex_t *self, gpointer userdata)
 {
-	cobex_t *c;
-
 	printf(__FUNCTION__ "()\n");
 
 	cobex_handle = self;
 
 	c = g_new0(cobex_t, 1);
-	OBEX_SetUserData(self, c);
 
 	if((c->fd = cobex_init(SERPORT)) < 0)
 		return -1;
-/*
-	if(cobex_start_io() < 0)
-		return -1;
-*/
+
 	return 1;
 }
 
@@ -340,27 +288,21 @@ gint cobex_disconnect(obex_t *self, gpointer userdata)
 /* Called from OBEX-lib when data needs to be written */
 gint cobex_write(obex_t *self, gpointer userdata, guint8 *buffer, gint length)
 {
-	cobex_t *c = (cobex_t *)OBEX_GetUserData(self);
-
 	int actual;
 	
-	DEBUG(1, G_GNUC_FUNCTION  "() \n");
+	DEBUG(1, G_GNUC_FUNCTION "() \n");
 
-	DEBUG(1, G_GNUC_FUNCTION  "() Data %d bytes\n", length);
+	DEBUG(1, G_GNUC_FUNCTION "() Data %d bytes\n", length);
 
-
-	sleep(1);
 
 	if (c->seq == 0){
-		actual = bfb_send_data(c->fd, BFB_DATA_FIRST, buffer, length, c->seq++);
-		DEBUG(2, G_GNUC_FUNCTION  "() Wrote %d first packets (%d bytes)\n", actual, length);
+		actual = bfb_send_first(c->fd, buffer, length);
+		DEBUG(2, G_GNUC_FUNCTION "() Wrote %d first packets (%d bytes)\n", actual, length);
 	} else {
-		actual = bfb_send_data(c->fd, BFB_DATA_PREPARE, NULL, 0, 0);
-		DEBUG(2, G_GNUC_FUNCTION  "() Wrote %d prepare packet\n", actual);
-
-		actual = bfb_send_data(c->fd, BFB_DATA_NEXT, buffer, length, c->seq++);
-		DEBUG(2, G_GNUC_FUNCTION  "() Wrote %d packets (%d bytes)\n", actual, length);
+		actual = bfb_send_next(c->fd, buffer, length, c->seq);
+		DEBUG(2, G_GNUC_FUNCTION "() Wrote %d packets (%d bytes)\n", actual, length);
 	}
+	c->seq++;
 
 
 	return actual;
@@ -369,11 +311,12 @@ gint cobex_write(obex_t *self, gpointer userdata, guint8 *buffer, gint length)
 /* Called when input data is needed */
 gint cobex_handleinput(obex_t *self, gpointer userdata, gint timeout)
 {
-	cobex_t *c = (cobex_t *)OBEX_GetUserData(self);
-	int ret;
+	gint ret;
 	struct timeval time;
 	fd_set fdset;
 	bfb_frame_t *frame;
+
+	gint j;
 
 	time.tv_sec = timeout;
 	time.tv_usec = 0;
@@ -385,34 +328,38 @@ gint cobex_handleinput(obex_t *self, gpointer userdata, gint timeout)
 	/* Wait for input */
 	ret = select(c->fd + 1, &fdset, NULL, NULL, &time);
 
-	g_print(__FUNCTION__ "() There is something (%d)\n", ret);
+	DEBUG(1, G_GNUC_FUNCTION "() There is something (%d)\n", ret);
 
 	/* Check if this is a timeout (0) or error (-1) */
-	if(ret < 1)
+	if(ret <= 0)
 		return ret;
 
 	ret = read(c->fd, &(c->recv[c->recv_len]), sizeof(c->recv) - c->recv_len);
-	g_print(__FUNCTION__ "() Read %d bytes (%d bytes already buffered)\n", ret, c->recv_len);
+	DEBUG(1, G_GNUC_FUNCTION "() Read %d bytes (%d bytes already buffered)\n", ret, c->recv_len);
 
 	if (ret > 0) {
 		c->recv_len += ret;
 
 		while ((frame = bfb_read_packets(c->recv, &(c->recv_len)))) {
-			g_print(__FUNCTION__ "() Parsed %x (%d bytes remaining)\n", frame->type, c->recv_len);
+			DEBUG(1, G_GNUC_FUNCTION "() Parsed %x (%d bytes remaining)\n", frame->type, c->recv_len);
 
 			c->data = bfb_assemble_data(c->data, &(c->data_len), frame);
 
 			if (bfb_check_data(c->data, c->data_len) == 1) {
-				OBEX_CustomDataFeed(self, &(c->data->data), c->data_len-7);
+				ret = bfb_send_ack(c->fd);
+				DEBUG(2, G_GNUC_FUNCTION "() Wrote ack packet (%d)\n", ret);
+
+				OBEX_CustomDataFeed(self, c->data->data, c->data_len-7);
 				g_free(c->data);
 				c->data = NULL;
 				c->data_len = 0;
+
 				return 1;
 			}
 		}
 
 	}
-	return ret; // 0 or -1
+	return ret;
 }
 
 

@@ -41,8 +41,8 @@ typedef struct {
 	guint8 seq;
 	guint8 len0;
 	guint8 len1;
-        guint8 data[0]; //...
-        // guint16 crc;
+	guint8 data[0]; //...
+	// guint16 crc;
 } bfb_data_t;
 
 
@@ -52,10 +52,9 @@ typedef struct {
 #define BFB_FRAME_DATA 0x16
 
 #define MAX_PACKET_DATA 32
-#define BFB_DATA_PREPARE 0x01 /* maybe a continuation command */
+#define BFB_DATA_ACK 0x01 /* aka ok */
 #define BFB_DATA_FIRST 0x02 /* first transmission in a row */
 #define BFB_DATA_NEXT 0x03 /* continued transmission */
-
 
 
 gint bfb_stuff_data(guint8 *buffer, guint8 type, guint8 *data, gint len, gint seq);
@@ -63,6 +62,15 @@ gint bfb_stuff_data(guint8 *buffer, guint8 type, guint8 *data, gint len, gint se
 gint bfb_write_packets(int fd, guint8 type, guint8 *buffer, gint length);
 
 gint bfb_send_data(int fd, guint8 type, guint8 *data, gint length, gint seq);
+
+#define bfb_send_ack(fd) \
+	bfb_send_data(fd, BFB_DATA_ACK, NULL, 0, 0)
+
+#define bfb_send_first(fd, data, length) \
+	bfb_send_data(fd, BFB_DATA_FIRST, data, length, 0)
+
+#define bfb_send_next(fd, data, length, seq) \
+	bfb_send_data(fd, BFB_DATA_NEXT, data, length, seq)
 
 bfb_frame_t *bfb_read_packets(guint8 *buffer, gint *length);
 

@@ -158,7 +158,7 @@ int main(int argc, char *argv[])
 			
 		// Connect
 		if(ircp_cli_connect(cli) >= 0) {
-			// Send all files
+			// Get all files
 			for(i = 2; i < argc; i++) {
 				ircp_get(cli, argv[i], argv[i]);
 			}

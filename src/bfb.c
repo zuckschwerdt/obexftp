@@ -209,8 +209,8 @@ bfb_data_t *bfb_assemble_data(bfb_data_t *data, gint *fraglen, bfb_frame_t *fram
 
 	// temp data
 	ret = (bfb_data_t *)frame->payload;
-	if (ret->cmd == BFB_DATA_PREPARE) {
-		DEBUG(3, G_GNUC_FUNCTION "() Skipping prepare type (%x)\n", ret->cmd);
+	if (ret->cmd == BFB_DATA_ACK) {
+		DEBUG(3, G_GNUC_FUNCTION "() Skipping ack\n");
 		return data;
 	}
 	/*
