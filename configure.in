@@ -63,7 +63,6 @@ AC_OUTPUT([
 Makefile 
 doc/Makefile
 contrib/Makefile
-vmo/Makefile
 apps/Makefile
 bfb/Makefile
 cobexbfb/Makefile

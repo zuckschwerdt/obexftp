@@ -326,6 +326,8 @@ int bfb_write_packets(fd_t fd, uint8_t type, uint8_t *buffer, int length)
 #else
 			actual = write(fd, frame, l + sizeof (bfb_frame_t));
 			DEBUG(3, "%s() Wrote %d bytes (expected %d)\n", __func__, actual, l + sizeof (bfb_frame_t));
+			// delay for some USB-serial coverters (Gerhard Reithofer)
+			// usleep(1000); // there has to be a better way
 #endif
 		}
 

@@ -307,8 +307,14 @@ int main(int argc, char *argv[])
 
 		case 'p':
 			if(cli_connect ()) {
+				char *basename;
+                		basename = strrchr(optarg, '/');
+		                if (basename)
+                		        basename++;
+				else
+					basename = optarg;
 				/* Send file */
-				(void) obexftp_put_file(cli, optarg, optarg);
+				(void) obexftp_put_file(cli, optarg, basename);
 			}
 			most_recent_cmd = c;
 			break;
@@ -349,12 +355,13 @@ int main(int argc, char *argv[])
 			break;
 			
 		case 'V':
-			printf("ObexFTP 0.10.4-rc3\n");
+			printf("ObexFTP 0.10.4\n");
 			most_recent_cmd = 'h'; // not really
 			break;
 
 		case 'h':
 		case 'u':
+			printf("ObexFTP 0.10.4\n");
 			printf("Usage: %s [-i | -b <dev> [-B <chan>] | -t <dev>] [-l <dir> ...] [-c <dir>]\n"
 				"[-g <file> ...] [-p <files> ...] [-k <files> ...] [-x] [-m <src> <dest> ...]\n"
 				"Transfer files from/to Mobile Equipment.\n"

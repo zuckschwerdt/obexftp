@@ -6,6 +6,7 @@ for 0.10.5
 * AT-Kommandos
 * UUID issue (FBS or S45 first?)
 
+* Excluded doc directory from standard make file
 
 * obexftpd server with simple inbox (like IrCP)
 
@@ -21,7 +22,7 @@ for 0.10.5
 
 * Path parsing issues (some phones dont know about paths others insist on them)
 
-* Error hanling on missing files (either TA or M)
+* Error handling on missing files (either TA or M)
 
 * Use the TAC (Type Approval Code) perhaps. (http://www.nobbi.com/glossar.htm#imei)
 

@@ -371,7 +371,7 @@ fd_t bfb_io_open(const char *ttyname, int *typeinfo)
 	(void) tcsetattr(ttyfd, TCSANOW, &newtio);
 #endif
 
-	/* do we need to handle an error? */
+	/* Can't just try that now, as it will break some phones. */
 	//if (bfb_io_init (ttyfd)) {
 	//	DEBUG(1, "Already in BFB mode.\n");
 	//	goto bfbmode;
@@ -401,7 +401,9 @@ fd_t bfb_io_open(const char *ttyname, int *typeinfo)
 		goto err;
 	}
 	DEBUG(1, "AT+GMI: %s\n", rspbuf);
-	if(strncasecmp("ERICSSON", rspbuf, 8) == 0) {
+	if(strncasecmp("ERICSSON", rspbuf, 8) == 0 ||
+	   strncasecmp("SONY ERICSSON", rspbuf, 13) == 0) {
+	
 		DEBUG(1, "Ericsson detected\n");
 		goto ericsson;
 	}

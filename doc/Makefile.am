@@ -1,3 +1,6 @@
+# only maintainer needs to build doc
+# txt2html and sablotron needed
+
 man_MANS =		obexftp.1
 
 EXTRA_DIST =		$(man_MANS) $(noinst_DATA) \
@@ -25,7 +28,7 @@ noinst_DATA =	$(patsubst ../%,%.html,$(wildcard ../[A-Z][A-Z]*[A-Za-z0-9] ../Cha
 #	cat $< | gnome-man2html2 > $@
 
 %.html: ../% doc.xsl menu.xml
-	txt2html -pb 1 -pe 1 --bold_delimiter "" --xhtml --tables -H '^\s*F:\s' -H '^\s*A:\s' $< |sabcmd doc.xsl '$$filename=$*' > $@
+	txt2html -pb 1 -pe 1 --bold_delimiter "" --xhtml --tables -H '^\s*F:\s' -H '^\s*A:\s' --append_head addhead.inc --title $* $< |sabcmd doc.xsl '$$filename=$*' > $@
 
 #clean-local:
 #	rm -f *.1
