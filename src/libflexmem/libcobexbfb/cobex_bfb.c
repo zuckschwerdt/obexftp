@@ -40,13 +40,14 @@
 
 #include <glib.h>
 #include <openobex/obex.h>
+#include "obex_t.h"
 #include "cobex_bfb.h"
 #include "debug.h"
 
 
 obex_t *cobex_handle;
 cobex_t *c;
-gchar *_tty;
+gchar *_tty = NULL;
 
 gint cobex_set_tty(gchar *tty)
 {
@@ -262,13 +263,13 @@ void cobex_cleanup(int force)
 {
 	if(force)	{
 		// Send a break to get out of OBEX-mode
-		if(ioctl(c->fd, TCSBRKP, 0) < 0)	{
+		if(ioctl(OBEX_FD(cobex_handle), TCSBRKP, 0) < 0)	{
 			g_print("Unable to send break!\n");
 		}
 		sleep(1);
 	}
-	close(c->fd);
-	c->fd = -1;
+	close(OBEX_FD(cobex_handle));
+	OBEX_FD(cobex_handle) = -1;
 }
 
 
@@ -283,7 +284,7 @@ gint cobex_connect(obex_t *self, gpointer userdata)
 	if(_tty == NULL)
 		_tty = SERPORT;
 
-	if((c->fd = cobex_init(_tty)) < 0)
+	if((OBEX_FD(self) = cobex_init(_tty)) < 0)
 		return -1;
 
 	return 1;
@@ -307,10 +308,10 @@ gint cobex_write(obex_t *self, gpointer userdata, guint8 *buffer, gint length)
 
 
 	if (c->seq == 0){
-		actual = bfb_send_first(c->fd, buffer, length);
+		actual = bfb_send_first(OBEX_FD(self), buffer, length);
 		DEBUG(2, G_GNUC_FUNCTION "() Wrote %d first packets (%d bytes)\n", actual, length);
 	} else {
-		actual = bfb_send_next(c->fd, buffer, length, c->seq);
+		actual = bfb_send_next(OBEX_FD(self), buffer, length, c->seq);
 		DEBUG(2, G_GNUC_FUNCTION "() Wrote %d packets (%d bytes)\n", actual, length);
 	}
 	c->seq++;
@@ -332,10 +333,10 @@ gint cobex_handleinput(obex_t *self, gpointer userdata, gint timeout)
 
 	/* Add the fd's to the set. */
 	FD_ZERO(&fdset);
-	FD_SET(c->fd, &fdset);
+	FD_SET(OBEX_FD(self), &fdset);
 
 	/* Wait for input */
-	ret = select(c->fd + 1, &fdset, NULL, NULL, &time);
+	ret = select(OBEX_FD(self) + 1, &fdset, NULL, NULL, &time);
 
 	DEBUG(1, G_GNUC_FUNCTION "() There is something (%d)\n", ret);
 
@@ -343,7 +344,7 @@ gint cobex_handleinput(obex_t *self, gpointer userdata, gint timeout)
 	if(ret <= 0)
 		return ret;
 
-	ret = read(c->fd, &(c->recv[c->recv_len]), sizeof(c->recv) - c->recv_len);
+	ret = read(OBEX_FD(self), &(c->recv[c->recv_len]), sizeof(c->recv) - c->recv_len);
 	DEBUG(1, G_GNUC_FUNCTION "() Read %d bytes (%d bytes already buffered)\n", ret, c->recv_len);
 
 	if (ret > 0) {
@@ -355,7 +356,7 @@ gint cobex_handleinput(obex_t *self, gpointer userdata, gint timeout)
 			c->data = bfb_assemble_data(c->data, &(c->data_len), frame);
 
 			if (bfb_check_data(c->data, c->data_len) == 1) {
-				ret = bfb_send_ack(c->fd);
+				ret = bfb_send_ack(OBEX_FD(self));
 				DEBUG(2, G_GNUC_FUNCTION "() Wrote ack packet (%d)\n", ret);
 
 				OBEX_CustomDataFeed(self, c->data->data, c->data_len-7);

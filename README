@@ -1,27 +1,36 @@
-Introduction:
-flexmem is used to access Flex. Memory on Siemens mobile equipment, i.e. S45.
+Introduction
+============
+
+flexmem is used to access Flex. Memory on Siemens mobile equipment,
+i.e. S45 and ME45.
+
+
+Short Installation Instructions
+===============================
 
 To compile and install:
 # ./configure
 # make
 # make install (as superuser)
 
-To send files or directories:
-# flexmem file/dir file/dir ...
 
-To list folder contents:
-# flexmem -l <FOLDER> ...
 
-To get files from your mobile: (not fully implemented yet)
-# flexmem -g dir/file ...
+Further Development
+===================
 
-To delete files from your mobile:
-# flexmem -d dir/file ...
+If you find this tool useful or actually like it let me know.
+Development will cease otherwise. Currently I know of 3 people
+using this tool (including me). So that proposal is not too
+unfair, see?
 
-To rename files on your mobile:
-# flexmem -m oldname newname
+If you are a developer and want to use flexmem library or even
+cobex_bfb library do so. But please keep me informed - I'll send
+you pre-releases. That way your application is able to exploit the
+newest library features.
 
-To receive files or directories:
-# flexmem -r [DEST]
-If no destination is specified files will be written to the current directory.
-Then use your mobiles "Send via IrDA" functions.
+
+Author and Contact
+==================
+
+Author: Christian W. Zuckschwerdt <zany@triq.net> http://triq.net/gsm.html
+

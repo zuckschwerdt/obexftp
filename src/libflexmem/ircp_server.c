@@ -2,7 +2,7 @@
 #include <string.h>
 #include <unistd.h>
 
-#include "ircp.h"
+#include "flexmem.h"
 #include "ircp_io.h"
 #include "ircp_server.h"
 #include "debug.h"

@@ -1,5 +1,5 @@
-AC_INIT(src/ircp.c)
-AM_INIT_AUTOMAKE(flexmem, 0.6)
+AC_INIT(src/flexmem_cli.c)
+AM_INIT_AUTOMAKE(flexmem, 0.7)
 AM_CONFIG_HEADER(config.h)
 
 AM_MAINTAINER_MODE
@@ -9,7 +9,6 @@ AC_PROG_CC
 AC_PROG_CXX
 AC_PROG_RANLIB
 AC_HEADER_STDC
-AC_ARG_PROGRAM
 
 AM_PATH_GLIB(1.2.0)
 AM_PATH_OPENOBEX(0.9.8)
@@ -22,4 +21,6 @@ CFLAGS="$CFLAGS -Wall"
 
 AC_OUTPUT([
 Makefile 
+src/libflexmem/libcobexbfb/Makefile
+src/libflexmem/Makefile
 src/Makefile])

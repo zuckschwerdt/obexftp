@@ -2,7 +2,7 @@
 #define IRCP_CLIENT_H
 
 #include <openobex/obex.h>
-#include "ircp.h"
+#include "flexmem.h"
 
 typedef struct ircp_client
 {
@@ -17,7 +17,9 @@ typedef struct ircp_client
 } ircp_client_t;
 
 
-ircp_client_t *ircp_cli_open(ircp_info_cb_t infocb, obex_ctrans_t *ctrans);
+gint ircp_sync(ircp_client_t *cli);
+
+ircp_client_t *ircp_cli_open(ircp_info_cb_t infocb, gchar *tty);
 void ircp_cli_close(ircp_client_t *cli);
 gint ircp_cli_connect(ircp_client_t *cli);
 gint ircp_cli_disconnect(ircp_client_t *cli);

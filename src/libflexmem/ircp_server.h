@@ -3,7 +3,7 @@
 
 #include <glib.h>
 #include <openobex/obex.h>
-#include "ircp.h"
+#include "flexmem.h"
 
 typedef struct ircp_server
 {

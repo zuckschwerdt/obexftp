@@ -32,7 +32,7 @@
 
 #include <glib.h>
 
-typedef void (*ircp_info_cb_t)(gint event, gchar *param);
+typedef void (*ircp_info_cb_t)(gint event, gpointer param);
 
 enum {
 	IRCP_EV_ERRMSG,
@@ -48,6 +48,9 @@ enum {
 	IRCP_EV_CONNECTIND,
 	IRCP_EV_DISCONNECTIND,
 	IRCP_EV_RECEIVING,
+
+	IRCP_EV_BODY,
+	IRCP_EV_INFO,
 };
 
 /* Number of bytes passed at one time to OBEX */

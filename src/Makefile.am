@@ -1,3 +1,5 @@
+SUBDIRS = libflexmem
+
 INCLUDES = \
 	@GLIB_CFLAGS@ \
 	@OPENOBEX_CFLAGS@
@@ -5,17 +7,9 @@ INCLUDES = \
 LDADD = \
 	@GLIB_LIBS@ \
 	@OPENOBEX_LIBS@ \
-	libircp.a
+	libflexmem/libflexmem.a \
+	libflexmem/libcobexbfb/libcobexbfb.a
 
-libircp_a_SOURCES = \
-		ircp_client.c ircp_client.h \
-		ircp_server.c ircp_server.h \
-		ircp_io.c ircp_io.h \
-		dirtraverse.c dirtraverse.h \
-		debug.h ircp.h
-
-noinst_LIBRARIES = libircp.a
-
-flexmem_SOURCES = ircp.c cobex_bfb.c bfb.c crc.c
+flexmem_SOURCES = flexmem_cli.c
 
 bin_PROGRAMS = flexmem 

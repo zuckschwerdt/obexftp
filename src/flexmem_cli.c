@@ -32,27 +32,23 @@
 #define _GNU_SOURCE
 #include <getopt.h>
 
-#include "debug.h"
-#include "ircp.h"
-#include "ircp_client.h"
-#include "ircp_server.h"
+#include "libflexmem/flexmem.h"
+#include "libflexmem/ircp_client.h"
+#include "libflexmem/ircp_server.h"
 
-#include "cobex_bfb.h"
-
-#define TTY_PREFIX "/dev/tty"
-#define IR_PREFIX "/dev/ir"
-
-void ircp_info_cb(gint event, gchar *param)
+void ircp_info_cb(gint event, gpointer param)
 {
-	DEBUG(4, G_GNUC_FUNCTION "()\n");
+	gchar *msg = (gchar *) param;
+	guint32 info = GPOINTER_TO_UINT (param);
+
 	switch (event) {
 
 	case IRCP_EV_ERRMSG:
-		g_print("Error: %s\n", param);
+		g_print("Error: %s\n", msg);
 		break;
 
 	case IRCP_EV_ERR:
-		g_print("failed: %s\n", param);
+		g_print("failed: %s\n", msg);
 		break;
 	case IRCP_EV_OK:
 		g_print("done\n");
@@ -65,10 +61,10 @@ void ircp_info_cb(gint event, gchar *param)
 		g_print("Disconnecting...");
 		break;
 	case IRCP_EV_SENDING:
-		g_print("Sending %s...", param);
+		g_print("Sending %s...", msg);
 		break;
 	case IRCP_EV_RECEIVING:
-		g_print("Receiving %s...", param);
+		g_print("Receiving %s...", msg);
 		break;
 
 	case IRCP_EV_LISTENING:
@@ -80,6 +76,10 @@ void ircp_info_cb(gint event, gchar *param)
 		break;
 	case IRCP_EV_DISCONNECTIND:
 		g_print("Disconnecting\n");
+		break;
+
+	case IRCP_EV_INFO:
+		g_print("Got info %d: \n", info);
 		break;
 
 	}
@@ -94,7 +94,7 @@ int main(int argc, char *argv[])
 	ircp_client_t *cli;
 	ircp_server_t *srv;
 	gchar *inbox;
-        obex_ctrans_t *ctrans = NULL;
+	gchar *tty = NULL;
 
 	while (1) {
 		int option_index = 0;
@@ -125,31 +125,23 @@ int main(int argc, char *argv[])
 		switch (c) {
 		
 		case 'd':
-			cobex_set_tty(optarg);
-			if (!strncmp(optarg, TTY_PREFIX, sizeof(TTY_PREFIX)-1))
-				ctrans = cobex_ctrans();
-			if (!strncmp(optarg, IR_PREFIX, sizeof(IR_PREFIX)-1))
-				ctrans = NULL;
-			break;
-
-		case 's':
-			ctrans = cobex_ctrans();
-			break;
-
-		case 'a':
-			ctrans = NULL;
+			if (!strcasecmp(optarg, "irda"))
+				tty = NULL;
+			else
+				tty = optarg;
 			break;
 
 		case 'l':
-			cli = ircp_cli_open(ircp_info_cb, ctrans);
+			cli = ircp_cli_open(ircp_info_cb, tty);
 			if(cli == NULL) {
 				g_print("Error opening ircp-client\n");
 				return -1;
 			}
-			
+
 			// Connect
 			if(ircp_cli_connect(cli) >= 0) {
 				ircp_list(cli, optarg, optarg);
+				ircp_sync (cli);
 
 				// Disconnect
 				ircp_cli_disconnect(cli);
@@ -159,7 +151,7 @@ int main(int argc, char *argv[])
 			break;
 
 		case 'g':
-			cli = ircp_cli_open(ircp_info_cb, ctrans);
+			cli = ircp_cli_open(ircp_info_cb, tty);
 			if(cli == NULL) {
 				g_print("Error opening ircp-client\n");
 				return -1;
@@ -169,6 +161,7 @@ int main(int argc, char *argv[])
 			if(ircp_cli_connect(cli) >= 0) {
 				// Get all files
 				ircp_get(cli, optarg, optarg);
+				ircp_sync (cli);
 
 				// Disconnect
 				ircp_cli_disconnect(cli);
@@ -178,7 +171,7 @@ int main(int argc, char *argv[])
 			break;
 
 		case 'p':
-			cli = ircp_cli_open(ircp_info_cb, ctrans);
+			cli = ircp_cli_open(ircp_info_cb, tty);
 			if(cli == NULL) {
 				g_print("Error opening ircp-client\n");
 				return -1;
@@ -188,6 +181,7 @@ int main(int argc, char *argv[])
 			if(ircp_cli_connect(cli) >= 0) {
 				// Send all files
 				ircp_put(cli, optarg);
+				ircp_sync (cli);
 
 				// Disconnect
 				ircp_cli_disconnect(cli);
@@ -197,7 +191,7 @@ int main(int argc, char *argv[])
 			break;
 
 		case 'i':
-			cli = ircp_cli_open(ircp_info_cb, ctrans);
+			cli = ircp_cli_open(ircp_info_cb, tty);
 			if(cli == NULL) {
 				g_print("Error opening ircp-client\n");
 				return -1;
@@ -207,7 +201,9 @@ int main(int argc, char *argv[])
 			if(ircp_cli_connect(cli) >= 0) {
 				// Retrieve Info
 				ircp_info(cli, 0x01);
+				ircp_sync (cli);
 				ircp_info(cli, 0x02);
+				ircp_sync (cli);
 
 				// Disconnect
 				ircp_cli_disconnect(cli);
@@ -223,7 +219,7 @@ int main(int argc, char *argv[])
 				break;
 			}
 
-			cli = ircp_cli_open(ircp_info_cb, ctrans);
+			cli = ircp_cli_open(ircp_info_cb, tty);
 			if(cli == NULL) {
 				g_print("Error opening ircp-client\n");
 				return -1;
@@ -233,6 +229,7 @@ int main(int argc, char *argv[])
 			if(ircp_cli_connect(cli) >= 0) {
 				// Rename a file
 				ircp_rename(cli, move_src, optarg);
+				ircp_sync (cli);
 
 				// Disconnect
 				ircp_cli_disconnect(cli);
@@ -243,7 +240,7 @@ int main(int argc, char *argv[])
 			break;
 
 		case 'k':
-			cli = ircp_cli_open(ircp_info_cb, ctrans);
+			cli = ircp_cli_open(ircp_info_cb, tty);
 			if(cli == NULL) {
 				g_print("Error opening ircp-client\n");
 				return -1;
@@ -253,6 +250,7 @@ int main(int argc, char *argv[])
 			if(ircp_cli_connect(cli) >= 0) {
 				// Delete file
 				ircp_del(cli, optarg);
+				ircp_sync (cli);
 
 				// Disconnect
 				ircp_cli_disconnect(cli);

@@ -7,9 +7,10 @@
 #include <fcntl.h>
 #include <sys/stat.h>
 
-#include "ircp.h"
+#include "flexmem.h"
 #include "ircp_client.h"
 #include "ircp_io.h"
+#include "libcobexbfb/cobex_bfb.h"
 
 #include "dirtraverse.h"
 #include "debug.h"
@@ -22,6 +23,17 @@
 #include <netdb.h>
 #include <netinet/in.h>
 #endif
+
+
+typedef struct { // fixed to 6 bytes for now
+	guint8 code;
+	guint8 info_len;
+	guint8 info[4];
+} apparam_t;
+
+// parameter 0x01: mem installed, 0x02: free mem
+#define APPARAM_INFO_CODE '2'
+
 
 //
 // Add more data to stream.
@@ -65,7 +77,7 @@ static gint cli_fillstream(ircp_client_t *cli, obex_object_t *object)
 
 
 //
-// Save body from object
+// Save body from object or return application parameters
 //
 static void client_done(obex_t *handle, obex_object_t *object, gint obex_cmd, gint obex_rsp)
 {
@@ -75,12 +87,8 @@ static void client_done(obex_t *handle, obex_object_t *object, gint obex_cmd, gi
 
         const guint8 *body = NULL;
         gint body_len = 0;
+	GString *body_str;
 
-	typedef struct { // fixed to 6 bytes
-		guint8 code;
-		guint8 info_len;
-		guint8 info[4];
-	} apparam_t;
 	apparam_t *app = NULL;
 	guint32 info;
 
@@ -90,12 +98,19 @@ static void client_done(obex_t *handle, obex_object_t *object, gint obex_cmd, gi
 
         g_print(__FUNCTION__ "()\n");
 
+	if (cli->fd > 0)
+		close(cli->fd);
+
         while(OBEX_ObjectGetNextHeader(handle, object, &hi, &hv, &hlen)) {
                 if(hi == OBEX_HDR_BODY) {
 			g_print(__FUNCTION__ "() Found body\n");
                         body = hv.bs;
                         body_len = hlen;
-                        break;
+			/* sucks we need glib2 asap */
+			body_str = g_string_sized_new (body_len);
+			body_str->str = body;
+			cli->infocb(IRCP_EV_BODY, body_str);
+                        //break;
                 }
                 else if(hi == OBEX_HDR_CONNECTION) {
 			g_print(__FUNCTION__ "() Found connection number: %d\n", hv.bq4);
@@ -108,8 +123,9 @@ static void client_done(obex_t *handle, obex_object_t *object, gint obex_cmd, gi
                         if(hlen == sizeof(apparam_t)) {
 				app = (apparam_t *)hv.bs;
 				 // needed for alignment
-				memcpy(&info, &(app->info), 4);
+				memcpy(&info, &(app->info), sizeof(info));
 				info = g_ntohl(info);
+				cli->infocb(IRCP_EV_INFO, GUINT_TO_POINTER (info));
 			}
 			else
 				g_print(__FUNCTION__ "() Application parameters don't fit %d vs. %d.\n", hlen, sizeof(apparam_t));
@@ -169,16 +185,16 @@ static void cli_obex_event(obex_t *handle, obex_object_t *object, gint mode, gin
 	}
 }
 
+
 //
 // Do an OBEX request sync.
 //
-static gint cli_sync_request(ircp_client_t *cli, obex_object_t *object)
+gint ircp_sync(ircp_client_t *cli)
 {
 	gint ret;
 	DEBUG(4, G_GNUC_FUNCTION "()\n");
 
-	cli->finished = FALSE;
-	OBEX_Request(cli->obexhandle, object);
+	// cli->finished = FALSE;
 
 	while(cli->finished == FALSE) {
 		ret = OBEX_HandleInput(cli->obexhandle, 20);
@@ -196,13 +212,35 @@ static gint cli_sync_request(ircp_client_t *cli, obex_object_t *object)
 		return -1;
 }
 	
+static gint cli_sync_request(ircp_client_t *cli, obex_object_t *object)
+{
+	DEBUG(4, G_GNUC_FUNCTION "()\n");
+
+	cli->finished = FALSE;
+	OBEX_Request(cli->obexhandle, object);
+
+	return ircp_sync (cli);
+}
+	
+static gint cli_async_request(ircp_client_t *cli, obex_object_t *object)
+{
+	DEBUG(4, G_GNUC_FUNCTION "()\n");
+
+	cli->finished = FALSE;
+	OBEX_Request(cli->obexhandle, object);
+
+	return 1;
+}
+
 
 //
 // Create an ircp client
 //
-ircp_client_t *ircp_cli_open(ircp_info_cb_t infocb, obex_ctrans_t *ctrans)
+ircp_client_t *ircp_cli_open(ircp_info_cb_t infocb, gchar *tty)
 {
 	ircp_client_t *cli;
+        obex_ctrans_t *ctrans = NULL;
+
 
 	DEBUG(4, G_GNUC_FUNCTION "()\n");
 	cli = g_new0(ircp_client_t, 1);
@@ -211,6 +249,12 @@ ircp_client_t *ircp_cli_open(ircp_info_cb_t infocb, obex_ctrans_t *ctrans)
 
 	cli->infocb = infocb;
 	cli->fd = -1;
+
+	cobex_set_tty (tty);
+	if (tty != NULL)
+		ctrans = cobex_ctrans();
+	else
+		ctrans = NULL;
 
 #ifdef DEBUG_TCP
 	cli->obexhandle = OBEX_Init(OBEX_TRANS_INET, cli_obex_event, 0);
@@ -348,7 +392,7 @@ gint ircp_info(ircp_client_t *cli, guint8 opcode)
 {
 	obex_object_t *object = NULL;
         obex_headerdata_t hdd;
-	guint8 cmdstr[] = {'2', 0x01, 0x00};
+	guint8 cmdstr[] = {APPARAM_INFO_CODE, 0x01, 0x00};
 	int ret;
 
 	g_return_val_if_fail(cli != NULL, -1);
@@ -365,7 +409,7 @@ gint ircp_info(ircp_client_t *cli, guint8 opcode)
         hdd.bs = cmdstr;
 	OBEX_ObjectAddHeader(cli->obexhandle, object, OBEX_HDR_APPARAM, hdd, sizeof(cmdstr), OBEX_FL_FIT_ONE_PACKET);
  
-	ret = cli_sync_request(cli, object);
+	ret = cli_async_request(cli, object);
 		
 	if(ret < 0) 
 		cli->infocb(IRCP_EV_ERR, "info");
@@ -416,7 +460,7 @@ gint ircp_list(ircp_client_t *cli, gchar *localname, gchar *remotename)
 		g_free(ucname);
 	}
 	
-	ret = cli_sync_request(cli, object);
+	ret = cli_async_request(cli, object);
 		
 	if(ret < 0) 
 		cli->infocb(IRCP_EV_ERR, localname);
@@ -467,7 +511,7 @@ gint ircp_get(ircp_client_t *cli, gchar *localname, gchar *remotename)
         OBEX_ObjectAddHeader(cli->obexhandle, object, OBEX_HDR_NAME, hdd, ucname_len, 0);
         g_free(ucname);
 	
-	ret = cli_sync_request(cli, object);
+	ret = cli_async_request(cli, object);
 		
 	if(ret < 0)
 		cli->infocb(IRCP_EV_ERR, localname);
@@ -533,7 +577,7 @@ gint ircp_rename(ircp_client_t *cli, gchar *sourcename, gchar *targetname)
         OBEX_ObjectAddHeader(cli->obexhandle, object, OBEX_HDR_APPARAM, hdd, appstr_len - 2, 0);
         g_free(appstr);
 	
-	ret = cli_sync_request(cli, object);
+	ret = cli_async_request(cli, object);
 		
 	if(ret < 0)
 		cli->infocb(IRCP_EV_ERR, sourcename);
@@ -581,10 +625,8 @@ gint ircp_del(ircp_client_t *cli, gchar *name)
         OBEX_ObjectAddHeader(cli->obexhandle, object, OBEX_HDR_NAME, hdd, ucname_len, OBEX_FL_FIT_ONE_PACKET);
         g_free(ucname);
 	
-	ret = cli_sync_request(cli, object);
+	ret = cli_async_request(cli, object);
 	
-	close(cli->fd);
-		
 	if(ret < 0)
 		cli->infocb(IRCP_EV_ERR, name);
 	else
@@ -619,9 +661,9 @@ static gint ircp_put_file(ircp_client_t *cli, gchar *localname, gchar *remotenam
 	if(cli->fd < 0)
 		ret = -1;
 	else
-		ret = cli_sync_request(cli, object);
+		ret = cli_async_request(cli, object);
 	
-	close(cli->fd);
+	//close(cli->fd);
 		
 	if(ret < 0)
 		cli->infocb(IRCP_EV_ERR, localname);
