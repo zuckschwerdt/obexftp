@@ -1,0 +1,52 @@
+#
+# spec file for package ObexFTP (Version 0.9.2)
+# 
+# Author: Christian W. Zuckschwerdt <zany@triq.net>, Dec 2001 - Feb 2002
+#
+
+Summary:      Access devices via ObexFTP e.g. Siemens Moblile Equipment
+Name:         obexftp
+Version:      @VERSION@
+Release:      @RELEASE@
+Copyright:    GPL
+Group:        Utilities/Console
+Autoreqprov:  on
+Source:       http://triq.net/gsmlib/%{name}-%{version}.tar.gz
+URL:          http://triq.net/gsm.html
+BuildRoot:    %{_tmppath}/%{name}-%{version}-root
+Packager:     Christian W. Zuckschwerdt <zany@triq.net>
+
+
+%description
+This package contains a library for ObexFTP and a library to access
+Siemens Mobile Equipment via serial port.
+A simple command line client is included too.
+
+Authors:
+--------
+    Christian W. Zuckschwerdt <zany@triq.net>
+    
+
+%prep
+%setup
+
+%configure
+
+%build
+make
+
+%install
+rm -rf $RPM_BUILD_ROOT
+%makeinstall
+
+%clean
+rm -rf $RPM_BUILD_ROOT
+
+%files
+%defattr(-, root, root)
+%doc AUTHORS COPYING ChangeLog NEWS
+%doc README README.bfb README.obexftp README.openobex
+%{_prefix}/bin/*
+%{_libdir}/*
+%{_includedir}/*/*
+

@@ -1,0 +1,47 @@
+================================================================
+            Siemens Mobile Equipment (e.g. S45/ME45)
+                         OBEX profiles
+================================================================
+
+  Christian Zuckschwerdt  <zany@triq.net>  2002-02-06
+
+
+0. Disclaimer
+
+ It is possible to harm your mobile phone.
+ Use the information in this document at your own risk.
+
+
+1. Preface
+
+ This document is a result of many hours of studying the
+ Siemens Mobile Equipment BFB protocol
+ by the author, in an attempt to implement a way to access
+ Flex.Mem. Like all tools, this document
+ was born out of frustration with the lack of documention
+ available on the subject.
+
+ Though every attempt has been made to ensure the correctness
+ of this document, the author cannot make any guarantees as
+ to its accuracy.
+
+
+1. Siemens Mobile Equipment
+
+ S45/ME45 seem to adhere to Bluetooth V1.1 Profile Specifications
+ - Section K12.5 OBEX
+
+
+A. Biography
+
+Object Exchange (OBEX) protocol
+http://www.irda.org/standards/pubs/IrOBEX12.pdf
+
+Bluetooth V1.1 Profile Specifications - Section K12.5 OBEX:
+http://www.bluetooth.org/specifications.htm
+
+Tutorial:
+http://www.palowireless.com/infotooth/tutorial.asp
+http://www.palowireless.com/infotooth/tutorial/profiles.asp
+http://www.palowireless.com/infotooth/tutorial/k12_ftp.asp
+

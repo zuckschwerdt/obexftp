@@ -32,9 +32,9 @@
 #define _GNU_SOURCE
 #include <getopt.h>
 
-#include "libobexftp/obexftp.h"
-#include "libobexftp/client.h"
-#include "libcobexbfb/cobex_bfb.h"
+#include <obexftp/obexftp.h>
+#include <obexftp/client.h>
+#include <cobexbfb/cobex_bfb.h>
 
 void info_cb(gint event, const gchar *msg, gint len, gpointer data)
 {
