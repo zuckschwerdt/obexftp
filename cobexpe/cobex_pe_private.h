@@ -30,6 +30,6 @@
 #define SERPORT "/dev/ttyS0"
 
 typedef struct {
-	gchar *tty;
+	char *tty;
 	int fd;
 } cobex_t;

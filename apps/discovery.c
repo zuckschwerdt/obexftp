@@ -20,27 +20,35 @@
  */
 /*
  *  v0.1:  Die, 30 Jul 2002 14:38:56 +0200
+ *  FIXME: win32 not done yet
  */
 
-#include <glib.h>
-
+#include <stdint.h>
 #include <stdlib.h>
+#include <stdio.h>
 #include <string.h>
-#include <sys/ioctl.h>
 #include <fcntl.h>
 #include <unistd.h>
+#ifdef _WIN32
+#include <windows.h>
+#define speed_t DWORD
+typedef HANDLE FD;
+#else
 #include <termios.h>
+#include <sys/ioctl.h>
+typedef int FD;
+#endif
 
-#include <g_debug.h>
+#include <common.h>
 
 struct mobile_info {
-	gchar *gmi;	/* AT+GMI : SIEMENS */
-	gchar *gmm;	/* AT+GMM : Gipsy Soft Protocolstack */
-	gchar *gmr;	/* AT+GMR : V2.550 */
-	gchar *cgmi;	/* AT+CGMI : SIEMENS */
-	gchar *cgmm;	/* AT+CGMM : S45 */
-	gchar *cgmr;	/* AT+CGMR : 21 */
-	const gchar *ttyname;
+	char *gmi;	/* AT+GMI : SIEMENS */
+	char *gmm;	/* AT+GMM : Gipsy Soft Protocolstack */
+	char *gmr;	/* AT+GMR : V2.550 */
+	char *cgmi;	/* AT+CGMI : SIEMENS */
+	char *cgmm;	/* AT+CGMM : S45 */
+	char *cgmr;	/* AT+CGMR : 21 */
+	const char *ttyname;
 	speed_t speed;
 };
 
@@ -58,39 +66,56 @@ struct mobile_info {
  */
 
 /* if auto-baud is enabled this will yoield the highest speed first */
+#ifdef _WIN32
+speed_t speeds[] = {CBR_115200, CBR_57600, CBR_38400, CBR_19200, CBR_9600, 0};
+#else
 speed_t speeds[] = {B115200, B57600, B38400, B19200, B9600, B0};
+#endif
 
 /* Send an AT-command an expect 1 line back as answer */
-static gint do_at_cmd(int fd, char *cmd, char *rspbuf, int rspbuflen)
+static int do_at_cmd(FD fd, char *cmd, char *rspbuf, int rspbuflen)
 {
+#ifdef _WIN32
+	DWORD actual;
+#else
 	fd_set ttyset;
 	struct timeval tv;
+	int actual;
+#endif
 
 	char *answer;
 	char *answer_end = NULL;
 	unsigned int answer_size;
 
 	char tmpbuf[200] = {0,};
-	int actual;
 	int total = 0;
 	int done = 0;
 	int cmdlen;
 
-        g_return_val_if_fail (fd > 0, -1);
-        g_return_val_if_fail (cmd != NULL, -1);
+        return_val_if_fail (fd > 0, -1);
+        return_val_if_fail (cmd != NULL, -1);
 
 	cmdlen = strlen(cmd);
 
 	rspbuf[0] = 0;
-	g_debug(G_GNUC_FUNCTION "() Sending %d: %s", cmdlen, cmd);
+	DEBUG(3, "%s() Sending %d: %s", __func__, cmdlen, cmd);
 
 	// Write command
-	if(write(fd, cmd, cmdlen) < cmdlen)	{
-		g_warning("Error writing to port");
+#ifdef _WIN32
+	if(!WriteFile(fd, cmd, cmdlen, &actual, NULL) || (actual != cmdlen)) {
+#else
+	if(write(fd, cmd, cmdlen) != cmdlen)	{
+#endif
+		DEBUG(1, "Error writing to port");
 		return -1;
 	}
 
 	while(!done)	{
+#ifdef _WIN32
+		if (!ReadFile(fd, &tmpbuf[total], sizeof(tmpbuf) - total, &actual, NULL)) {
+				DEBUG(2, "%s() Read error: %ld", __func__, actual);
+		}
+#else
 		FD_ZERO(&ttyset);
 		FD_SET(fd, &ttyset);
 		tv.tv_sec = 2;
@@ -98,34 +123,37 @@ static gint do_at_cmd(int fd, char *cmd, char *rspbuf, int rspbuflen)
 		if(select(fd+1, &ttyset, NULL, NULL, &tv))	{
 			sleep(1);
 			actual = read(fd, &tmpbuf[total], sizeof(tmpbuf) - total);
+#endif
 			if(actual < 0)
 				return actual;
 			total += actual;
 
-			g_debug(G_GNUC_FUNCTION "() tmpbuf=%d: %s", total, tmpbuf);
+			DEBUG(3, "%s() tmpbuf=%d: %s", __func__, total, tmpbuf);
 
 			// Answer not found within 100 bytes. Cancel
 			if(total == sizeof(tmpbuf))
 				return -1;
 
-			if( (answer = index(tmpbuf, '\n')) )	{
+			if( (answer = strchr(tmpbuf, '\n')) )	{
 				// Remove first line (echo)
-				if( (answer_end = index(answer+1, '\n')) )	{
+				if( (answer_end = strchr(answer+1, '\n')) )	{
 					// Found end of answer
 					done = 1;
 				}
 			}
+#ifndef _WIN32
 		}
 		else	{
 			// Anser didn't come in time. Cancel
 			return -1;
 		}
+#endif
 	}
 
-//	g_debug(G_GNUC_FUNCTION "() buf:%08lx answer:%08lx end:%08lx", tmpbuf, answer, answer_end);
+//	DEBUG(3, "%s() buf:%08lx answer:%08lx end:%08lx", __func__, tmpbuf, answer, answer_end);
 
 
-	g_debug(G_GNUC_FUNCTION "() Answer: %s", answer);
+	DEBUG(3, "%s() Answer: %s", __func__, answer);
 
 	// Remove heading and trailing \r
 	if((*answer_end == '\r') || (*answer_end == '\n'))
@@ -136,11 +164,11 @@ static gint do_at_cmd(int fd, char *cmd, char *rspbuf, int rspbuflen)
 		answer++;
 	if((*answer == '\r') || (*answer == '\n'))
 		answer++;
-	g_debug(G_GNUC_FUNCTION "() Answer: %s", answer);
+	DEBUG(3, "%s() Answer: %s", __func__, answer);
 
 	answer_size = (answer_end) - answer +1;
 
-	g_info(G_GNUC_FUNCTION "() Answer size=%d", answer_size);
+	DEBUG(2, "%s() Answer size=%d", __func__, answer_size);
 	if( (answer_size) >= rspbuflen )
 		return -1;
 
@@ -152,24 +180,70 @@ static gint do_at_cmd(int fd, char *cmd, char *rspbuf, int rspbuflen)
 
 /* Init the phone and set it in BFB-mode */
 /* Returns fd or -1 on failure */
-struct mobile_info *probe_tty(const gchar *ttyname)
+struct mobile_info *probe_tty(const char *ttyname)
 {
-	gint ttyfd;
-	gint speed;
-	struct termios oldtio, newtio;
-	guint8 rspbuf[200];
+	int speed;
+	uint8_t rspbuf[200];
 	struct mobile_info *info;
-	gchar *p;
+	char *p;
+#ifdef _WIN32
+	HANDLE ttyfd;
+	DCB dcb;
+	COMMTIMEOUTS ctTimeOuts;
 
-        g_return_val_if_fail (ttyname != NULL, NULL);
+        return_val_if_fail (ttyname != NULL, INVALID_HANDLE_VALUE);
 
-	g_debug(G_GNUC_FUNCTION "() ");
+	DEBUG(3, "%s() CreateFile", __func__);
+	ttyfd = CreateFile (ttyname, GENERIC_READ | GENERIC_WRITE, 0, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+	if (ttyfd == INVALID_HANDLE_VALUE) {
+		fprintf(stderr, "Error: CreateFile()\n");
+		return NULL;
+	}
+
+	if(!GetCommState(ttyfd, &dcb))
+		fprintf(stderr, "Error: GetCommState()\n");
+	dcb.fBinary = TRUE;
+	dcb.BaudRate = CBR_57600;
+	dcb.fParity = FALSE;
+	dcb.Parity = 0;
+	dcb.ByteSize = 8;
+	dcb.StopBits = 1;
+	dcb.fInX = FALSE;
+	dcb.fOutX = FALSE;
+	dcb.fOutxDsrFlow = FALSE;
+	dcb.fOutxCtsFlow = FALSE;
+	dcb.fDtrControl = DTR_CONTROL_ENABLE;
+	dcb.fRtsControl = RTS_CONTROL_ENABLE;
+	if(!SetCommState(ttyfd, &dcb))
+		fprintf(stderr, "Error: SetCommState()\n");
+
+	ctTimeOuts.ReadIntervalTimeout = 250;
+	ctTimeOuts.ReadTotalTimeoutMultiplier = 1; /* no good with big buffer */
+	ctTimeOuts.ReadTotalTimeoutConstant = 500;
+	ctTimeOuts.WriteTotalTimeoutMultiplier = 1;
+	ctTimeOuts.WriteTotalTimeoutConstant = 5000;
+	if(!SetCommTimeouts(ttyfd, &ctTimeOuts))
+		fprintf(stderr, "Error: SetCommTimeouts()\n");
+       
+	Sleep(500);
+
+	// flush all pending input
+	if(!PurgeComm(ttyfd, PURGE_RXABORT | PURGE_RXCLEAR))
+		fprintf(stderr, "Error: PurgeComm()\n");
+
+#else /* _WIN32 */
+	int ttyfd;
+	struct termios oldtio, newtio;
+
+        return_val_if_fail (ttyname != NULL, NULL);
+
+	DEBUG(3, "%s() ", __func__);
 
 	info = calloc(1, sizeof(struct mobile_info));
 	info->ttyname = ttyname;
 
 	if( (ttyfd = open(ttyname, O_RDWR | O_NONBLOCK | O_NOCTTY, 0)) < 0 ) {
-		g_error("Can' t open tty");
+		fprintf(stderr, "Error: Can't open tty\n");
 		free(info);
 		return NULL;
 	}
@@ -188,10 +262,10 @@ struct mobile_info *probe_tty(const gchar *ttyname)
 
 		/* is this ok? do we need to send both cr and lf? */
 		if(do_at_cmd(ttyfd, "AT\r", rspbuf, sizeof(rspbuf)) < 0) {
-			g_warning("Comm-error doing AT");
+			DEBUG(1, "Comm-error doing AT");
 		}
 		else if(strcasecmp("OK", rspbuf) == 0) {
-			g_info("OKAY doing AT (%s)", rspbuf);
+			DEBUG(2, "OKAY doing AT (%s)", rspbuf);
 			break;
 		}
 
@@ -199,7 +273,7 @@ struct mobile_info *probe_tty(const gchar *ttyname)
 	if(speeds[speed] == B0) {
 		close(ttyfd);
 		free(info);
-		g_warning("Nothing found");
+		DEBUG(1, "Nothing found");
 		return NULL;
 	}
 	info->speed = speeds[speed];
@@ -208,91 +282,101 @@ struct mobile_info *probe_tty(const gchar *ttyname)
 	if(do_at_cmd(ttyfd, "AT+GMI\r", rspbuf, sizeof(rspbuf)) < 0) {
 		close(ttyfd);
 		free(info);
-		g_warning("Comm-error doing AT+GMI");
+		DEBUG(1, "Comm-error doing AT+GMI");
 		return NULL;
 	}
 	if ((p=strchr(rspbuf, '\r')) != NULL) *p = 0;
 	if ((p=strchr(rspbuf, '\n')) != NULL) *p = 0;
-	info->gmi = g_strdup(rspbuf);
+	info->gmi = strdup(rspbuf);
 
 	if(do_at_cmd(ttyfd, "AT+GMM\r", rspbuf, sizeof(rspbuf)) < 0) {
 		close(ttyfd);
 		free(info);
-		g_warning("Comm-error doing AT+GMM");
+		DEBUG(1, "Comm-error doing AT+GMM");
 		return NULL;
 	}
 	if ((p=strchr(rspbuf, '\r')) != NULL) *p = 0;
 	if ((p=strchr(rspbuf, '\n')) != NULL) *p = 0;
-	info->gmm = g_strdup(rspbuf);
+	info->gmm = strdup(rspbuf);
 
 	if(do_at_cmd(ttyfd, "AT+GMR\r", rspbuf, sizeof(rspbuf)) < 0) {
 		close(ttyfd);
 		free(info);
-		g_warning("Comm-error doing AT+GMR");
+		DEBUG(1, "Comm-error doing AT+GMR");
 		return NULL;
 	}
 	if ((p=strchr(rspbuf, '\r')) != NULL) *p = 0;
 	if ((p=strchr(rspbuf, '\n')) != NULL) *p = 0;
-	info->gmr= g_strdup(rspbuf);
+	info->gmr= strdup(rspbuf);
 
 	if(do_at_cmd(ttyfd, "AT+CGMI\r", rspbuf, sizeof(rspbuf)) < 0) {
 		close(ttyfd);
 		free(info);
-		g_warning("Comm-error doing AT+CGMI");
+		DEBUG(1, "Comm-error doing AT+CGMI");
 		return NULL;
 	}
 	if ((p=strchr(rspbuf, '\r')) != NULL) *p = 0;
 	if ((p=strchr(rspbuf, '\n')) != NULL) *p = 0;
-	info->cgmi = g_strdup(rspbuf);
+	info->cgmi = strdup(rspbuf);
 
 	if(do_at_cmd(ttyfd, "AT+CGMM\r", rspbuf, sizeof(rspbuf)) < 0) {
 		close(ttyfd);
 		free(info);
-		g_warning("Comm-error doing AT+CGMM");
+		DEBUG(1, "Comm-error doing AT+CGMM");
 		return NULL;
 	}
 	if ((p=strchr(rspbuf, '\r')) != NULL) *p = 0;
 	if ((p=strchr(rspbuf, '\n')) != NULL) *p = 0;
-	info->cgmm = g_strdup(rspbuf);
+	info->cgmm = strdup(rspbuf);
 
 	if(do_at_cmd(ttyfd, "AT+CGMR\r", rspbuf, sizeof(rspbuf)) < 0) {
 		close(ttyfd);
 		free(info);
-		g_warning("Comm-error doing AT+CGMR");
+		DEBUG(1, "Comm-error doing AT+CGMR");
 		return NULL;
 	}
 	if ((p=strchr(rspbuf, '\r')) != NULL) *p = 0;
 	if ((p=strchr(rspbuf, '\n')) != NULL) *p = 0;
-	info->cgmr= g_strdup(rspbuf);
+	info->cgmr= strdup(rspbuf);
 
 	close(ttyfd);
+#endif
 	return info;
 
 }
 
-void g_log_null_handler (const gchar *log_domain,
+#if 0
+void g_log_null_handler (const char *log_domain,
                          GLogLevelFlags log_level,
-                         const gchar *message,
-                         gpointer user_data) {
+                         const char *message,
+                         void *user_data) {
 }
+#endif
 
 int main(int argc, char *argv[])
 {
 	struct mobile_info *info;
-
+	/*
         g_log_set_handler (NULL, G_LOG_LEVEL_DEBUG | G_LOG_LEVEL_INFO,
                            g_log_null_handler, NULL);
-
+	*/
 	if (argc > 1)
 		info = probe_tty(argv[1]);
 	else
+#ifdef _WIN32
+		info = probe_tty("COM1");
+#else
 		info = probe_tty("/dev/ttyS0");
+#endif
 
-	if (info != NULL)
-		g_print("%s (%d):\n%s, %s, %s\n%s, %s, %s\n",
-			info->ttyname, info->speed,
-			info->gmi, info->gmm, info->gmr,
-			info->cgmi, info->cgmm, info->cgmr);
+	if (info != NULL) {
+		printf("%s (%d):\n%s, %s, %s\n%s, %s, %s\n",
+		       info->ttyname, info->speed,
+		       info->gmi, info->gmm, info->gmr,
+		       info->cgmi, info->cgmm, info->cgmr);
+		
+		return (EXIT_SUCCESS);
+	}
 
-	return (EXIT_SUCCESS);
+	return (EXIT_FAILURE);
 }

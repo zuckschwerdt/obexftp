@@ -23,23 +23,66 @@
  *  v0.4:  Don, 25 Jul 2002 03:16:41 +0200
  */
 
-#include <glib.h>
-
+#include <stdlib.h>
+#include <stdint.h>
 #include <string.h>
+#ifndef S_SPLINT_S
 #include <unistd.h>
+#endif
+
+/* htons */
+#ifdef _WIN32
+#include <winsock.h>
+#else
+#include <netinet/in.h>
+#endif
 
 #include "crc.h"
 #include "bfb.h"
-#include <g_debug.h>
+#include <common.h>
 
-#undef G_LOG_DOMAIN
-#define	G_LOG_DOMAIN	BFB_LOG_DOMAIN
+/* Provide convenience macros for handling structure
+ * fields through their offsets.
+ */
+#define STRUCT_OFFSET(struct_type, member)    \
+	((uint64_t) ((char*) &((struct_type*) 0)->member))
+#define STRUCT_MEMBER_P(struct_p, struct_offset)   \
+	((void *) ((char*) (struct_p) + (uint64_t) (struct_offset)))
+#define STRUCT_MEMBER(member_type, struct_p, struct_offset)   \
+	(*(member_type*) STRUCT_MEMBER_P ((struct_p), (struct_offset)))
+
+/* mobile need little-endianess always */
+/* Solaris: _LITTLE_ENDIAN / _BIG_ENDIAN */
+/* Linux: */
+#if (BYTE_ORDER == LITTLE_ENDIAN) || defined (_LITTLE_ENDIAN)
+
+#define htoms(A)	(A)
+#define htoml(A)	(A)
+#define mtohs(A)	(A)
+#define mtohl(A)	(A)
+
+#elif (BYTE_ORDER == BIG_ENDIAN) || defined (_BIG_ENDIAN)
+
+#define htoms(A)	((((uint16_t)(A) & 0xff00) >> 8) | \
+			 (((uint16_t)(A) & 0x00ff) << 8))
+#define htoml(A)	((((uint32_t)(A) & 0xff000000) >> 24) | \
+			 (((uint32_t)(A) & 0x00ff0000) >> 8)  | \
+			 (((uint32_t)(A) & 0x0000ff00) << 8)  | \
+			 (((uint32_t)(A) & 0x000000ff) << 24))
+#define mtohs     htoms
+#define mtohl     htoml
+
+#else
+
+#error "BYTE_ORDER needs to be either BIG_ENDIAN or LITTLE_ENDIAN."
+
+#endif
 
 /* returns the whole buffer folded with xor. */
-guint8 bfb_checksum(guint8 *data, gint len)
+uint8_t bfb_checksum(uint8_t *data, int len)
 {
 	int i;
-	guint8 chk = 0;
+	uint8_t chk = 0;
       
 	for (i=0; i < len; i++)
 	     chk ^= data[i];
@@ -53,12 +96,12 @@ guint8 bfb_checksum(guint8 *data, gint len)
 /* Type 0x02: first transmission in a row. */
 /* Type 0x03: continued transmission. */
 /* seq needs to be incremented afterwards. */
-gint bfb_stuff_data(guint8 *buffer, guint8 type, guint8 *data, gint len, gint seq)
+int bfb_stuff_data(uint8_t *buffer, uint8_t type, uint8_t *data, int len, int seq)
 {
         int i;
         union {
-                guint16 value;
-                guint8 bytes[2];
+                uint16_t value;
+                uint8_t bytes[2];
         } fcs;
 
 	// special case: "attention" packet
@@ -77,7 +120,7 @@ gint bfb_stuff_data(guint8 *buffer, guint8 type, guint8 *data, gint len, gint se
 	buffer[1] = ~buffer[0];
 	buffer[2] = seq;
 
-	fcs.value = g_htons(len);
+	fcs.value = htons(len);
 	buffer[3] = fcs.bytes[0];
 	buffer[4] = fcs.bytes[1];
 
@@ -94,7 +137,7 @@ gint bfb_stuff_data(guint8 *buffer, guint8 type, guint8 *data, gint len, gint se
         fcs.value = ~fcs.value;
 
 	// append CRC to packet
-	//fcs.value = g_htons(fcs.value);
+	//fcs.value = htons(fcs.value);
 	buffer[len+5] = fcs.bytes[0];
 	buffer[len+6] = fcs.bytes[1];
 
@@ -102,9 +145,9 @@ gint bfb_stuff_data(guint8 *buffer, guint8 type, guint8 *data, gint len, gint se
 }
 
 /* send a cmd, subcmd packet, add chk (no parameters) */
-gint bfb_write_subcmd(FD fd, guint8 type, guint8 subtype)
+int bfb_write_subcmd(FD fd, uint8_t type, uint8_t subtype)
 {
-	guint8 buffer[2];
+	uint8_t buffer[2];
 
 	buffer[0] = subtype;
 	buffer[1] = bfb_checksum(buffer, 1);
@@ -113,15 +156,15 @@ gint bfb_write_subcmd(FD fd, guint8 type, guint8 subtype)
 }
 
 /* send a cmd, subcmd packet */
-gint bfb_write_subcmd0(FD fd, guint8 type, guint8 subtype)
+int bfb_write_subcmd0(FD fd, uint8_t type, uint8_t subtype)
 {
 	return bfb_write_packets(fd, type, &subtype, 1);
 }
 
 /* send a cmd, subcmd, data packet */
-gint bfb_write_subcmd8(FD fd, guint8 type, guint8 subtype, guint8 p1)
+int bfb_write_subcmd8(FD fd, uint8_t type, uint8_t subtype, uint8_t p1)
 {
-	guint8 buffer[2];
+	uint8_t buffer[2];
 
 	buffer[0] = subtype;
 	buffer[1] = p1;
@@ -130,89 +173,89 @@ gint bfb_write_subcmd8(FD fd, guint8 type, guint8 subtype, guint8 p1)
 }
 
 /* send a cmd, subcmd packet, add chk (one word parameter) */
-gint bfb_write_subcmd1(FD fd, guint8 type, guint8 subtype, guint16 p1)
+int bfb_write_subcmd1(FD fd, uint8_t type, uint8_t subtype, uint16_t p1)
 {
-	guint8 buffer[4];
+	uint8_t buffer[4];
 
 	buffer[0] = subtype;
 
-	p1 = GUINT16_TO_LE(p1);	 /* mobile need little-endianess always */
-	buffer[1] = G_STRUCT_MEMBER(guint8, &p1, 0);
-	buffer[2] = G_STRUCT_MEMBER(guint8, &p1, 1);
+	p1 = htoms(p1);	 /* mobile need little-endianess always */
+	buffer[1] = STRUCT_MEMBER(uint8_t, &p1, 0);
+	buffer[2] = STRUCT_MEMBER(uint8_t, &p1, 1);
 
 	buffer[3] = bfb_checksum(buffer, 3);
 
-	g_debug("buf: %x %x %x %x",
+	DEBUG(3, "buf: %x %x %x %x",
 	      buffer[0], buffer[1], buffer[2], buffer[3]);
 	return bfb_write_packets(fd, type, buffer, 4);
 }
 
 /* send a cmd, subcmd packet, add chk (two word parameter) */
-gint bfb_write_subcmd2(FD fd, guint8 type, guint8 subtype, guint16 p1, guint16 p2)
+int bfb_write_subcmd2(FD fd, uint8_t type, uint8_t subtype, uint16_t p1, uint16_t p2)
 {
-	guint8 buffer[6];
+	uint8_t buffer[6];
 
 	buffer[0] = subtype;
 
-	p1 = GUINT16_TO_LE(p1);	 /* mobile need little-endianess always */
-	buffer[1] = G_STRUCT_MEMBER(guint8, &p1, 0);
-	buffer[2] = G_STRUCT_MEMBER(guint8, &p1, 1);
-	p2 = GUINT16_TO_LE(p2);	 /* mobile need little-endianess always */
-	buffer[3] = G_STRUCT_MEMBER(guint8, &p2, 0);
-	buffer[4] = G_STRUCT_MEMBER(guint8, &p2, 1);
+	p1 = htoms(p1);	 /* mobile need little-endianess always */
+	buffer[1] = STRUCT_MEMBER(uint8_t, &p1, 0);
+	buffer[2] = STRUCT_MEMBER(uint8_t, &p1, 1);
+	p2 = htoms(p2);	 /* mobile need little-endianess always */
+	buffer[3] = STRUCT_MEMBER(uint8_t, &p2, 0);
+	buffer[4] = STRUCT_MEMBER(uint8_t, &p2, 1);
 
 	buffer[5] = bfb_checksum(buffer, 5);
 
-	g_debug("buf: %x %x %x %x %x %x",
+	DEBUG(3, "buf: %x %x %x %x %x %x",
 	      buffer[0], buffer[1], buffer[2], buffer[3], buffer[4], buffer[5]);
 
 	return bfb_write_packets(fd, type, buffer, 6);
 }
 
 /* send a cmd, subcmd packet, add chk (three word parameter) */
-gint bfb_write_subcmd3(FD fd, guint8 type, guint8 subtype, guint16 p1, guint16 p2, guint16 p3)
+int bfb_write_subcmd3(FD fd, uint8_t type, uint8_t subtype, uint16_t p1, uint16_t p2, uint16_t p3)
 {
-	guint8 buffer[8];
+	uint8_t buffer[8];
 
 	buffer[0] = subtype;
 
-	p1 = GUINT16_TO_LE(p1);	 /* mobile need little-endianess always */
-	buffer[1] = G_STRUCT_MEMBER(guint8, &p1, 0);
-	buffer[2] = G_STRUCT_MEMBER(guint8, &p1, 1);
-	p2 = GUINT16_TO_LE(p2);	 /* mobile need little-endianess always */
-	buffer[3] = G_STRUCT_MEMBER(guint8, &p2, 0);
-	buffer[4] = G_STRUCT_MEMBER(guint8, &p2, 1);
-	p3 = GUINT16_TO_LE(p3);	 /* mobile need little-endianess always */
-	buffer[5] = G_STRUCT_MEMBER(guint8, &p3, 0);
-	buffer[6] = G_STRUCT_MEMBER(guint8, &p3, 1);
+	p1 = htoms(p1);	 /* mobile need little-endianess always */
+	buffer[1] = STRUCT_MEMBER(uint8_t, &p1, 0);
+	buffer[2] = STRUCT_MEMBER(uint8_t, &p1, 1);
+	p2 = htoms(p2);	 /* mobile need little-endianess always */
+	buffer[3] = STRUCT_MEMBER(uint8_t, &p2, 0);
+	buffer[4] = STRUCT_MEMBER(uint8_t, &p2, 1);
+	p3 = htoms(p3);	 /* mobile need little-endianess always */
+	buffer[5] = STRUCT_MEMBER(uint8_t, &p3, 0);
+	buffer[6] = STRUCT_MEMBER(uint8_t, &p3, 1);
 
 	buffer[7] = bfb_checksum(buffer, 7);
 
-	g_debug("buf: %x %x  %x %x  %x %x  %x %x",
+	DEBUG(3, "buf: %x %x  %x %x  %x %x  %x %x",
 	      buffer[0], buffer[1], buffer[2], buffer[3], buffer[4], buffer[5], buffer[6], buffer[7]);
 
 	return bfb_write_packets(fd, type, buffer, 8);
 }
 
 /* send a cmd, subcmd packet, add long, word parameter */
-gint bfb_write_subcmd_lw(FD fd, guint8 type, guint8 subtype, guint32 p1, guint16 p2)
+int bfb_write_subcmd_lw(FD fd, uint8_t type, uint8_t subtype, uint32_t p1, uint16_t p2)
 {
-	guint8 buffer[8];
+	uint8_t buffer[8];
 
 	buffer[0] = subtype;
 
-	p1 = GUINT32_TO_LE(p1);	 /* mobile need little-endianess always */
-	buffer[1] = G_STRUCT_MEMBER(guint8, &p1, 0);
-	buffer[2] = G_STRUCT_MEMBER(guint8, &p1, 1);
-	buffer[3] = G_STRUCT_MEMBER(guint8, &p1, 2);
-	buffer[4] = G_STRUCT_MEMBER(guint8, &p1, 3);
-	p2 = GUINT16_TO_LE(p2);	 /* mobile need little-endianess always */
-	buffer[5] = G_STRUCT_MEMBER(guint8, &p2, 0);
-	buffer[6] = G_STRUCT_MEMBER(guint8, &p2, 1);
+	p1 = htoml(p1);	 /* mobile need little-endianess always */
+	buffer[1] = STRUCT_MEMBER(uint8_t, &p1, 0);
+	buffer[2] = STRUCT_MEMBER(uint8_t, &p1, 1);
+	buffer[3] = STRUCT_MEMBER(uint8_t, &p1, 2);
+	buffer[4] = STRUCT_MEMBER(uint8_t, &p1, 3);
+	p2 = htoms(p2);	 /* mobile need little-endianess always */
+	buffer[5] = STRUCT_MEMBER(uint8_t, &p2, 0);
+	buffer[6] = STRUCT_MEMBER(uint8_t, &p2, 1);
 
 	buffer[7] = bfb_checksum(buffer, 7);
 
-	g_debug("buf: %02x  %02x %02x %02x %02x  %02x %02x",
+	DEBUG(3, "buf: %02x  %02x %02x %02x %02x  %02x %02x",
 	      buffer[0], buffer[1], buffer[2], buffer[3], buffer[4], buffer[5], buffer[6]);
 
 	return bfb_write_packets(fd, type, buffer, 7); /* no chk? */
@@ -220,19 +263,27 @@ gint bfb_write_subcmd_lw(FD fd, guint8 type, guint8 subtype, guint32 p1, guint16
 
 
 /* send actual packets */
-gint bfb_write_packets(FD fd, guint8 type, guint8 *buffer, gint length)
+int bfb_write_packets(FD fd, uint8_t type, uint8_t *buffer, int length)
 {
 	bfb_frame_t *frame;
-	gint i;
-	gint l;
+	int i;
+	int l;
 #ifdef _WIN32
 	DWORD actual;
 #else
-	gint actual;
+	int actual;
+#endif
+
+#ifdef _WIN32
+        return_val_if_fail (fd != INVALID_HANDLE_VALUE, FALSE);
+#else
+        return_val_if_fail (fd > 0, FALSE);
 #endif
 	
 	// alloc frame buffer
-	frame = g_malloc((length > MAX_PACKET_DATA ? MAX_PACKET_DATA : length) + sizeof (bfb_frame_t));
+	frame = malloc((length > MAX_PACKET_DATA ? MAX_PACKET_DATA : length) + sizeof (bfb_frame_t));
+	if (frame == NULL)
+		return -1;
 
 	for(i=0; i <length; i += MAX_PACKET_DATA) {
 
@@ -249,148 +300,156 @@ gint bfb_write_packets(FD fd, guint8 type, guint8 *buffer, gint length)
 		/* actual = bfb_io_write(fd, frame, l + sizeof (bfb_frame_t)); */
 #ifdef _WIN32
 		if(!WriteFile(fd, frame, l + sizeof (bfb_frame_t), &actual, NULL))
-			g_info(G_GNUC_FUNCTION "() Write error: %ld", actual);
-		g_debug(G_GNUC_FUNCTION "() Wrote %ld bytes (expected %d)", actual, l + sizeof (bfb_frame_t));
+			DEBUG(2, "%s() Write error: %ld", __func__, actual);
+		DEBUG(3, "%s() Wrote %ld bytes (expected %d)", __func__, actual, l + sizeof (bfb_frame_t));
 #else
 		actual = write(fd, frame, l + sizeof (bfb_frame_t));
-		g_debug(G_GNUC_FUNCTION "() Wrote %d bytes (expected %d)", actual, l + sizeof (bfb_frame_t));
+		DEBUG(3, "%s() Wrote %d bytes (expected %d)", __func__, actual, l + sizeof (bfb_frame_t));
 #endif
 
 
 		if (actual < 0 || actual < l + sizeof (bfb_frame_t)) {
-			g_warning(G_GNUC_FUNCTION "() Write failed");
-			g_free(frame);
+			DEBUG(1, "%s() Write failed", __func__);
+			free(frame);
 			return -1;
 		}
 
 	}
-	g_free(frame);
+	free(frame);
 	return i / MAX_PACKET_DATA;
 }
 
-gint bfb_send_data(FD fd, guint8 type, guint8 *data, gint length, gint seq)
+int bfb_send_data(FD fd, uint8_t type, uint8_t *data, int length, int seq)
 {
-	guint8 *buffer;
-	gint actual;
+	uint8_t *buffer;
+	int actual;
 
-	buffer = g_malloc(length + 7);
+	buffer = malloc(length + 7);
+	if (buffer == NULL)
+		return -1;
 
 	actual = bfb_stuff_data(buffer, type, data, length, seq);
-	g_debug(G_GNUC_FUNCTION "() Stuffed %d bytes", actual);
+	DEBUG(3, "%s() Stuffed %d bytes", __func__, actual);
 
 	actual = bfb_write_packets(fd, BFB_FRAME_DATA, buffer, actual);
-	g_debug(G_GNUC_FUNCTION "() Wrote %d packets", actual);
+	DEBUG(3, "%s() Wrote %d packets", __func__, actual);
+
+	free(buffer);
 
 	return actual;
 }
 
 
 /* retrieve actual packets */
-bfb_frame_t *bfb_read_packets(guint8 *buffer, gint *length)
+/*@null@*/
+bfb_frame_t *bfb_read_packets(uint8_t *buffer, int *length)
 {
 	bfb_frame_t *frame;
-	gint l;
+	int l;
 
-	g_debug(G_GNUC_FUNCTION "() ");
+	DEBUG(3, "%s() ", __func__);
 
 	if (*length < 0) {
-		g_warning(G_GNUC_FUNCTION "() Wrong length?");
+		DEBUG(1, "%s() Wrong length?", __func__);
 		return NULL;
 	}
 
 	if (*length == 0) {
-		g_warning(G_GNUC_FUNCTION "() No packet?");
+		DEBUG(1, "%s() No packet?", __func__);
 		return NULL;
 	}
 
 	if (*length < sizeof(bfb_frame_t)) {
-		g_warning(G_GNUC_FUNCTION "() Short packet?");
+		DEBUG(1, "%s() Short packet?", __func__);
 		return NULL;
 	}
 	
 	// temp frame
 	frame = (bfb_frame_t *)buffer;
 	if ((frame->type ^ frame->len) != frame->chk) {
-		g_warning(G_GNUC_FUNCTION "() Header error?");
+		DEBUG(1, "%s() Header error?", __func__);
 		return NULL;
 	}
 
 	if (*length < frame->len + sizeof(bfb_frame_t)) {
-		g_warning(G_GNUC_FUNCTION "() Need more data?");
+		DEBUG(1, "%s() Need more data?", __func__);
 		return NULL;
 	}
 
 	// copy frame from buffer
 	l = sizeof(bfb_frame_t) + frame->len;
-	frame = g_malloc(l);
+	frame = malloc(l);
+	if (frame == NULL)
+		return NULL;
 	memcpy(frame, buffer, l);
 
 	// remove frame from buffer
 	*length -= l;
 	memmove(buffer, &buffer[l], *length);
 	
-	g_debug(G_GNUC_FUNCTION "() Packet %x (%d bytes)", frame->type, frame->len);
+	DEBUG(3, "%s() Packet %x (%d bytes)", __func__, frame->type, frame->len);
 	return frame;
 }
 
-bfb_data_t *bfb_assemble_data(bfb_data_t *data, gint *fraglen, bfb_frame_t *frame)
+/*@null@*/
+bfb_data_t *bfb_assemble_data(bfb_data_t *data, int *fraglen, bfb_frame_t *frame)
 {
 	bfb_data_t *ret;
-	gint l;
+	int l;
 
-	g_debug(G_GNUC_FUNCTION "() ");
+	DEBUG(3, "%s() ", __func__);
 
 	if (frame->type != BFB_FRAME_DATA) {
-		g_warning(__FUNCTION__ "() Wrong frame type (%x)?", frame->type);
+		DEBUG(1, "%s() Wrong frame type (%x)?", __func__, frame->type);
 		return data;
 	}
 
 	// temp data
 	ret = (bfb_data_t *)frame->payload;
 	if (ret->cmd == BFB_DATA_ACK) {
-		g_debug(G_GNUC_FUNCTION "() Skipping ack");
+		DEBUG(3, "%s() Skipping ack", __func__);
 		return data;
 	}
 	/*
 	if ((ret->cmd != BFB_DATA_FIRST) && (ret->cmd != BFB_DATA_NEXT)) {
-		g_warning(__FUNCTION__ "() Wrong data type (%x)?", ret->cmd);
+		DEBUG(1, "%s() Wrong data type (%x)?", __func__, ret->cmd);
 		return data;
 	}
 	*/
 
 	// copy frame from buffer
-	g_debug(G_GNUC_FUNCTION "() data: %d, frame: %d", *fraglen, frame->len);
+	DEBUG(3, "%s() data: %d, frame: %d", __func__, *fraglen, frame->len);
 	l = *fraglen + frame->len;
-	ret = g_realloc(data, l);
+	ret = realloc(data, l);
 	//memcpy(ret, data, *fraglen);
-	memcpy(&((guint8 *)ret)[*fraglen], frame->payload, frame->len);
+	memcpy(&((uint8_t *)ret)[*fraglen], frame->payload, frame->len);
 
-	//g_free(data);
+	//free(data);
 	*fraglen = l;
 	return ret;
 }
 
-gint bfb_check_data(bfb_data_t *data, gint fraglen)
+int bfb_check_data(bfb_data_t *data, int fraglen)
 {
         union {
-                guint16 value;
-                guint8 bytes[2];
+                uint16_t value;
+                uint8_t bytes[2];
         } l;
 
-	g_debug(G_GNUC_FUNCTION "() ");
+	DEBUG(3, "%s() ", __func__);
 
 	if (data == NULL)
 		return -1;
 
 	l.bytes[0] = data->len0;
 	l.bytes[1] = data->len1;
-	l.value = g_htons(l.value);
+	l.value = htons(l.value);
 
-	g_debug(G_GNUC_FUNCTION "() fragment size is %d", fraglen);
-	g_debug(G_GNUC_FUNCTION "() expected len %d", l.value);
-	g_debug(G_GNUC_FUNCTION "() data size is %d", fraglen-sizeof(bfb_data_t));
+	DEBUG(3, "%s() fragment size is %d", __func__, fraglen);
+	DEBUG(3, "%s() expected len %d", __func__, l.value);
+	DEBUG(3, "%s() data size is %d", __func__, fraglen-sizeof(bfb_data_t));
 
-	if (fraglen-sizeof(bfb_data_t) + 2 < l.value)
+	if (fraglen-sizeof(bfb_data_t) < l.value + /*crc*/ 2)
 		return 0;
 
 /*
@@ -399,7 +458,7 @@ gint bfb_check_data(bfb_data_t *data, gint fraglen)
 		return -1;
 */
 
-	g_info(G_GNUC_FUNCTION "() data ready!");
+	DEBUG(2, "%s() data ready!", __func__);
 	return 1;
 
 }

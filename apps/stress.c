@@ -27,7 +27,8 @@
  *     
  */
 
-#include <glib.h>
+#include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #define _GNU_SOURCE
 #include <getopt.h>
@@ -36,47 +37,55 @@
 #include <obexftp/client.h>
 #include <cobexbfb/cobex_bfb.h>
 
-void info_cb(gint event, const gchar *msg, gint len, gpointer data)
+#include <common.h>
+
+#ifdef _WIN32
+/* OpenOBEX won't define a handler on win32 */
+void DEBUG(unsigned int n, ...) { }
+void DUMPBUFFER(unsigned int n, char *label, char *msg) { }
+#endif /* _WIN32 */
+
+void info_cb(int event, const char *msg, int len, void *data)
 {
 	switch (event) {
 
 	case OBEXFTP_EV_ERRMSG:
-		g_print("Error: %s\n", msg);
+		printf("Error: %s\n", msg);
 		break;
 
 	case OBEXFTP_EV_ERR:
-		g_print("failed: %s\n", msg);
+		printf("failed: %s\n", msg);
 		break;
 	case OBEXFTP_EV_OK:
-		g_print("done\n");
+		printf("done\n");
 		break;
 
 	case OBEXFTP_EV_CONNECTING:
-		g_print("Connecting...");
+		printf("Connecting...");
 		break;
 	case OBEXFTP_EV_DISCONNECTING:
-		g_print("Disconnecting...");
+		printf("Disconnecting...");
 		break;
 	case OBEXFTP_EV_SENDING:
-		g_print("Sending %s...", msg);
+		printf("Sending %s...", msg);
 		break;
 	case OBEXFTP_EV_RECEIVING:
-		g_print("Receiving %s...", msg);
+		printf("Receiving %s...", msg);
 		break;
 
 	case OBEXFTP_EV_LISTENING:
-		g_print("Waiting for incoming connection\n");
+		printf("Waiting for incoming connection\n");
 		break;
 
 	case OBEXFTP_EV_CONNECTIND:
-		g_print("Incoming connection\n");
+		printf("Incoming connection\n");
 		break;
 	case OBEXFTP_EV_DISCONNECTIND:
-		g_print("Disconnecting\n");
+		printf("Disconnecting\n");
 		break;
 
 	case OBEXFTP_EV_INFO:
-		g_print("Got info %d: \n", GPOINTER_TO_UINT (msg));
+		printf("Got info %d: \n", (int)msg);
 		break;
 
 	}
@@ -87,8 +96,8 @@ int main(int argc, char *argv[])
 {
 	obexftp_client_t *cli = NULL;
 	obex_ctrans_t *ctrans = NULL;
-	gchar *tty = NULL;
-	gint i;
+	char *tty = NULL;
+	int i;
 
 	tty = "/dev/ttyS0";
 	ctrans = cobex_ctrans (tty);
@@ -98,13 +107,13 @@ int main(int argc, char *argv[])
 		/* Open */
 		cli = obexftp_cli_open (info_cb, ctrans, NULL);
 		if(cli == NULL) {
-			g_print("Error opening obexftp-client\n");
+			printf("Error opening obexftp-client\n");
 			exit (-1);
 		}
 
 		/* Connect */
 		if (obexftp_cli_connect (cli) < 0) {
-			g_print("Error connecting to obexftp-client\n");
+			printf("Error connecting to obexftp-client\n");
 			exit (-2);
 		}
 

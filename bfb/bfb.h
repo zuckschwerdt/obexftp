@@ -22,7 +22,7 @@
 #ifndef BFB_H
 #define BFB_H
 
-#include <glib.h>
+#include <stdint.h>
 
 #ifdef _WIN32
 #include <windows.h>
@@ -34,21 +34,21 @@ typedef int FD;
 #define	BFB_LOG_DOMAIN	"bfb"
 
 typedef struct {
-	guint8 type;
-	guint8 len;
-        guint8 chk;
-        guint8 payload[0]; //...
-	// guint8 xor; ?
+	uint8_t type;
+	uint8_t len;
+        uint8_t chk;
+        uint8_t payload[0]; //...
+	// uint8_t xor; ?
 } bfb_frame_t;
 
 typedef struct {
-	guint8 cmd;
-	guint8 chk;
-	guint8 seq;
-	guint8 len0;
-	guint8 len1;
-	guint8 data[0]; //...
-	// guint16 crc;
+	uint8_t cmd;
+	uint8_t chk;
+	uint8_t seq;
+	uint8_t len0;
+	uint8_t len1;
+	uint8_t data[0]; //...
+	// uint16_t crc;
 } bfb_data_t;
 
 
@@ -69,25 +69,25 @@ typedef struct {
 #define BFB_DATA_FIRST 0x02 /* first transmission in a row */
 #define BFB_DATA_NEXT 0x03 /* continued transmission */
 
-guint8	bfb_checksum(guint8 *data, gint len);
+uint8_t	bfb_checksum(uint8_t *data, int len);
 
-gint	bfb_write_subcmd(FD fd, guint8 type, guint8 subtype);
-gint	bfb_write_subcmd0(FD fd, guint8 type, guint8 subtype);
-gint	bfb_write_subcmd8(FD fd, guint8 type, guint8 subtype, guint8 p1);
-gint	bfb_write_subcmd1(FD fd, guint8 type, guint8 subtype, guint16 p1);
+int	bfb_write_subcmd(FD fd, uint8_t type, uint8_t subtype);
+int	bfb_write_subcmd0(FD fd, uint8_t type, uint8_t subtype);
+int	bfb_write_subcmd8(FD fd, uint8_t type, uint8_t subtype, uint8_t p1);
+int	bfb_write_subcmd1(FD fd, uint8_t type, uint8_t subtype, uint16_t p1);
 
 /* send a cmd, subcmd packet, add chk (two word parameter) */
-gint	bfb_write_subcmd2(FD fd, guint8 type, guint8 subtype, guint16 p1, guint16 p2);
+int	bfb_write_subcmd2(FD fd, uint8_t type, uint8_t subtype, uint16_t p1, uint16_t p2);
 
 /* send a cmd, subcmd packet, add chk (three word parameter) */
-gint	bfb_write_subcmd3(FD fd, guint8 type, guint8 subtype, guint16 p1, guint16 p2, guint16 p3);
+int	bfb_write_subcmd3(FD fd, uint8_t type, uint8_t subtype, uint16_t p1, uint16_t p2, uint16_t p3);
 
 /* send a cmd, subcmd packet, add long, word parameter */
-gint	bfb_write_subcmd_lw(FD fd, guint8 type, guint8 subtype, guint32 p1, guint16 p2);
+int	bfb_write_subcmd_lw(FD fd, uint8_t type, uint8_t subtype, uint32_t p1, uint16_t p2);
 
-gint	bfb_stuff_data(guint8 *buffer, guint8 type, guint8 *data, gint len, gint seq);
+int	bfb_stuff_data(uint8_t *buffer, uint8_t type, uint8_t *data, int len, int seq);
 
-gint	bfb_write_packets(FD fd, guint8 type, guint8 *buffer, gint length);
+int	bfb_write_packets(FD fd, uint8_t type, uint8_t *buffer, int length);
 
 #define bfb_write_at(fd, data) \
 	bfb_write_packets(fd, BFB_FRAME_AT, data, strlen(data))
@@ -95,7 +95,7 @@ gint	bfb_write_packets(FD fd, guint8 type, guint8 *buffer, gint length);
 #define bfb_write_key(fd, data) \
 	bfb_write_subcmd8(fd, BFB_FRAME_KEY, BFB_KEY_PRESS, data)
 
-gint	bfb_send_data(FD fd, guint8 type, guint8 *data, gint length, gint seq);
+int	bfb_send_data(FD fd, uint8_t type, uint8_t *data, int length, int seq);
 
 #define bfb_send_ack(fd) \
 	bfb_send_data(fd, BFB_DATA_ACK, NULL, 0, 0)
@@ -107,11 +107,11 @@ gint	bfb_send_data(FD fd, guint8 type, guint8 *data, gint length, gint seq);
 	bfb_send_data(fd, BFB_DATA_NEXT, data, length, seq)
 
 bfb_frame_t *
-	bfb_read_packets(guint8 *buffer, gint *length);
+	bfb_read_packets(uint8_t *buffer, int *length);
 
 bfb_data_t *
-	bfb_assemble_data(bfb_data_t *data, gint *fraglen, bfb_frame_t *frame);
+	bfb_assemble_data(bfb_data_t *data, int *fraglen, bfb_frame_t *frame);
 
-gint	bfb_check_data(bfb_data_t *data, gint fraglen);
+int	bfb_check_data(bfb_data_t *data, int fraglen);
 
 #endif /* BFB_H */

@@ -32,11 +32,11 @@
 #define SERPORT "/dev/ttyS0"
 
 typedef struct {
-	gchar *tty;
+	char *tty;
 	int fd;
-	guint8 recv[500];
-	gint recv_len;
-	guint8 seq;
+	uint8_t recv[500];
+	int recv_len;
+	uint8_t seq;
 	bfb_data_t *data;
-	gint data_len;
+	int data_len;
 } cobex_t;

@@ -1,11 +1,18 @@
-#include <glib.h>
-#include <openobex/obex.h>
 
 #include <string.h>
 #include <stdlib.h>
 #include <unistd.h>
 #include <fcntl.h>
 #include <sys/stat.h>
+
+/* htons */
+#ifdef _WIN32
+#include <winsock.h>
+#else
+#include <netinet/in.h>
+#endif
+
+#include <openobex/obex.h>
 
 #include "obexftp.h"
 #include "client.h"
@@ -14,7 +21,7 @@
 #include "uuid.h"
 
 #include "dirtraverse.h"
-#include <g_debug.h>
+#include <common.h>
 
 #ifdef DEBUG_TCP
 #include <unistd.h>
@@ -32,24 +39,24 @@
 
 
 typedef struct { // fixed to 6 bytes for now
-	guint8 code;
-	guint8 info_len;
-	guint8 info[4];
+	uint8_t code;
+	uint8_t info_len;
+	uint8_t info[4];
 } apparam_t;
 
 //
 // Add more data to stream.
 //
-static gint cli_fillstream(obexftp_client_t *cli, obex_object_t *object)
+static int cli_fillstream(obexftp_client_t *cli, obex_object_t *object)
 {
-	gint actual;
+	int actual;
 	obex_headerdata_t hdd;
 		
-	g_debug(G_GNUC_FUNCTION "()");
+	DEBUG(3, "%s()", __func__);
 	
 	actual = read(cli->fd, cli->buf, STREAM_CHUNK);
 	
-	g_debug(G_GNUC_FUNCTION "() Read %d bytes", actual);
+	DEBUG(3, "%s() Read %d bytes", __func__, actual);
 	
 	if(actual > 0) {
 		/* Read was ok! */
@@ -81,57 +88,57 @@ static gint cli_fillstream(obexftp_client_t *cli, obex_object_t *object)
 //
 // Save body from object or return application parameters
 //
-static void client_done(obex_t *handle, obex_object_t *object, gint obex_cmd, gint obex_rsp)
+static void client_done(obex_t *handle, obex_object_t *object, int obex_cmd, int obex_rsp)
 {
         obex_headerdata_t hv;
-        guint8 hi;
-        guint32 hlen;
+        uint8_t hi;
+        uint32_t hlen;
 
-        const guint8 *body = NULL;
-        gint body_len = 0;
+        const uint8_t *body = NULL;
+        int body_len = 0;
 
 	apparam_t *app = NULL;
-	guint32 info;
+	uint32_t info;
 
 	obexftp_client_t *cli;
 
 	cli = OBEX_GetUserData(handle);
 
-        g_debug(G_GNUC_FUNCTION "()\n");
+        DEBUG(3, "%s()\n", __func__);
 
 	if (cli->fd > 0)
 		close(cli->fd);
 
         while(OBEX_ObjectGetNextHeader(handle, object, &hi, &hv, &hlen)) {
                 if(hi == OBEX_HDR_BODY) {
-			g_debug(G_GNUC_FUNCTION "() Found body\n");
+			DEBUG(3, "%s() Found body\n", __func__);
                         body = hv.bs;
                         body_len = hlen;
 			cli->infocb(OBEXFTP_EV_BODY, body, body_len, cli->infocb_data);
-			g_debug(G_GNUC_FUNCTION "() Done body\n");
+			DEBUG(3, "%s() Done body\n", __func__);
                         //break;
                 }
                 else if(hi == OBEX_HDR_CONNECTION) {
-			g_debug(G_GNUC_FUNCTION "() Found connection number: %d\n", hv.bq4);
+			DEBUG(3, "%s() Found connection number: %d\n", __func__, hv.bq4);
 		}
                 else if(hi == OBEX_HDR_WHO) {
-			g_debug(G_GNUC_FUNCTION "() Sender identified\n");
+			DEBUG(3, "%s() Sender identified\n", __func__);
 		}
                 else if(hi == OBEX_HDR_APPARAM) {
-			g_debug(G_GNUC_FUNCTION "() Found application parameters\n");
+			DEBUG(3, "%s() Found application parameters\n", __func__);
                         if(hlen == sizeof(apparam_t)) {
 				app = (apparam_t *)hv.bs;
 				 // needed for alignment
 				memcpy(&info, &(app->info), sizeof(info));
-				info = g_ntohl(info);
-				cli->infocb(OBEXFTP_EV_INFO, GUINT_TO_POINTER (info), 0, cli->infocb_data);
+				info = ntohl(info);
+				cli->infocb(OBEXFTP_EV_INFO, (void *)info, 0, cli->infocb_data);
 			}
 			else
-				g_debug(G_GNUC_FUNCTION "() Application parameters don't fit %d vs. %d.\n", hlen, sizeof(apparam_t));
+				DEBUG(3, "%s() Application parameters don't fit %d vs. %d.\n", __func__, hlen, sizeof(apparam_t));
                         break;
                 }
                 else    {
-                        g_debug(G_GNUC_FUNCTION "() Skipped header %02x\n", hi);
+                        DEBUG(3, "%s() Skipped header %02x\n", __func__, hi);
                 }
         }
 
@@ -140,7 +147,7 @@ static void client_done(obex_t *handle, obex_object_t *object, gint obex_cmd, gi
 			write(cli->out_fd, body, body_len);
         }
         if(app) {
-		g_debug(G_GNUC_FUNCTION "() Appcode %d, data (%d) %d\n",
+		DEBUG(3, "%s() Appcode %d, data (%d) %d\n", __func__,
 			app->code, app->info_len, info);
 
         }
@@ -150,7 +157,7 @@ static void client_done(obex_t *handle, obex_object_t *object, gint obex_cmd, gi
 //
 // Incoming event from OpenOBEX.
 //
-static void cli_obex_event(obex_t *handle, obex_object_t *object, gint mode, gint event, gint obex_cmd, gint obex_rsp)
+static void cli_obex_event(obex_t *handle, obex_object_t *object, int mode, int event, int obex_cmd, int obex_rsp)
 {
 	obexftp_client_t *cli;
 
@@ -179,7 +186,7 @@ static void cli_obex_event(obex_t *handle, obex_object_t *object, gint mode, gin
 		break;
 	
 	default:
-		g_warning(G_GNUC_FUNCTION "() Unknown event %d", event);
+		DEBUG(1, "%s() Unknown event %d", __func__, event);
 		break;
 	}
 }
@@ -188,22 +195,22 @@ static void cli_obex_event(obex_t *handle, obex_object_t *object, gint mode, gin
 //
 // Do an OBEX request sync.
 //
-gint obexftp_sync(obexftp_client_t *cli)
+int obexftp_sync(obexftp_client_t *cli)
 {
-	gint ret;
-	g_debug(G_GNUC_FUNCTION "()");
+	int ret;
+	DEBUG(3, "%s()", __func__);
 
 	// cli->finished = FALSE;
 
 	while(cli->finished == FALSE) {
 		ret = OBEX_HandleInput(cli->obexhandle, 20);
-		g_debug(G_GNUC_FUNCTION "() ret = %d", ret);
+		DEBUG(3, "%s() ret = %d", __func__, ret);
 
 		if (ret <= 0)
 			return -1;
 	}
 
-	g_debug(G_GNUC_FUNCTION "() Done success=%d", cli->success);
+	DEBUG(3, "%s() Done success=%d", __func__, cli->success);
 
 	if(cli->success)
 		return 1;
@@ -211,9 +218,9 @@ gint obexftp_sync(obexftp_client_t *cli)
 		return -1;
 }
 	
-static gint cli_sync_request(obexftp_client_t *cli, obex_object_t *object)
+static int cli_sync_request(obexftp_client_t *cli, obex_object_t *object)
 {
-	g_debug(G_GNUC_FUNCTION "()");
+	DEBUG(3, "%s()", __func__);
 
 	cli->finished = FALSE;
 	OBEX_Request(cli->obexhandle, object);
@@ -225,12 +232,12 @@ static gint cli_sync_request(obexftp_client_t *cli, obex_object_t *object)
 //
 // Create an obexftp client
 //
-obexftp_client_t *obexftp_cli_open(obexftp_info_cb_t infocb, /*const*/ obex_ctrans_t *ctrans, gpointer infocb_data)
+obexftp_client_t *obexftp_cli_open(obexftp_info_cb_t infocb, /*const*/ obex_ctrans_t *ctrans, void *infocb_data)
 {
 	obexftp_client_t *cli;
 
-	g_debug(G_GNUC_FUNCTION "()");
-	cli = g_new0(obexftp_client_t, 1);
+	DEBUG(3, "%s()", __func__);
+	cli = calloc (1, sizeof(obexftp_client_t));
 	if(cli == NULL)
 		return NULL;
 
@@ -242,7 +249,7 @@ obexftp_client_t *obexftp_cli_open(obexftp_info_cb_t infocb, /*const*/ obex_ctra
 	cli->obexhandle = OBEX_Init(OBEX_TRANS_INET, cli_obex_event, 0);
 #else
 	if ( ctrans ) {
-                g_info("Do the cable-OBEX!\n");
+                DEBUG(2, "Do the cable-OBEX!\n");
 		cli->obexhandle = OBEX_Init(OBEX_TRANS_CUST, cli_obex_event, 0);
         }
 	else
@@ -256,20 +263,20 @@ obexftp_client_t *obexftp_cli_open(obexftp_info_cb_t infocb, /*const*/ obex_ctra
 	if ( ctrans ) {
 		/* OBEX_RegisterCTransport is const to ctrans ... */
                 if(OBEX_RegisterCTransport(cli->obexhandle, ctrans) < 0) {
-                        g_warning("Custom transport callback-registration failed\n");
+                        DEBUG(1, "Custom transport callback-registration failed\n");
                 }
         }
 
 	OBEX_SetUserData(cli->obexhandle, cli);
 	
 	/* Buffer for body */
-	cli->buf = g_malloc(STREAM_CHUNK);
+	cli->buf = malloc(STREAM_CHUNK);
 	return cli;
 
 out_err:
 	if(cli->obexhandle != NULL)
 		OBEX_Cleanup(cli->obexhandle);
-	g_free(cli);
+	free(cli);
 	return NULL;
 }
 	
@@ -278,24 +285,24 @@ out_err:
 //
 void obexftp_cli_close(obexftp_client_t *cli)
 {
-	g_debug(G_GNUC_FUNCTION "()");
-	g_return_if_fail(cli != NULL);
+	DEBUG(3, "%s()", __func__);
+	return_if_fail(cli != NULL);
 
 	OBEX_Cleanup(cli->obexhandle);
-	g_free(cli->buf);
-	g_free(cli);
+	free(cli->buf);
+	free(cli);
 }
 
 //
 // Do connect as client
 //
-gint obexftp_cli_connect(obexftp_client_t *cli)
+int obexftp_cli_connect(obexftp_client_t *cli)
 {
 	obex_object_t *object;
 	int ret;
 
-	g_debug(G_GNUC_FUNCTION "()");
-	g_return_val_if_fail(cli != NULL, -1);
+	DEBUG(3, "%s()", __func__);
+	return_val_if_fail(cli != NULL, -1);
 
 	cli->infocb(OBEXFTP_EV_CONNECTING, "", 0, cli->infocb_data);
 #ifdef DEBUG_TCP
@@ -327,7 +334,7 @@ gint obexftp_cli_connect(obexftp_client_t *cli)
                                 (obex_headerdata_t) UUID_S45,
                                 sizeof(UUID_S45),
                                 OBEX_FL_FIT_ONE_PACKET) < 0)    {
-                g_warning("Error adding header\n");
+                DEBUG(1, "Error adding header\n");
                 OBEX_ObjectDelete(cli->obexhandle, object);
                 return -1;
         }
@@ -344,13 +351,13 @@ gint obexftp_cli_connect(obexftp_client_t *cli)
 //
 // Do disconnect as client
 //
-gint obexftp_cli_disconnect(obexftp_client_t *cli)
+int obexftp_cli_disconnect(obexftp_client_t *cli)
 {
 	obex_object_t *object;
 	int ret;
 
-	g_debug(G_GNUC_FUNCTION "()");
-	g_return_val_if_fail(cli != NULL, -1);
+	DEBUG(3, "%s()", __func__);
+	return_val_if_fail(cli != NULL, -1);
 
 	cli->infocb(OBEXFTP_EV_DISCONNECTING, "", 0, cli->infocb_data);
 
@@ -370,16 +377,16 @@ gint obexftp_cli_disconnect(obexftp_client_t *cli)
 //
 // Do an OBEX GET with app info opcode.
 //
-gint obexftp_info(obexftp_client_t *cli, guint8 opcode)
+int obexftp_info(obexftp_client_t *cli, uint8_t opcode)
 {
 	obex_object_t *object = NULL;
 	int ret;
 
-	g_return_val_if_fail(cli != NULL, -1);
+	return_val_if_fail(cli != NULL, -1);
 
 	cli->infocb(OBEXFTP_EV_RECEIVING, "info", 0, cli->infocb_data);
 
-	g_info(G_GNUC_FUNCTION "() Retrieving info %d", opcode);
+	DEBUG(2, "%s() Retrieving info %d", __func__, opcode);
 
         object = obexftp_build_info (cli->obexhandle, opcode);
         if(object == NULL)
@@ -399,16 +406,16 @@ gint obexftp_info(obexftp_client_t *cli, guint8 opcode)
 //
 // Do an OBEX GET with TYPE.
 //
-gint obexftp_list(obexftp_client_t *cli, const gchar *localname, const gchar *remotename)
+int obexftp_list(obexftp_client_t *cli, const char *localname, const char *remotename)
 {
 	obex_object_t *object = NULL;
 	int ret;
 
-	g_return_val_if_fail(cli != NULL, -1);
+	return_val_if_fail(cli != NULL, -1);
 
 	cli->infocb(OBEXFTP_EV_RECEIVING, localname, 0, cli->infocb_data);
 
-	g_info(G_GNUC_FUNCTION "() Listing %s -> %s", remotename, localname);
+	DEBUG(2, "%s() Listing %s -> %s", __func__, remotename, localname);
 
 	cli->out_fd = STDOUT_FILENO;
 
@@ -431,16 +438,16 @@ gint obexftp_list(obexftp_client_t *cli, const gchar *localname, const gchar *re
 //
 // Do an OBEX GET.
 //
-gint obexftp_get(obexftp_client_t *cli, const gchar *localname, const gchar *remotename)
+int obexftp_get(obexftp_client_t *cli, const char *localname, const char *remotename)
 {
 	obex_object_t *object = NULL;
 	int ret;
 
-	g_return_val_if_fail(cli != NULL, -1);
+	return_val_if_fail(cli != NULL, -1);
 
 	cli->infocb(OBEXFTP_EV_RECEIVING, localname, 0, cli->infocb_data);
 
-	g_info(G_GNUC_FUNCTION "() Getting %s -> %s", remotename, localname);
+	DEBUG(2, "%s() Getting %s -> %s", __func__, remotename, localname);
 
 	cli->out_fd = open_safe("", localname);
 
@@ -462,16 +469,16 @@ gint obexftp_get(obexftp_client_t *cli, const gchar *localname, const gchar *rem
 //
 // Do an OBEX rename.
 //
-gint obexftp_rename(obexftp_client_t *cli, const gchar *sourcename, const gchar *targetname)
+int obexftp_rename(obexftp_client_t *cli, const char *sourcename, const char *targetname)
 {
 	obex_object_t *object = NULL;
 	int ret;
 
-	g_return_val_if_fail(cli != NULL, -1);
+	return_val_if_fail(cli != NULL, -1);
 
 	cli->infocb(OBEXFTP_EV_SENDING, sourcename, 0, cli->infocb_data);
 
-	g_info(G_GNUC_FUNCTION "() Moving %s -> %s", sourcename, targetname);
+	DEBUG(2, "%s() Moving %s -> %s", __func__, sourcename, targetname);
 
         object = obexftp_build_rename (cli->obexhandle, sourcename, targetname);
         if(object == NULL)
@@ -491,16 +498,16 @@ gint obexftp_rename(obexftp_client_t *cli, const gchar *sourcename, const gchar 
 //
 // Do an OBEX PUT with empty file (delete)
 //
-gint obexftp_del(obexftp_client_t *cli, const gchar *name)
+int obexftp_del(obexftp_client_t *cli, const char *name)
 {
 	obex_object_t *object;
 	int ret;
 
-	g_return_val_if_fail(cli != NULL, -1);
+	return_val_if_fail(cli != NULL, -1);
 
 	cli->infocb(OBEXFTP_EV_SENDING, name, 0, cli->infocb_data);
 
-	g_info(G_GNUC_FUNCTION "() Deleting %s", name);
+	DEBUG(2, "%s() Deleting %s", __func__, name);
 
         object = obexftp_build_del (cli->obexhandle, name);
         if(object == NULL)
@@ -520,16 +527,16 @@ gint obexftp_del(obexftp_client_t *cli, const gchar *name)
 //
 // Do OBEX SetPath
 //
-gint obexftp_setpath(obexftp_client_t *cli, const gchar *name, gboolean up)
+int obexftp_setpath(obexftp_client_t *cli, const char *name, int up)
 {
 	obex_object_t *object;
 	int ret;
 
-	g_return_val_if_fail(cli != NULL, -1);
+	return_val_if_fail(cli != NULL, -1);
 
 	cli->infocb(OBEXFTP_EV_SENDING, name, 0, cli->infocb_data); //FIXME
 
-	g_info(G_GNUC_FUNCTION "() %s", name);
+	DEBUG(2, "%s() %s", __func__, name);
 
 	object = obexftp_build_setpath (cli->obexhandle, name, up);
 
@@ -546,16 +553,16 @@ gint obexftp_setpath(obexftp_client_t *cli, const gchar *name, gboolean up)
 //
 // Do an OBEX PUT.
 //
-static gint obexftp_put_file(obexftp_client_t *cli, const gchar *localname, const gchar *remotename)
+static int obexftp_put_file(obexftp_client_t *cli, const char *localname, const char *remotename)
 {
 	obex_object_t *object;
 	int ret;
 
-	g_return_val_if_fail(cli != NULL, -1);
+	return_val_if_fail(cli != NULL, -1);
 
 	cli->infocb(OBEXFTP_EV_SENDING, localname, 0, cli->infocb_data);
 
-	g_info(G_GNUC_FUNCTION "() Sending %s -> %s", localname, remotename);
+	DEBUG(2, "%s() Sending %s -> %s", __func__, localname, remotename);
 
 	object = build_object_from_file (cli->obexhandle, localname, remotename);
 	
@@ -578,12 +585,12 @@ static gint obexftp_put_file(obexftp_client_t *cli, const gchar *localname, cons
 //
 // Callback from dirtraverse.
 //
-static gint obexftp_visit(gint action, const gchar *name, const gchar *path, gpointer userdata)
+static int obexftp_visit(int action, const char *name, const char *path, void *userdata)
 {
-	const gchar *remotename;
-	gint ret = -1;
+	const char *remotename;
+	int ret = -1;
 
-	g_debug(G_GNUC_FUNCTION "()\n");
+	DEBUG(3, "%s()\n", __func__);
 	switch(action) {
 	case VISIT_FILE:
 		// Strip /'s before sending file
@@ -603,18 +610,18 @@ static gint obexftp_visit(gint action, const gchar *name, const gchar *path, gpo
 		ret = obexftp_setpath(userdata, "", TRUE);
 		break;
 	}
-	g_debug(G_GNUC_FUNCTION "() returning %d", ret);
+	DEBUG(3, "%s() returning %d", __func__, ret);
 	return ret;
 }
 
 //
 // Put file or directory
 //
-gint obexftp_put(obexftp_client_t *cli, const gchar *name)
+int obexftp_put(obexftp_client_t *cli, const char *name)
 {
 	struct stat statbuf;
-	gchar *origdir;
-	gint ret;
+	char *origdir;
+	int ret;
 	
 	/* Remember cwd */
 	origdir = getcwd(NULL, 0);
@@ -627,8 +634,8 @@ gint obexftp_put(obexftp_client_t *cli, const gchar *name)
 	
 	/* This is a directory. CD into it */
 	if(S_ISDIR(statbuf.st_mode)) {
-		gchar *newrealdir = NULL;
-		gchar *dirname;
+		char *newrealdir = NULL;
+		char *dirname;
 		
 		chdir(name);
 		name = ".";

@@ -19,20 +19,24 @@
  *     
  */
 
-#include <glib.h>
+#ifndef COBEXBFB_H
+#define COBEXBFB_H
+
+#include <stdint.h>
 
 #define	COBEX_BFB_LOG_DOMAIN	"cobex-bfb"
 
 /* session handling */
 
 obex_ctrans_t *
-	cobex_ctrans (const gchar *tty);
+	cobex_ctrans (const char *tty);
 void	cobex_free (obex_ctrans_t * ctrans);
 
 /* callbacks */
 
-gint	cobex_connect (obex_t *self, gpointer userdata);
-gint	cobex_disconnect (obex_t *self, gpointer userdata);
-gint	cobex_write (obex_t *self, gpointer userdata, guint8 *buffer, gint length);
-gint	cobex_handleinput (obex_t *self, gpointer userdata, gint timeout);
+int	cobex_connect (obex_t *self, void *userdata);
+int	cobex_disconnect (obex_t *self, void *userdata);
+int	cobex_write (obex_t *self, void *userdata, uint8_t *buffer, int length);
+int	cobex_handleinput (obex_t *self, void *userdata, int timeout);
 
+#endif /* COBEXBFB */

@@ -21,7 +21,7 @@
  * be seen in entry 128, 0x8408.  This corresponds to x^0 + x^5 + x^12.
  * Add the implicit x^16, and you have the standard CRC-CCITT.
  */
-guint16 const irda_crc16_table[256] =
+uint16_t const irda_crc16_table[256] =
 {
 	0x0000, 0x1189, 0x2312, 0x329b, 0x4624, 0x57ad, 0x6536, 0x74bf,
 	0x8c48, 0x9dc1, 0xaf5a, 0xbed3, 0xca6c, 0xdbe5, 0xe97e, 0xf8f7,
@@ -57,7 +57,7 @@ guint16 const irda_crc16_table[256] =
 	0x7bc7, 0x6a4e, 0x58d5, 0x495c, 0x3de3, 0x2c6a, 0x1ef1, 0x0f78
 };
 
-unsigned short crc_calc(guint16 fcs, guint8 const *buf, gint len) 
+unsigned short crc_calc(uint16_t fcs, uint8_t const *buf, int len) 
 {
 	while (len--)
                 fcs = irda_fcs(fcs, *buf++);

@@ -22,26 +22,25 @@
 #ifndef BFB_IO_H
 #define BFB_IO_H
 
-#include <glib.h>
+#include <stdint.h>
 
 /* Write out a BFB buffer */
-gint	bfb_io_write(FD fd, guint8 *buffer, gint length);
+int	bfb_io_write(FD fd, uint8_t *buffer, int length);
 
 /* Read in a BFB answer */
-gint	do_bfb_read(FD fd, guint8 *buffer, gint length);
+int	do_bfb_read(FD fd, uint8_t *buffer, int length);
 
 /* Send an BFB init command an check for a valid answer frame */
-gboolean
-	do_bfb_init(FD fd);
+int	do_bfb_init(FD fd);
 
 /* Send an AT-command an expect 1 line back as answer */
-gint	do_at_cmd(FD fd, char *cmd, char *rspbuf, int rspbuflen);
+int	do_at_cmd(FD fd, char *cmd, char *rspbuf, int rspbuflen);
 
 /* close the connection */
 void	bfb_io_close(FD fd, int force);
 
 /* Init the phone and set it in BFB-mode */
 /* Returns fd or -1 on failure */
-FD	bfb_io_open(const gchar *ttyname);
+FD	bfb_io_open(const char *ttyname);
 
 #endif /* BFB_IO_H */

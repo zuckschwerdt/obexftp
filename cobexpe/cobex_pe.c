@@ -28,12 +28,13 @@
  *     
  */
 
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
 #include <sys/types.h>
 #include <sys/time.h>
 #include <fcntl.h>
 #include <errno.h>
-#include <string.h>
-#include <unistd.h>
 #ifdef _WIN32
 #include <windows.h>
 #include <stdlib.h>
@@ -43,20 +44,16 @@
 #include <termios.h>
 #endif
 
-#include <glib.h>
 #include <openobex/obex.h>
 #include "obex_t.h"
 #include "cobex_pe.h"
 #include "cobex_pe_private.h"
-#include <g_debug.h>
-
-#undef G_LOG_DOMAIN
-#define	G_LOG_DOMAIN	COBEX_PE_LOG_DOMAIN
+#include <common.h>
 
 #ifdef _WIN32
 #else
 /* Send an AT-command an expect 1 line back as answer */
-static gint cobex_do_at_cmd(int fd, char *cmd, char *rspbuf, int rspbuflen)
+static int cobex_do_at_cmd(int fd, char *cmd, char *rspbuf, int rspbuflen)
 {
 	fd_set ttyset;
 	struct timeval tv;
@@ -71,17 +68,17 @@ static gint cobex_do_at_cmd(int fd, char *cmd, char *rspbuf, int rspbuflen)
 	int done = 0;
 	int cmdlen;
 
-        g_return_val_if_fail (fd > 0, -1);
-        g_return_val_if_fail (cmd != NULL, -1);
+        return_val_if_fail (fd > 0, -1);
+        return_val_if_fail (cmd != NULL, -1);
 
 	cmdlen = strlen(cmd);
 
 	rspbuf[0] = 0;
-	g_debug(G_GNUC_FUNCTION "() Sending %d: %s\n", cmdlen, cmd);
+	DEBUG(3, "%s() Sending %d: %s\n", __func__, cmdlen, cmd);
 
 	// Write command
 	if(write(fd, cmd, cmdlen) < cmdlen)	{
-		g_warning("Error writing to port");
+		DEBUG(1, "Error writing to port");
 		return -1;
 	}
 
@@ -96,7 +93,7 @@ static gint cobex_do_at_cmd(int fd, char *cmd, char *rspbuf, int rspbuflen)
 				return actual;
 			total += actual;
 
-			g_debug(G_GNUC_FUNCTION "() tmpbuf=%d: %s\n", total, tmpbuf);
+			DEBUG(3, "%s() tmpbuf=%d: %s\n", __func__, total, tmpbuf);
 
 			// Answer not found within 100 bytes. Cancel
 			if(total == sizeof(tmpbuf))
@@ -117,10 +114,10 @@ static gint cobex_do_at_cmd(int fd, char *cmd, char *rspbuf, int rspbuflen)
 	}
 
 
-//	g_debug(G_GNUC_FUNCTION "() buf:%08lx answer:%08lx end:%08lx\n", tmpbuf, answer, answer_end);
+//	DEBUG(3, "%s() buf:%08lx answer:%08lx end:%08lx\n", __func__, tmpbuf, answer, answer_end);
 
 
-	g_debug(G_GNUC_FUNCTION "() Answer: %s", answer);
+	DEBUG(3, "%s() Answer: %s", __func__, answer);
 
 	// Remove heading and trailing \r
 	if((*answer_end == '\r') || (*answer_end == '\n'))
@@ -131,11 +128,11 @@ static gint cobex_do_at_cmd(int fd, char *cmd, char *rspbuf, int rspbuflen)
 		answer++;
 	if((*answer == '\r') || (*answer == '\n'))
 		answer++;
-	g_debug(G_GNUC_FUNCTION "() Answer: %s", answer);
+	DEBUG(3, "%s() Answer: %s", __func__, answer);
 
 	answer_size = (answer_end) - answer +1;
 
-	g_info(G_GNUC_FUNCTION "() Answer size=%d\n", answer_size);
+	DEBUG(2, "%s() Answer size=%d\n", __func__, answer_size);
 	if( (answer_size) >= rspbuflen )
 		return -1;
 
@@ -150,13 +147,13 @@ static void cobex_pe_cleanup(obex_t *self, int force)
 {
 #ifdef _WIN32
 #else
-        g_return_if_fail (self != NULL);
-        g_return_if_fail (OBEX_FD(self) > 0);
+        return_if_fail (self != NULL);
+        return_if_fail (OBEX_FD(self) > 0);
 
 	if(force)	{
 		// Send a break to get out of OBEX-mode
 		if(ioctl(OBEX_FD(self), TCSBRKP, 0) < 0)	{
-			g_warning("Unable to send break!");
+			DEBUG(1, "Unable to send break!");
 		}
 		sleep(1);
 	}
@@ -169,18 +166,18 @@ static void cobex_pe_cleanup(obex_t *self, int force)
 #else
 /* Init the phone and set it in BFB-mode */
 /* Returns fd or -1 on failure */
-static gint cobex_pe_init(obex_t *self, const gchar *ttyname)
+static int cobex_pe_init(obex_t *self, const char *ttyname)
 {
-	gint ttyfd;
+	int ttyfd;
 	struct termios oldtio, newtio;
-	guint8 rspbuf[200];
+	uint8_t rspbuf[200];
 
-        g_return_val_if_fail (self != NULL, -1);
+        return_val_if_fail (self != NULL, -1);
 
-	g_debug(G_GNUC_FUNCTION "() \n");
+	DEBUG(3, "%s() \n", __func__);
 
 	if( (ttyfd = open(ttyname, O_RDWR | O_NONBLOCK | O_NOCTTY, 0)) < 0 ) {
-		g_error("Can' t open tty");
+		DEBUG(1, "Can't open tty");
 		return -1;
 	}
 
@@ -194,20 +191,20 @@ static gint cobex_pe_init(obex_t *self, const gchar *ttyname)
 
 
 	if(cobex_do_at_cmd(ttyfd, "ATZ\r\n", rspbuf, sizeof(rspbuf)) < 0)	{
-		g_warning("Comm-error or already in OBEX mode");
+		DEBUG(1, "Comm-error or already in OBEX mode");
 		goto err;
 	}
 	if(strcasecmp("OK", rspbuf) != 0)	{
-		g_warning("Error doing ATZ (%s)", rspbuf);
+		DEBUG(1, "Error doing ATZ (%s)", rspbuf);
 		goto err;
 	}
 
 	if(cobex_do_at_cmd(ttyfd, "AT*EOBEX\r\n", rspbuf, sizeof(rspbuf)) < 0)	{
-		g_warning("Comm-error");
+		DEBUG(1, "Comm-error");
 		goto err;
 	}
 	if(strcasecmp("CONNECT", rspbuf) != 0)	{
-		g_warning("Error doing AT*EOBEX (%s)", rspbuf);
+		DEBUG(1, "Error doing AT*EOBEX (%s)", rspbuf);
 		goto err;
 	}
 
@@ -219,14 +216,14 @@ static gint cobex_pe_init(obex_t *self, const gchar *ttyname)
 #endif
 
 
-gint cobex_pe_connect(obex_t *self, gpointer userdata)
+int cobex_pe_connect(obex_t *self, void *userdata)
 {
 	cobex_t *c;
-        g_return_val_if_fail (self != NULL, -1);
-        g_return_val_if_fail (userdata != NULL, -1);
+        return_val_if_fail (self != NULL, -1);
+        return_val_if_fail (userdata != NULL, -1);
 	c = (cobex_t *) userdata;
 
-	g_debug(G_GNUC_FUNCTION "() \n");
+	DEBUG(3, "%s() \n", __func__);
 
 #ifdef _WIN32
 #else
@@ -237,32 +234,32 @@ gint cobex_pe_connect(obex_t *self, gpointer userdata)
 	return 1;
 }
 
-gint cobex_pe_disconnect(obex_t *self, gpointer userdata)
+int cobex_pe_disconnect(obex_t *self, void *userdata)
 {
-	g_debug(G_GNUC_FUNCTION "() \n");
+	DEBUG(3, "%s() \n", __func__);
 	cobex_pe_cleanup(self, FALSE);
 	return 1;
 }
 
 /* Called from OBEX-lib when data needs to be written */
-gint cobex_pe_write(obex_t *self, gpointer userdata, guint8 *buffer, gint length)
+int cobex_pe_write(obex_t *self, void *userdata, uint8_t *buffer, int length)
 {
 #ifdef _WIN32
   return -1;
 #else
 	int actual;
 	cobex_t *c;
-        g_return_val_if_fail (self != NULL, -1);
-        g_return_val_if_fail (userdata != NULL, -1);
+        return_val_if_fail (self != NULL, -1);
+        return_val_if_fail (userdata != NULL, -1);
 	c = (cobex_t *) userdata;
 	
-	g_debug(G_GNUC_FUNCTION "() \n");
+	DEBUG(3, "%s() \n", __func__);
 
-	g_info(G_GNUC_FUNCTION "() Data %d bytes\n", length);
+	DEBUG(2, "%s() Data %d bytes\n", __func__, length);
 
 	actual = write(OBEX_FD(self), buffer, length);
 	if (actual < length)	{
-		g_warning("Error writing to port");
+		DEBUG(1, "Error writing to port");
 		return -1;
 	}
 
@@ -271,20 +268,20 @@ gint cobex_pe_write(obex_t *self, gpointer userdata, guint8 *buffer, gint length
 }
 
 /* Called when input data is needed */
-gint cobex_pe_handleinput(obex_t *self, gpointer userdata, gint timeout)
+int cobex_pe_handleinput(obex_t *self, void *userdata, int timeout)
 {
 #ifdef _WIN32
   return 1;
 #else
-	gint ret;
+	int ret;
 	struct timeval time;
 	fd_set fdset;
-	guint8 recv[500];
+	uint8_t recv[500];
 
 	cobex_t *c;
 
-        g_return_val_if_fail (self != NULL, -1);
-        g_return_val_if_fail (userdata != NULL, -1);
+        return_val_if_fail (self != NULL, -1);
+        return_val_if_fail (userdata != NULL, -1);
 	c = (cobex_t *) userdata;
 
 	time.tv_sec = timeout;
@@ -297,14 +294,14 @@ gint cobex_pe_handleinput(obex_t *self, gpointer userdata, gint timeout)
 	/* Wait for input */
 	ret = select(OBEX_FD(self) + 1, &fdset, NULL, NULL, &time);
 
-	g_info(G_GNUC_FUNCTION "() There is something (%d)\n", ret);
+	DEBUG(2, "%s() There is something (%d)\n", __func__, ret);
 
 	/* Check if this is a timeout (0) or error (-1) */
 	if(ret <= 0)
 		return ret;
 
 	ret = read(OBEX_FD(self), recv, sizeof(recv));
-	g_info(G_GNUC_FUNCTION "() Read %d bytes\n", ret);
+	DEBUG(2, "%s() Read %d bytes\n", __func__, ret);
 
 	if (ret > 0) {
 		OBEX_CustomDataFeed(self, recv, ret);
@@ -325,16 +322,16 @@ static obex_ctrans_t _cobex_ctrans = {
 	handleinput: cobex_handleinput,
 };
 */
-obex_ctrans_t *cobex_pe_ctrans (const gchar *tty) {
+obex_ctrans_t *cobex_pe_ctrans (const char *tty) {
 	obex_ctrans_t *ctrans;
 	cobex_t *cobex;
 
-	cobex = g_new0 (cobex_t, 1);
+	cobex = calloc (1, sizeof(cobex_t));
 	if(tty == NULL)
 		tty = SERPORT;
-	cobex->tty = g_strdup (tty);
+	cobex->tty = strdup (tty);
 
-	ctrans = g_new0 (obex_ctrans_t, 1);
+	ctrans = calloc (1, sizeof(obex_ctrans_t));
 	ctrans->connect = cobex_pe_connect;
 	ctrans->disconnect = cobex_pe_disconnect;
 	ctrans->write = cobex_pe_write;
@@ -350,18 +347,18 @@ void cobex_pe_free (obex_ctrans_t *ctrans)
 {
 	cobex_t *cobex;
 
-	g_return_if_fail (ctrans != NULL);
+	return_if_fail (ctrans != NULL);
 
 	cobex = (cobex_t *)ctrans->userdata;
 
-	g_return_if_fail (cobex != NULL);
+	return_if_fail (cobex != NULL);
 
-	g_free (cobex->tty);
+	free (cobex->tty);
 	/* maybe there is a bfb_data_t left? */
-	/* g_free(cobex->data); */
+	/* free(cobex->data); */
 
-	g_free (cobex);
-	g_free (ctrans);
+	free (cobex);
+	free (ctrans);
 
 	return;
 }

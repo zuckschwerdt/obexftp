@@ -22,34 +22,31 @@
  *  v0.1:  Don, 25 Jul 2002 03:16:41 +0200
  */
 
-#include <glib.h>
-
+#include <stdlib.h>
 #include <string.h>
 #include <fcntl.h>
+#ifndef S_SPLINT_S
 #include <unistd.h>
+#endif
 #ifdef _WIN32
 #include <windows.h>
-#include <stdlib.h>
 #define sleep(n)	_sleep(n*1000)
-#else /* _WIN32 */
+#else
 #include <sys/ioctl.h>
 #include <termios.h>
-#endif /* _WIN32 */
+#endif
 
 #include "bfb.h"
-#include <g_debug.h>
-
-#undef G_LOG_DOMAIN
-#define	G_LOG_DOMAIN	BFB_LOG_DOMAIN
+#include <common.h>
 
 /* Write out a BFB buffer */
-gint bfb_io_write(FD fd, guint8 *buffer, gint length)
+int bfb_io_write(FD fd, uint8_t *buffer, int length)
 {
 #ifdef _WIN32
 	DWORD bytes;
-	g_debug(G_GNUC_FUNCTION "() WriteFile");
+	DEBUG(3, "%s() WriteFile", __func__);
 	if(!WriteFile(fd, buffer, length, &bytes, NULL))
-		g_info(G_GNUC_FUNCTION "() Write error: %ld", bytes);
+		DEBUG(2, "%s() Write error: %ld", __func__, bytes);
 	return bytes;
 #else
 	return write(fd, buffer, length);
@@ -57,14 +54,14 @@ gint bfb_io_write(FD fd, guint8 *buffer, gint length)
 }
 
 /* Read a BFB answer */
-gint do_bfb_read(FD fd, guint8 *buffer, gint length)
+int do_bfb_read(FD fd, uint8_t *buffer, int length)
 {
 #ifdef _WIN32
 	DWORD bytes;
 
-	g_debug(G_GNUC_FUNCTION "() ReadFile");
+	DEBUG(3, "%s() ReadFile", __func__);
 	if (!ReadFile(fd, buffer, length, &bytes, NULL)) {
-		g_info(G_GNUC_FUNCTION "() Read error: %ld", bytes);
+		DEBUG(2, "%s() Read error: %ld", __func__, bytes);
 	}
 
 	return bytes;
@@ -73,7 +70,7 @@ gint do_bfb_read(FD fd, guint8 *buffer, gint length)
 	fd_set fdset;
 	int actual;
 
-        g_return_val_if_fail (fd > 0, -1);
+        return_val_if_fail (fd > 0, -1);
 
 	time.tv_sec = 1;
 	time.tv_usec = 0;
@@ -84,71 +81,82 @@ gint do_bfb_read(FD fd, guint8 *buffer, gint length)
 	if(select(fd+1, &fdset, NULL, NULL, &time)) {
 		actual = read(fd, buffer, length);
 		if(actual < 0)
-			g_info(G_GNUC_FUNCTION "() Read error: %d", actual);
+			DEBUG(2, "%s() Read error: %d", __func__, actual);
 		return actual;
 	}
 	else {
-		g_warning(G_GNUC_FUNCTION "() No data");
+		DEBUG(1, "%s() No data", __func__);
 		return 0;
 	}
 #endif
 }
 
 /* Send an BFB init command an check for a valid answer frame */
-gboolean do_bfb_init(FD fd)
+int do_bfb_init(FD fd)
 {
-	gint actual;
+	int actual;
+	int tries=3;
 	bfb_frame_t *frame;
-	guint8 rspbuf[200];
+	uint8_t rspbuf[200];
 
-	guint8 init_magic = BFB_CONNECT_HELLO;
-	guint8 init_magic2 = BFB_CONNECT_HELLO_ACK;
+	uint8_t init_magic = BFB_CONNECT_HELLO;
+	uint8_t init_magic2 = BFB_CONNECT_HELLO_ACK;
 	/*
-	guint8 speed115200[] = {0xc0,'1','1','5','2','0','0',0x13,0xd2,0x2b};
-	guint8 sifs[] = {'a','t','^','s','i','f','s',0x13};
+	uint8_t speed115200[] = {0xc0,'1','1','5','2','0','0',0x13,0xd2,0x2b};
+	uint8_t sifs[] = {'a','t','^','s','i','f','s',0x13};
 	*/
 
-        g_return_val_if_fail (fd > 0, FALSE);
+#ifdef _WIN32
+        return_val_if_fail (fd != INVALID_HANDLE_VALUE, FALSE);
+#else
+        return_val_if_fail (fd > 0, FALSE);
+#endif
 
-	actual = bfb_write_packets (fd, BFB_FRAME_CONNECT, &init_magic, sizeof(init_magic));
-	g_info(G_GNUC_FUNCTION "() Wrote %d packets", actual);
+	while (tries-- > 0) {
+		actual = bfb_write_packets (fd, BFB_FRAME_CONNECT, &init_magic, sizeof(init_magic));
+		DEBUG(2, "%s() Wrote %d packets", __func__, actual);
 
-	if (actual < 1) {
-		g_warning("BFB port error");
-		return FALSE;
+		if (actual < 1) {
+			DEBUG(1, "BFB port error");
+			return FALSE;
+		}
+
+		actual = do_bfb_read(fd, rspbuf, sizeof(rspbuf));
+		DEBUG(2, "%s() Read %d bytes", __func__, actual);
+
+		if (actual < 1) {
+			DEBUG(1, "BFB read error");
+			return FALSE;
+		}
+
+		frame = bfb_read_packets(rspbuf, &actual);
+		DEBUG(2, "%s() Unstuffed, %d bytes remaining", __func__, actual);
+
+		if (frame != NULL)
+			break;
 	}
-
-	actual = do_bfb_read(fd, rspbuf, sizeof(rspbuf));
-	g_info(G_GNUC_FUNCTION  "() Read %d bytes", actual);
-
-	if (actual < 1) {
-		g_warning("BFB read error");
-		return FALSE;
-	}
-
-	frame = bfb_read_packets(rspbuf, &actual);
-	g_info(G_GNUC_FUNCTION  "() Unstuffed, %d bytes remaining", actual);
+		
 	if (frame == NULL) {
-		g_warning("BFB init error");
+		DEBUG(1, "BFB init error");
 		return FALSE;
 	}
-	g_message("BFB init ok");
+	DEBUG(2, "BFB init ok.");
 
 	if ((frame->len == 2) && (frame->payload[0] == init_magic) && (frame->payload[1] == init_magic2)) {
-		g_free(frame);
+		free(frame);
 		return TRUE;
 	}
 
-	g_warning("Error doing BFB init (%d, %x %x)",
+	DEBUG(1, "Error doing BFB init (%d, %x %x)",
 		frame->len, frame->payload[0], frame->payload[1]);
 
-	g_free(frame);
+	free(frame);
 
 	return FALSE;
 }
 
 /* Send an AT-command an expect 1 line back as answer */
-gint do_at_cmd(FD fd, char *cmd, char *rspbuf, int rspbuflen)
+int do_at_cmd(FD fd, char *cmd, char *rspbuf, int rspbuflen)
 {
 #ifdef _WIN32
 	DWORD actual;
@@ -167,13 +175,17 @@ gint do_at_cmd(FD fd, char *cmd, char *rspbuf, int rspbuflen)
 	int done = 0;
 	int cmdlen;
 
-        g_return_val_if_fail (fd > 0, -1);
-        g_return_val_if_fail (cmd != NULL, -1);
+#ifdef _WIN32
+        return_val_if_fail (fd != INVALID_HANDLE_VALUE, -1);
+#else
+        return_val_if_fail (fd > 0, -1);
+#endif
+        return_val_if_fail (cmd != NULL, -1);
 
 	cmdlen = strlen(cmd);
 
 	rspbuf[0] = 0;
-	g_debug(G_GNUC_FUNCTION "() Sending %d: %s", cmdlen, cmd);
+	DEBUG(3, "%s() Sending %d: %s", __func__, cmdlen, cmd);
 
 	// Write command
 #ifdef _WIN32
@@ -181,14 +193,14 @@ gint do_at_cmd(FD fd, char *cmd, char *rspbuf, int rspbuflen)
 #else
 	if(write(fd, cmd, cmdlen) < cmdlen)	{
 #endif
-		g_warning("Error writing to port");
+		DEBUG(1, "Error writing to port");
 		return -1;
 	}
 
 	while(!done)	{
 #ifdef _WIN32
 			if (!ReadFile(fd, &tmpbuf[total], sizeof(tmpbuf) - total, &actual, NULL))
-				g_info(G_GNUC_FUNCTION "() Read error: %ld", actual);
+				DEBUG(2, "%s() Read error: %ld", __func__, actual);
 #else
 		FD_ZERO(&ttyset);
 		FD_SET(fd, &ttyset);
@@ -201,7 +213,7 @@ gint do_at_cmd(FD fd, char *cmd, char *rspbuf, int rspbuflen)
 				return actual;
 			total += actual;
 
-			g_debug(G_GNUC_FUNCTION "() tmpbuf=%d: %s", total, tmpbuf);
+			DEBUG(3, "%s() tmpbuf=%d: %s", __func__, total, tmpbuf);
 
 			// Answer not found within 100 bytes. Cancel
 			if(total == sizeof(tmpbuf))
@@ -224,10 +236,10 @@ gint do_at_cmd(FD fd, char *cmd, char *rspbuf, int rspbuflen)
 	}
 
 
-//	g_debug(G_GNUC_FUNCTION "() buf:%08lx answer:%08lx end:%08lx", tmpbuf, answer, answer_end);
+//	DEBUG(3, "%s() buf:%08lx answer:%08lx end:%08lx", __func__, tmpbuf, answer, answer_end);
 
 
-	g_debug(G_GNUC_FUNCTION "() Answer: %s", answer);
+	DEBUG(3, "%s() Answer: %s", __func__, answer);
 
 	// Remove heading and trailing \r
 	if((*answer_end == '\r') || (*answer_end == '\n'))
@@ -238,11 +250,11 @@ gint do_at_cmd(FD fd, char *cmd, char *rspbuf, int rspbuflen)
 		answer++;
 	if((*answer == '\r') || (*answer == '\n'))
 		answer++;
-	g_debug(G_GNUC_FUNCTION "() Answer: %s", answer);
+	DEBUG(3, "%s() Answer: %s", __func__, answer);
 
 	answer_size = (answer_end) - answer +1;
 
-	g_info(G_GNUC_FUNCTION "() Answer size=%d", answer_size);
+	DEBUG(2, "%s() Answer size=%d", __func__, answer_size);
 	if( (answer_size) >= rspbuflen )
 		return -1;
 
@@ -255,11 +267,11 @@ gint do_at_cmd(FD fd, char *cmd, char *rspbuf, int rspbuflen)
 /* close the connection */
 void bfb_io_close(FD fd, int force)
 {
-	g_debug(G_GNUC_FUNCTION "()");
+	DEBUG(3, "%s()", __func__);
 #ifdef _WIN32
-        g_return_if_fail (fd != INVALID_HANDLE_VALUE);
+        return_if_fail (fd != INVALID_HANDLE_VALUE);
 #else
-        g_return_if_fail (fd > 0);
+        return_if_fail (fd > 0);
 #endif
 
 	if(force)	{
@@ -269,7 +281,7 @@ void bfb_io_close(FD fd, int force)
 #else
 		if(ioctl(fd, TCSBRKP, 0) < 0)	{
 #endif
-			g_warning("Unable to send break!");
+			DEBUG(1, "Unable to send break!");
 		}
 		sleep(1);
 	}
@@ -282,29 +294,32 @@ void bfb_io_close(FD fd, int force)
 
 /* Init the phone and set it in BFB-mode */
 /* Returns fd or -1 on failure */
-FD bfb_io_open(const gchar *ttyname)
+FD bfb_io_open(const char *ttyname)
 {
-	guint8 rspbuf[200];
+	uint8_t rspbuf[200];
 #ifdef _WIN32
 	HANDLE ttyfd;
 	DCB dcb;
 	COMMTIMEOUTS ctTimeOuts;
 
-        g_return_val_if_fail (ttyname != NULL, INVALID_HANDLE_VALUE);
+        return_val_if_fail (ttyname != NULL, INVALID_HANDLE_VALUE);
 
-	g_debug(G_GNUC_FUNCTION "() CreateFile");
+	DEBUG(3, "%s() CreateFile", __func__);
 	ttyfd = CreateFile (ttyname, GENERIC_READ | GENERIC_WRITE, 0, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
-	if (ttyfd == INVALID_HANDLE_VALUE)
-		g_error ("CreateFile");
+	if (ttyfd == INVALID_HANDLE_VALUE) {
+		DEBUG(1, "Error: CreateFile()");
+		return NULL;
+	}
 
-	if(!GetCommState(ttyfd, &dcb))
-		g_error ("GetCommState");
+	if(!GetCommState(ttyfd, &dcb)) {
+		DEBUG(1, "Error: GetCommState()");
+	}
 	dcb.fBinary = TRUE;
 	dcb.BaudRate = CBR_57600;
 	dcb.fParity = FALSE;
-	dcb.Parity = 0;
+	dcb.Parity = NOPARITY;
 	dcb.ByteSize = 8;
-	dcb.StopBits = 1;
+	dcb.StopBits = ONESTOPBIT;
 	dcb.fInX = FALSE;
 	dcb.fOutX = FALSE;
 	dcb.fOutxDsrFlow = FALSE;
@@ -312,83 +327,96 @@ FD bfb_io_open(const gchar *ttyname)
 	dcb.fDtrControl = DTR_CONTROL_ENABLE;
 	dcb.fRtsControl = RTS_CONTROL_ENABLE;
 	if(!SetCommState(ttyfd, &dcb))
-		g_error ("SetCommState");
+		DEBUG(1, "SetCommState failed");
 
 	ctTimeOuts.ReadIntervalTimeout = 250;
 	ctTimeOuts.ReadTotalTimeoutMultiplier = 1; /* no good with big buffer */
 	ctTimeOuts.ReadTotalTimeoutConstant = 500;
 	ctTimeOuts.WriteTotalTimeoutMultiplier = 1;
 	ctTimeOuts.WriteTotalTimeoutConstant = 5000;
-	if(!SetCommTimeouts(ttyfd, &ctTimeOuts))
-		g_error ("SetCommTimeouts");
+	if(!SetCommTimeouts(ttyfd, &ctTimeOuts)) {
+		DEBUG(1, "Error: SetCommTimeouts()");
+	}
        
 	Sleep(500);
 
 	// flush all pending input
-	if(!PurgeComm(ttyfd, PURGE_RXABORT | PURGE_RXCLEAR))
-		g_error ("PurgeComm");
+	if(!PurgeComm(ttyfd, PURGE_RXABORT | PURGE_RXCLEAR)) {
+		DEBUG(1, "Error: PurgeComm");
+	}
 
-#else /* _WIN32 */
-	gint ttyfd;
+#else
+	int ttyfd;
 	struct termios oldtio, newtio;
 
-        g_return_val_if_fail (ttyname != NULL, -1);
+        return_val_if_fail (ttyname != NULL, -1);
 
-	g_info(G_GNUC_FUNCTION "() ");
+	DEBUG(2, "%s() ", __func__);
 
 	if( (ttyfd = open(ttyname, O_RDWR | O_NONBLOCK | O_NOCTTY, 0)) < 0 ) {
-		g_error("Can' t open tty");
+		DEBUG(1, "Can' t open tty");
 		return -1;
 	}
 
-	tcgetattr(ttyfd, &oldtio);
+	(void) tcgetattr(ttyfd, &oldtio);
 	bzero(&newtio, sizeof(newtio));
 	newtio.c_cflag = B57600 | CS8 | CREAD;
 	newtio.c_iflag = IGNPAR;
 	newtio.c_oflag = 0;
-	tcflush(ttyfd, TCIFLUSH);
-	tcsetattr(ttyfd, TCSANOW, &newtio);
-#endif /* _WIN32 */
+	(void) tcflush(ttyfd, TCIFLUSH);
+	(void) tcsetattr(ttyfd, TCSANOW, &newtio);
+#endif
 
 	/* do we need to handle an error? */
 	if (do_bfb_init (ttyfd)) {
-		g_warning("Already in BFB mode.");
+		DEBUG(1, "Already in BFB mode.");
 		goto bfbmode;
 	}
 
-	if(do_at_cmd(ttyfd, "ATZ\r\n", rspbuf, sizeof(rspbuf)) < 0)	{
-		g_warning("Comm-error or already in BFB mode");
-		goto err;
+	if(do_at_cmd(ttyfd, "ATZ\r\n", rspbuf, sizeof(rspbuf)) < 0) {
+		DEBUG(1, "Comm-error or already in BFB mode");
+		newtio.c_cflag = B19200 | CS8 | CREAD;
+		(void) tcflush(ttyfd, TCIFLUSH);
+		(void) tcsetattr(ttyfd, TCSANOW, &newtio);
+		if(do_at_cmd(ttyfd, "ATZ\r\n", rspbuf, sizeof(rspbuf)) < 0) {
+			DEBUG(1, "Comm-error or already in BFB mode");
+			goto err;
+		}
 	}
 	if(strcasecmp("OK", rspbuf) != 0)	{
-		g_warning("Error doing ATZ (%s)", rspbuf);
+		DEBUG(1, "Error doing ATZ (%s)", rspbuf);
 		goto err;
 	}
 
 	if(do_at_cmd(ttyfd, "AT^SIFS\r\n", rspbuf, sizeof(rspbuf)) < 0)	{
-		g_warning("Comm-error");
+		DEBUG(1, "Comm-error");
 		goto err;
 	}
 	if(strcasecmp("^SIFS: WIRE", rspbuf) != 0)	{ // expect "OK" also!
-		g_warning("Error doing AT^SIFS (%s)", rspbuf);
+		DEBUG(1, "Error doing AT^SIFS (%s)", rspbuf);
 		goto err;
 	}
 
 	if(do_at_cmd(ttyfd, "AT^SBFB=1\r\n", rspbuf, sizeof(rspbuf)) < 0)	{
-		g_warning("Comm-error");
+		DEBUG(1, "Comm-error");
 		goto err;
 	}
 	if(strcasecmp("OK", rspbuf) != 0)	{
-		g_warning("Error doing AT^SBFB=1 (%s)", rspbuf);
+		DEBUG(1, "Error doing AT^SBFB=1 (%s)", rspbuf);
 		goto err;
 	}
 
 	sleep(1); // synch a bit
+
+	newtio.c_cflag = B57600 | CS8 | CREAD;
+	(void) tcflush(ttyfd, TCIFLUSH);
+	(void) tcsetattr(ttyfd, TCSANOW, &newtio);
+
  bfbmode:
 	if (! do_bfb_init (ttyfd)) {
 		// well there may be some garbage -- just try again
 		if (! do_bfb_init (ttyfd)) {
-			g_warning("Couldn't init BFB mode.");
+			DEBUG(1, "Couldn't init BFB mode.");
 			goto err;
 		}
 	}

@@ -1,5 +1,3 @@
-#include <glib.h>
-#include <openobex/obex.h>
 
 #include <string.h>
 #include <stdlib.h>
@@ -7,13 +5,17 @@
 #include <fcntl.h>
 #include <sys/stat.h>
 
+#include <openobex/obex.h>
+
+#include <common.h>
+
 #include "object.h"
 
-obex_object_t *obexftp_build_info (obex_t obex, guint8 opcode)
+obex_object_t *obexftp_build_info (obex_t obex, uint8_t opcode)
 {
 	obex_object_t *object = NULL;
         obex_headerdata_t hdd;
-	guint8 cmdstr[] = {APPARAM_INFO_CODE, 0x01, 0x00};
+	uint8_t cmdstr[] = {APPARAM_INFO_CODE, 0x01, 0x00};
 
         object = OBEX_ObjectNew(obex, OBEX_CMD_GET);
         if(object == NULL)
@@ -27,12 +29,12 @@ obex_object_t *obexftp_build_info (obex_t obex, guint8 opcode)
 }
 
 //	cli->out_fd = STDOUT_FILENO;
-obex_object_t *obexftp_build_list (obex_t obex, const gchar *name)
+obex_object_t *obexftp_build_list (obex_t obex, const char *name)
 {
 	obex_object_t *object = NULL;
         obex_headerdata_t hdd;
-        guint8 *ucname;
-        gint ucname_len;
+        uint8_t *ucname;
+        int ucname_len;
 
         object = OBEX_ObjectNew(obex, OBEX_CMD_GET);
         if(object == NULL)
@@ -43,7 +45,7 @@ obex_object_t *obexftp_build_list (obex_t obex, const gchar *name)
  
 	if (name != NULL) {
 		ucname_len = strlen(name)*2 + 2;
-		ucname = g_malloc(ucname_len);
+		ucname = malloc(ucname_len);
 		if(ucname == NULL)
 			goto err;
 
@@ -51,7 +53,7 @@ obex_object_t *obexftp_build_list (obex_t obex, const gchar *name)
 
 		hdd.bs = ucname;
 		OBEX_ObjectAddHeader(obex, object, OBEX_HDR_NAME, hdd, ucname_len, OBEX_FL_FIT_ONE_PACKET);
-		g_free(ucname);
+		free(ucname);
 	}
 	
 	return object;
@@ -64,19 +66,19 @@ err:
 
 
 //	cli->out_fd = open_safe("", localname);
-obex_object_t *obexftp_build_get (obex_t obex, const gchar *name)
+obex_object_t *obexftp_build_get (obex_t obex, const char *name)
 {
 	obex_object_t *object = NULL;
         obex_headerdata_t hdd;
-        guint8 *ucname;
-        gint ucname_len;
+        uint8_t *ucname;
+        int ucname_len;
 
         object = OBEX_ObjectNew(obex, OBEX_CMD_GET);
         if(object == NULL)
                 return NULL;
 
         ucname_len = strlen(name)*2 + 2;
-        ucname = g_malloc(ucname_len);
+        ucname = malloc(ucname_len);
         if(ucname == NULL)
                 goto err;
 
@@ -84,7 +86,7 @@ obex_object_t *obexftp_build_get (obex_t obex, const gchar *name)
 
         hdd.bs = ucname;
         OBEX_ObjectAddHeader(obex, object, OBEX_HDR_NAME, hdd, ucname_len, 0);
-        g_free(ucname);
+        free(ucname);
 	
 	return object;
 
@@ -95,14 +97,14 @@ err:
 }
 
 
-obex_object_t *obexftp_build_rename (obex_t obex, const gchar *from, const gchar *to)
+obex_object_t *obexftp_build_rename (obex_t obex, const char *from, const char *to)
 {
 	obex_object_t *object = NULL;
         obex_headerdata_t hdd;
-        guint8 *appstr;
-        guint8 *appstr_p;
-        gint appstr_len;
-        gint ucname_len;
+        uint8_t *appstr;
+        uint8_t *appstr_p;
+        int appstr_len;
+        int ucname_len;
 	char opname[] = {'m','o','v','e'};
 
         object = OBEX_ObjectNew(obex, OBEX_CMD_PUT);
@@ -112,7 +114,7 @@ obex_object_t *obexftp_build_rename (obex_t obex, const gchar *from, const gchar
         appstr_len = 1 + 1 + sizeof(opname) +
 		strlen(from)*2 + 2 +
 		strlen(to)*2 + 2 + 2;
-        appstr = g_malloc(appstr_len);
+        appstr = malloc(appstr_len);
         if(appstr == NULL)
                 goto err;
 
@@ -133,7 +135,7 @@ obex_object_t *obexftp_build_rename (obex_t obex, const gchar *from, const gchar
 	
         hdd.bs = appstr;
         OBEX_ObjectAddHeader(obex, object, OBEX_HDR_APPARAM, hdd, appstr_len - 2, 0);
-        g_free(appstr);
+        free(appstr);
 	
 	return object;
 
@@ -144,19 +146,19 @@ err:
 }
 
 
-obex_object_t *obexftp_build_del (obex_t obex, const gchar *name)
+obex_object_t *obexftp_build_del (obex_t obex, const char *name)
 {
 	obex_object_t *object;
         obex_headerdata_t hdd;
-        guint8 *ucname;
-        gint ucname_len;
+        uint8_t *ucname;
+        int ucname_len;
 
         object = OBEX_ObjectNew(obex, OBEX_CMD_PUT);
         if(object == NULL)
                 return NULL;
 
         ucname_len = strlen(name)*2 + 2;
-        ucname = g_malloc(ucname_len);
+        ucname = malloc(ucname_len);
         if(ucname == NULL)
                 goto err;
 
@@ -164,7 +166,7 @@ obex_object_t *obexftp_build_del (obex_t obex, const gchar *name)
 
         hdd.bs = ucname;
         OBEX_ObjectAddHeader(obex, object, OBEX_HDR_NAME, hdd, ucname_len, OBEX_FL_FIT_ONE_PACKET);
-        g_free(ucname);
+        free(ucname);
 	
 	return object;
 
@@ -175,13 +177,13 @@ err:
 }
 
 
-obex_object_t *obexftp_build_setpath (obex_t obex, const gchar *name, gboolean up)
+obex_object_t *obexftp_build_setpath (obex_t obex, const char *name, int up)
 {
 	obex_object_t *object;
 	obex_headerdata_t hdd;
-	guint8 setpath_nohdr_data[2] = {0,};
-	gchar *ucname;
-	gint ucname_len;
+	uint8_t setpath_nohdr_data[2] = {0,};
+	char *ucname;
+	int ucname_len;
 
 	object = OBEX_ObjectNew(obex, OBEX_CMD_SETPATH);
 
@@ -190,7 +192,7 @@ obex_object_t *obexftp_build_setpath (obex_t obex, const gchar *name, gboolean u
 	}
 	else {
 		ucname_len = strlen(name)*2 + 2;
-		ucname = g_malloc(ucname_len);
+		ucname = malloc(ucname_len);
 		if(ucname == NULL) {
 			OBEX_ObjectDelete(obex, object);
 			return NULL;
@@ -199,7 +201,7 @@ obex_object_t *obexftp_build_setpath (obex_t obex, const gchar *name, gboolean u
 
 		hdd.bs = ucname;
 		OBEX_ObjectAddHeader(obex, object, OBEX_HDR_NAME, hdd, ucname_len, 0);
-		g_free(ucname);
+		free(ucname);
 	}
 
 	OBEX_ObjectSetNonHdrData(object, setpath_nohdr_data, 2);
@@ -208,7 +210,7 @@ obex_object_t *obexftp_build_setpath (obex_t obex, const gchar *name, gboolean u
 }
 
 
-obex_object_t *obexftp_build_put (obex_t obex, const gchar *name)
+obex_object_t *obexftp_build_put (obex_t obex, const char *name)
 {
 	return NULL;
 }

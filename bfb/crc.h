@@ -14,20 +14,20 @@
 #ifndef IRDA_CRC_H
 #define IRDA_CRC_H
 
-#include <glib.h>
+#include <stdint.h>
 
 #define INIT_FCS  0xffff   /* Initial FCS value */
 #define GOOD_FCS  0xf0b8   /* Good final FCS value */
 
-extern guint16 const irda_crc16_table[];
+extern uint16_t const irda_crc16_table[];
 
 /* Recompute the FCS with one more character appended. */
-static inline guint16 irda_fcs(guint16 fcs, guint8 c)
+static inline uint16_t irda_fcs(uint16_t fcs, uint8_t c)
 {
 	return (((fcs) >> 8) ^ irda_crc16_table[((fcs) ^ (c)) & 0xff]);
 }
 
 /* Recompute the FCS with len bytes appended. */
-unsigned short crc_calc( guint16 fcs, guint8 const *buf, gint len);
+unsigned short crc_calc( uint16_t fcs, uint8_t const *buf, int len);
 
 #endif

@@ -1,6 +1,7 @@
 #ifndef OBEXFTP_OBJECT_H
 #define OBEXFTP_OBJECT_H
 
+#include <stdint.h>
 #include <openobex/obex.h>
 
 /* Telecom/IrMC Synchronization Service */
@@ -16,12 +17,12 @@
 #define APPARAM_INFO_CODE '2'
 
 
-obex_object_t *obexftp_build_info (obex_t obex, guint8 opcode);
-obex_object_t *obexftp_build_list (obex_t obex, const gchar *name);
-obex_object_t *obexftp_build_get (obex_t obex, const gchar *name);
-obex_object_t *obexftp_build_rename (obex_t obex, const gchar *from, const gchar *to);
-obex_object_t *obexftp_build_del (obex_t obex, const gchar *name);
-obex_object_t *obexftp_build_setpath (obex_t obex, const gchar *name, gboolean up);
-obex_object_t *obexftp_build_put (obex_t obex, const gchar *name);
+obex_object_t *obexftp_build_info (obex_t obex, uint8_t opcode);
+obex_object_t *obexftp_build_list (obex_t obex, const char *name);
+obex_object_t *obexftp_build_get (obex_t obex, const char *name);
+obex_object_t *obexftp_build_rename (obex_t obex, const char *from, const char *to);
+obex_object_t *obexftp_build_del (obex_t obex, const char *name);
+obex_object_t *obexftp_build_setpath (obex_t obex, const char *name, int up);
+obex_object_t *obexftp_build_put (obex_t obex, const char *name);
 
-#endif // OBEXFTP_OBJECT_H
+#endif /* OBEXFTP_OBJECT_H */

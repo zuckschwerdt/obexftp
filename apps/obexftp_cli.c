@@ -27,7 +27,8 @@
  *     
  */
 
-#include <glib.h>
+#include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #define _GNU_SOURCE
 #include <getopt.h>
@@ -41,74 +42,77 @@
 #ifdef _WIN32_FIXME
 /* OpenOBEX won't define a handler on win32 */
 void DEBUG(unsigned int n, ...) { }
+void DUMPBUFFER(unsigned int n, char *label, char *msg) { }
 #endif /* _WIN32 */
 
-#include <g_debug.h>
+#include <common.h>
 
-void g_log_null_handler (const gchar *log_domain,
+#if 0
+void g_log_null_handler (const char *log_domain,
 			 GLogLevelFlags log_level,
-			 const gchar *message,
-			 gpointer user_data) {
+			 const char *message,
+			 void *user_data) {
 }
 
-void g_log_print_handler (const gchar *log_domain,
+void g_log_print_handler (const char *log_domain,
 			 GLogLevelFlags log_level,
-			 const gchar *message,
-			 gpointer user_data) {
+			 const char *message,
+			 void *user_data) {
 	g_print ("%s\n", message);
 }
+#endif
 
-static void info_cb(gint event, const gchar *msg, /*@unused@*/ gint len, /*@unused@*/ gpointer data)
+static void info_cb(int event, const char *msg, /*@unused@*/ int len, /*@unused@*/ void *data)
 {
 	switch (event) {
 
 	case OBEXFTP_EV_ERRMSG:
-		g_print("Error: %s\n", msg);
+		printf("Error: %s\n", msg);
 		break;
 
 	case OBEXFTP_EV_ERR:
-		g_print("failed: %s\n", msg);
+		printf("failed: %s\n", msg);
 		break;
 	case OBEXFTP_EV_OK:
-		g_print("done\n");
+		printf("done\n");
 		break;
 
 	case OBEXFTP_EV_CONNECTING:
-		g_print("Connecting...");
+		printf("Connecting...");
 		break;
 	case OBEXFTP_EV_DISCONNECTING:
-		g_print("Disconnecting...");
+		printf("Disconnecting...");
 		break;
 	case OBEXFTP_EV_SENDING:
-		g_print("Sending %s...", msg);
+		printf("Sending %s...", msg);
 		break;
 	case OBEXFTP_EV_RECEIVING:
-		g_print("Receiving %s...", msg);
+		printf("Receiving %s...", msg);
 		break;
 
 	case OBEXFTP_EV_LISTENING:
-		g_print("Waiting for incoming connection\n");
+		printf("Waiting for incoming connection\n");
 		break;
 
 	case OBEXFTP_EV_CONNECTIND:
-		g_print("Incoming connection\n");
+		printf("Incoming connection\n");
 		break;
 	case OBEXFTP_EV_DISCONNECTIND:
-		g_print("Disconnecting\n");
+		printf("Disconnecting\n");
 		break;
 
 	case OBEXFTP_EV_INFO:
-		g_print("Got info %d: \n", GPOINTER_TO_UINT (msg));
+		printf("Got info %d: \n", (int)msg);
 		break;
 
 	}
 }
 
 /*@only@*/ /*@null@*/ static obexftp_client_t *cli = NULL;
-/*@only@*/ /*@null@*/ static gchar *tty = NULL;
-/*@only@*/ /*@null@*/ static gchar *transport = NULL;
+/*@only@*/ /*@null@*/ static char *tty = NULL;
+/*@only@*/ /*@null@*/ static char *transport = NULL;
 
-static gboolean cli_connect()
+static int cli_connect()
 {
 /*@only@*/ /*@null@*/ static obex_ctrans_t *ctrans = NULL;
 	int retry;
@@ -118,22 +122,22 @@ static gboolean cli_connect()
 
 	if (tty != NULL) {
 		if ((transport != NULL) && !strcasecmp(transport, "ericsson")) {
-			g_print("Custom transport set to 'Ericsson'\n");
+			printf("Custom transport set to 'Ericsson'\n");
 			ctrans = cobex_pe_ctrans (tty);
 		} else {
 			ctrans = cobex_ctrans (tty);
-			g_print("Custom transport set to 'Siemens'\n");
+			printf("Custom transport set to 'Siemens'\n");
 		}
 	}
 	else {
 		ctrans = NULL;
-		g_print("No custom transport\n");
+		printf("No custom transport\n");
 	}
 
 	/* Open */
 	cli = obexftp_cli_open (info_cb, ctrans, NULL);
 	if(cli == NULL) {
-		g_print("Error opening obexftp-client\n");
+		printf("Error opening obexftp-client\n");
 		return FALSE;
 	}
 
@@ -142,7 +146,7 @@ static gboolean cli_connect()
 		/* Connect */
 		if (obexftp_cli_connect (cli) >= 0)
 			return TRUE;
-		g_print("Still trying to connect\n");
+		printf("Still trying to connect\n");
 	}
 
 	cli = NULL;
@@ -161,13 +165,13 @@ static void cli_disconnect()
 
 int main(int argc, char *argv[])
 {
-	int verbose=0;
-	guint log_handler;
+	/* int verbose=0; */
+	/* guint log_handler; */
 	int c;
 	int most_recent_cmd = 0;
-	gchar *p;
-	gchar *move_src = NULL;
-	/* gchar *inbox; */
+	char *p;
+	char *move_src = NULL;
+	/* char *inbox; */
 
 	/* preset mode of operation depending on our name */
 	if (strstr(argv[0], "ls") != NULL)	most_recent_cmd = 'l';
@@ -177,11 +181,11 @@ int main(int argc, char *argv[])
 	if (strstr(argv[0], "rm") != NULL)	most_recent_cmd = 'k';
 
 	/* by default don't debug anything */
-
+	/*
 	log_handler = g_log_set_handler (NULL,
 					 G_LOG_LEVEL_DEBUG | G_LOG_LEVEL_INFO,
 					 g_log_null_handler, NULL);
-
+	*/
 	while (1) {
 		int option_index = 0;
 		static struct option long_options[] = {
@@ -212,7 +216,7 @@ int main(int argc, char *argv[])
 		
 		case 'd':
 			if (tty != NULL)
-				g_free (tty);
+				free (tty);
 
 			if (!strcasecmp(optarg, "irda"))
 				tty = NULL;
@@ -223,7 +227,7 @@ int main(int argc, char *argv[])
 		
 		case 't':
 			if (transport != NULL)
-				g_free (transport);
+				free (transport);
 
 			transport = optarg;
 
@@ -294,6 +298,7 @@ int main(int argc, char *argv[])
 			break;
 
 		case 'v':
+#if 0
 			if (verbose++ > 0)
 				log_handler = g_log_set_handler (NULL,
 					 G_LOG_LEVEL_DEBUG,
@@ -304,10 +309,11 @@ int main(int argc, char *argv[])
 				log_handler = g_log_set_handler (NULL,
 					 G_LOG_LEVEL_INFO,
 					 g_log_default_handler, NULL);
+#endif
 			break;
 		case 'h':
 		case 'u':
-			g_print("Usage: %s [-d <dev>] [-s|-a] [-l <dir> ...] [-c <dir>]\n"
+			printf("Usage: %s [-d <dev>] [-s|-a] [-l <dir> ...] [-c <dir>]\n"
 				"[-g <file> ...] [-p <files> ...] [-i] [-m <src> <dest> ...] [-k <files> ...]\n"
 				"Transfer files from/to Siemens Mobile Equipment.\n"
 				"Copyright (c) 2002 Christian W. Zuckschwerdt\n"
@@ -328,16 +334,16 @@ int main(int argc, char *argv[])
 			break;
 
 		default:
-			g_print("Try `%s --help' for more information.\n",
+			printf("Try `%s --help' for more information.\n",
 				 argv[0]);
 		}
 	}
 
 	if (optind < argc) {
-		g_print("non-option ARGV-elements: ");
+		printf("non-option ARGV-elements: ");
 		while (optind < argc)
-			g_print("%s ", argv[optind++]);
-		g_print("\n");
+			printf("%s ", argv[optind++]);
+		printf("\n");
 	}
 
 	cli_disconnect ();

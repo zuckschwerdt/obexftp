@@ -30,11 +30,9 @@
 #ifndef OBEXFTP_H
 #define OBEXFTP_H
 
-#include <glib.h>
-
 #define	OBEXFTP_LOG_DOMAIN	"obexftp"
 
-typedef void (*obexftp_info_cb_t) (gint event, const gchar *buf, gint len, gpointer data);
+typedef void (*obexftp_info_cb_t) (int event, const char *buf, int len, void *data);
 
 enum {
 	OBEXFTP_EV_ERRMSG,
@@ -58,4 +56,4 @@ enum {
 /* Number of bytes passed at one time to OBEX */
 #define STREAM_CHUNK 4096
 
-#endif // OBEXFTP
+#endif /* OBEXFTP */

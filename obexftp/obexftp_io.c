@@ -1,21 +1,25 @@
-#include <sys/stat.h>
+
+#include <stdint.h>
+#include <stdlib.h>
 #include <unistd.h>
+#include <stdio.h>	/* FIXME: libraries shouldn't do this */
+#include <sys/stat.h>
 
 #include <fcntl.h>
 #include <string.h>
 #include <time.h>
 
-#include <glib.h>
 #include <openobex/obex.h>
 
 #include "obexftp_io.h"
-#include <g_debug.h>
+#include <common.h>
 
 #ifdef _WIN32
 #define S_IRGRP 0
 #define S_IROTH 0
 #define S_IXGRP 0
 #define S_IXOTH 0
+#define PATH_MAX MAX_PATH
 #endif
 #define DEFFILEMOD (S_IRUSR|S_IWUSR|S_IRGRP|S_IROTH) /* 0644 */
 #define DEFXFILEMOD (DEFFILEMOD | S_IXGRP | S_IXUSR | S_IXOTH) /* 0755 */
@@ -23,30 +27,30 @@
 //
 // Get some file-info. (size and lastmod)
 //
-static gint get_fileinfo(const char *name, char *lastmod)
+static int get_fileinfo(const char *name, char *lastmod)
 {
 	struct stat stats;
 	struct tm *tm;
 	
 	stat(name, &stats);
 	tm = gmtime(&stats.st_mtime);
-	g_snprintf(lastmod, 21, "%04d-%02d-%02dT%02d:%02d:%02dZ",
+	snprintf(lastmod, 21, "%04d-%02d-%02dT%02d:%02d:%02dZ",
 			tm->tm_year+1900, tm->tm_mon+1, tm->tm_mday,
 			tm->tm_hour, tm->tm_min, tm->tm_sec);
-	return (gint) stats.st_size;
+	return (int) stats.st_size;
 }
 
 
 //
 // Create an object from a file. Attach some info-headers to it
 //
-obex_object_t *build_object_from_file(obex_t *handle, const gchar *localname, const gchar *remotename)
+obex_object_t *build_object_from_file(obex_t *handle, const char *localname, const char *remotename)
 {
 	obex_object_t *object = NULL;
 	obex_headerdata_t hdd;
-	guint8 *ucname;
-	gint ucname_len, size;
-	gchar lastmod[21*2] = {"1970-01-01T00:00:00Z"};
+	uint8_t *ucname;
+	int ucname_len, size;
+	char lastmod[21*2] = {"1970-01-01T00:00:00Z"};
 		
 	/* Get filesize and modification-time */
 	size = get_fileinfo(localname, lastmod);
@@ -56,7 +60,7 @@ obex_object_t *build_object_from_file(obex_t *handle, const gchar *localname, co
 		return NULL;
 
 	ucname_len = strlen(remotename)*2 + 2;
-	ucname = g_malloc(ucname_len);
+	ucname = malloc(ucname_len);
 	if(ucname == NULL)
 		goto err;
 
@@ -64,10 +68,10 @@ obex_object_t *build_object_from_file(obex_t *handle, const gchar *localname, co
 
 	hdd.bs = ucname;
 	OBEX_ObjectAddHeader(handle, object, OBEX_HDR_NAME, hdd, ucname_len, 0);
-	g_free(ucname);
+	free(ucname);
 
 	hdd.bq4 = size;
-	OBEX_ObjectAddHeader(handle, object, OBEX_HDR_LENGTH, hdd, sizeof(guint32), 0);
+	OBEX_ObjectAddHeader(handle, object, OBEX_HDR_LENGTH, hdd, sizeof(uint32_t), 0);
 
 #if 0
 	/* Win2k excpects this header to be in unicode. I suspect this in
@@ -80,7 +84,7 @@ obex_object_t *build_object_from_file(obex_t *handle, const gchar *localname, co
 	OBEX_ObjectAddHeader(handle, object, OBEX_HDR_BODY,
 				hdd, 0, OBEX_FL_STREAM_START);
 
-	g_debug(G_GNUC_FUNCTION "() Lastmod = %s", lastmod);
+	DEBUG(3, "%s() Lastmod = %s", __func__, lastmod);
 	return object;
 
 err:
@@ -92,11 +96,11 @@ err:
 //
 // Check for dangerous filenames.
 //
-static gboolean nameok(const gchar *name)
+static int nameok(const char *name)
 {
-	g_debug(G_GNUC_FUNCTION "() ");
+	DEBUG(3, "%s() ", __func__);
 
-        g_return_val_if_fail (name != NULL, FALSE);
+        return_val_if_fail (name != NULL, FALSE);
 	
 	/* No abs paths */
 	if(name[0] == '/')
@@ -112,85 +116,100 @@ static gboolean nameok(const gchar *name)
 	}
 	return TRUE;
 }
+
+//
+// Concatenate two pathnames.
+// The first path may be NULL.
+// The second path is always treated relative.
+// dest must have at least PATH_MAX + 1 chars.
+//
+char *pathcat(char *dest, const char *path, const char *name)
+{
+	if(name == NULL)
+		return dest;
+		
+	while(*name == '/')
+		name++;
+		
+	if((path == NULL) || (*path == '\0'))
+		strncpy(dest, name, PATH_MAX);
+	else {
+		strncpy(dest, path, PATH_MAX);
+		if (dest[strlen(dest)-1] != '/') {
+			dest[strlen(dest) + 1] = '\0';
+			dest[strlen(dest)] = '/';
+		}
+		strncat(dest, name, PATH_MAX-strlen(dest));
+	}
+
+	return dest;
+}
 	
 //
 // Open a file, but do some sanity-checking first.
 //
-gint open_safe(const gchar *path, const gchar *name)
+int open_safe(const char *path, const char *name)
 {
-	GString *diskname;
-	gint fd;
+	char diskname[PATH_MAX + 1] = {0,};
+	int fd;
 
-	g_debug(G_GNUC_FUNCTION "() ");
+	DEBUG(3, "%s() ", __func__);
 	
 	/* Check for dangerous filenames */
 	if(nameok(name) == FALSE)
 		return -1;
 
-	diskname = g_string_new(path);
-	if(diskname == NULL)
-		return -1;
-
 	//TODO! Rename file if already exist.
-	
-	if(diskname->len > 0)
-		g_string_append(diskname, "/");
-	g_string_append(diskname, name);
 
-	g_debug(G_GNUC_FUNCTION "() Creating file %s", diskname->str);
+	pathcat(diskname, path, name);
 
-	fd = open(diskname->str, O_RDWR | O_CREAT | O_TRUNC, DEFFILEMOD);
-	g_string_free(diskname, TRUE);
+	DEBUG(3, "%s() Creating file %s", __func__, diskname);
+
+	fd = open(diskname, O_RDWR | O_CREAT | O_TRUNC, DEFFILEMOD);
 	return fd;
 }
 
 //
 // Go to a directory. Create if not exists and create is true.
 //
-gint checkdir(const gchar *path, const gchar *dir, cd_flags flags)
+int checkdir(const char *path, const char *dir, cd_flags flags)
 {
-	GString *newpath;
+	char newpath[PATH_MAX + 1] = {0,};
 	struct stat statbuf;
-	gint ret = -1;
+	int ret = -1;
 
 	if(!(flags & CD_ALLOWABS))	{
 		if(nameok(dir) == FALSE)
 			return -1;
 	}
 
-	newpath = g_string_new(path);
-	if(strcmp(path, "") != 0)
-		g_string_append(newpath, "/");
-	g_string_append(newpath, dir);
+	pathcat(newpath, path, dir);
 
-	g_debug(G_GNUC_FUNCTION "() path = %s dir = %s, flags = %d", path, dir, flags);
-	if(stat(newpath->str, &statbuf) == 0) {
+	DEBUG(3, "%s() path = %s dir = %s, flags = %d", __func__, path, dir, flags);
+	if(stat(newpath, &statbuf) == 0) {
 		// If this directory aleady exist we are done
 		if(S_ISDIR(statbuf.st_mode)) {
-			g_debug(G_GNUC_FUNCTION "() Using existing dir");
-			ret = 1;
-			goto out;
+			DEBUG(3, "%s() Using existing dir", __func__);
+			return 1;
 		}
 		else  {
 			// A non-directory with this name already exist.
-			g_debug(G_GNUC_FUNCTION "() A non-dir called %s already exist", newpath->str);
-			ret = -1;
-			goto out;
+			DEBUG(3, "%s() A non-dir called %s already exist", __func__, newpath);
+			return -1;
 		}
 	}
 	if(flags & CD_CREATE) {
-		g_debug(G_GNUC_FUNCTION "() Will try to create %s", newpath->str);
+		DEBUG(3, "%s() Will try to create %s", __func__, newpath);
 #ifdef _WIN32
-		ret = mkdir(newpath->str);
+		ret = mkdir(newpath);
 #else
-		ret = mkdir(newpath->str, DEFXFILEMOD);
+		ret = mkdir(newpath, DEFXFILEMOD);
 #endif
 	}
 	else {
 		ret = -1;
 	}
 
-out:	g_string_free(newpath, TRUE);
 	return ret;
 }
 	
