@@ -262,11 +262,16 @@ int bfb_write_subcmd_lw(fd_t fd, uint8_t type, uint8_t subtype, uint32_t p1, uin
 
 
 /* send actual packets */
+/* patch from Jorge Ventura to handle EAGAIN from write */
 int bfb_write_packets(fd_t fd, uint8_t type, uint8_t *buffer, int length)
 {
 	bfb_frame_t *frame;
 	int i;
 	int l;
+
+	struct timeval timeout;
+	fd_set fds;
+	int rc;
 #ifdef _WIN32
 	DWORD actual;
 #else
@@ -278,6 +283,9 @@ int bfb_write_packets(fd_t fd, uint8_t type, uint8_t *buffer, int length)
 #else
         return_val_if_fail (fd > 0, FALSE);
 #endif
+	/* select setup */
+	FD_ZERO(&fds);
+	FD_SET(fd, &fds);
 	
 	/* alloc frame buffer */
 	frame = malloc((length > MAX_PACKET_DATA ? MAX_PACKET_DATA : length) + sizeof (bfb_frame_t));
@@ -296,18 +304,24 @@ int bfb_write_packets(fd_t fd, uint8_t type, uint8_t *buffer, int length)
 
 		memcpy(frame->payload, &buffer[i], l);
 
+		/* Set time limit. */
+		timeout.tv_sec = 1;
+		timeout.tv_usec = 0;
+
 		/* actual = bfb_io_write(fd, frame, l + sizeof (bfb_frame_t)); */
+		rc = select(fd+1, NULL, &fds, NULL, &timeout);
+		if ( rc > 0) {
 #ifdef _WIN32
-		if(!WriteFile(fd, frame, l + sizeof (bfb_frame_t), &actual, NULL))
-			DEBUG(2, "%s() Write error: %ld\n", __func__, actual);
-		DEBUG(3, "%s() Wrote %ld bytes (expected %d)\n", __func__, actual, l + sizeof (bfb_frame_t));
+			if(!WriteFile(fd, frame, l + sizeof (bfb_frame_t), &actual, NULL))
+				DEBUG(2, "%s() Write error: %ld\n", __func__, actual);
+			DEBUG(3, "%s() Wrote %ld bytes (expected %d)\n", __func__, actual, l + sizeof (bfb_frame_t));
 #else
-		actual = write(fd, frame, l + sizeof (bfb_frame_t));
-		DEBUG(3, "%s() Wrote %d bytes (expected %d)\n", __func__, actual, l + sizeof (bfb_frame_t));
+			actual = write(fd, frame, l + sizeof (bfb_frame_t));
+			DEBUG(3, "%s() Wrote %d bytes (expected %d)\n", __func__, actual, l + sizeof (bfb_frame_t));
 #endif
+		}
 
-
-		if (actual < 0 || actual < l + (int) sizeof (bfb_frame_t)) {
+		if (actual < 0 || actual < l + (int) sizeof (bfb_frame_t) || rc <= 0) {
 			DEBUG(1, "%s() Write failed\n", __func__);
 			free(frame);
 			return -1;

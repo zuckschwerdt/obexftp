@@ -75,6 +75,7 @@ int cobex_connect(obex_t *self, void *data)
 	DEBUG(3, "%s() \n", __func__);
 
 	c->fd = bfb_io_open(c->tty, &typeinfo);
+	DEBUG(3, "%s() bfb_io_open returned %d, %d\n", __func__, c->fd, typeinfo);
 	if(typeinfo == 2)
 		c->type = CT_ERICSSON;
 	else

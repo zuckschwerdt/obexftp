@@ -374,7 +374,7 @@ fd_t bfb_io_open(const char *ttyname, int *typeinfo)
 		(void) tcsetattr(ttyfd, TCSANOW, &newtio);
 		if(do_at_cmd(ttyfd, "ATZ\r\n", rspbuf, sizeof(rspbuf)) < 0) {
 			DEBUG(1, "Comm-error or already in BFB mode\n");
-			goto err;
+			goto bfbmode;
 		}
 	}
 	if(strcasecmp("OK", rspbuf) != 0)	{
@@ -418,11 +418,11 @@ fd_t bfb_io_open(const char *ttyname, int *typeinfo)
 
 	sleep(1); /* synch a bit */
 
+ bfbmode:
 	newtio.c_cflag = B57600 | CS8 | CREAD;
 	(void) tcflush(ttyfd, TCIFLUSH);
 	(void) tcsetattr(ttyfd, TCSANOW, &newtio);
 
- //bfbmode:
 	if (! bfb_io_init (ttyfd)) {
 		/* well there may be some garbage -- just try again */
 		if (! bfb_io_init (ttyfd)) {

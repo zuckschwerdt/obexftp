@@ -1,5 +1,5 @@
 /*
- *  apps/obexftp_cli.c: Transfer from/to Siemens Mobile Equipment via OBEX
+ *  apps/obexftp.c: Transfer from/to Mobile Equipment via OBEX
  *
  *  Copyright (c) 2002 Christian W. Zuckschwerdt <zany@triq.net>
  *
@@ -19,7 +19,7 @@
  *     
  */
 /*
- * Created at:    Don, 17 Jan 2002 18:27:25 +0100
+ * Created at:    Don, 17 Jan 2002
  */
 
 #include <stdio.h>
@@ -346,7 +346,7 @@ int main(int argc, char *argv[])
 		case 'u':
 			printf("Usage: %s [-d <dev>] [-s|-a] [-l <dir> ...] [-c <dir>]\n"
 				"[-g <file> ...] [-p <files> ...] [-i] [-m <src> <dest> ...] [-k <files> ...]\n"
-				"Transfer files from/to Siemens Mobile Equipment.\n"
+				"Transfer files from/to Mobile Equipment.\n"
 				"Copyright (c) 2002-2003 Christian W. Zuckschwerdt\n"
 				"\n"
 				" -i, --irda                  connect using IrDA transport\n"

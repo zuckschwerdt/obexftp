@@ -382,7 +382,7 @@ void obexftp_cli_close(obexftp_client_t *cli)
 int obexftp_cli_connect(obexftp_client_t *cli, const char *device, int port)
 {
 	obex_object_t *object;
-	int ret;
+	int ret = -1; /* no connection yet */
 
 	DEBUG(3, "%s()\n", __func__);
 	return_val_if_fail(cli != NULL, -1);
@@ -399,6 +399,7 @@ int obexftp_cli_connect(obexftp_client_t *cli, const char *device, int port)
 
 		ret = OBEX_TransportConnect(cli->obexhandle, (struct sockaddr *) &peer,
 					  sizeof(struct sockaddr_in));
+		DEBUG(3, "%s() TCP %d\n", __func__, ret);
 	}
 		
 #else
@@ -411,15 +412,18 @@ int obexftp_cli_connect(obexftp_client_t *cli, const char *device, int port)
 
 		str2ba(device, &bdaddr);
 		ret = BtOBEX_TransportConnect(cli->obexhandle, BDADDR_ANY, &bdaddr, channel);
+		DEBUG(3, "%s() BT %d\n", __func__, ret);
 
 		fprintf(stderr,"bt: %d\n",ret);
 
 	}
-	if (ret == -1 /* -ESOCKTNOSUPPORT */)
 #endif
-	ret = IrOBEX_TransportConnect(cli->obexhandle, "OBEX");
+	if (ret == -1 /* -ESOCKTNOSUPPORT */)
+		ret = IrOBEX_TransportConnect(cli->obexhandle, "OBEX");
+	DEBUG(3, "%s() IR %d\n", __func__, ret);
 	if (ret == -1 /* -ESOCKTNOSUPPORT */)
 		ret = OBEX_TransportConnect(cli->obexhandle, NULL, 0);
+	DEBUG(3, "%s() TC %d\n", __func__, ret);
 #endif
 	if (ret < 0) {
 		/* could be -EBUSY or -ESOCKTNOSUPPORT */

@@ -1,3 +1,8 @@
+2003-10-22  Christian W. Zuckschwerdt  <zany@triq.net>
+
+	* bfb_write_packets patch by Jorge Ventura <jorge.ventura@varig.com>
+	* connection setup fixes (cobex)
+	
 2003-10-01  Christian W. Zuckschwerdt  <zany@triq.net>
 
 	* Bluetooth support
