@@ -1,3 +1,5 @@
+* Resolve unified cable support problems with Ericsson phones.
+
 * Discover port and protocol to use (i.e. IrDA, Ericsson or Siemens)
 
 * Tear down BFB connection cleanly - no more cable cycling.

@@ -1,64 +1,72 @@
-2002-01-26  Christian Zuckschwerdt  <zany@triq.net>
+2003-02-17  Christian W. Zuckschwerdt  <zany@triq.net>
+
+	* Added vmo converters (suggested by Dmitry Zakharov)
+
+2003-02-11  Christian W. Zuckschwerdt  <zany@triq.net>
+
+	* Added UUID fallback for C55 (suggested by Hristo Todorov)
+
+2002-01-26  Christian W. Zuckschwerdt  <zany@triq.net>
 
 	* Unified BFB and PE;
 
-2002-01-19  Christian Zuckschwerdt  <zany@triq.net>
+2002-01-19  Christian W. Zuckschwerdt  <zany@triq.net>
 
-	* C++ compatible header files (Carsten Pfeiffer)
+	* C++ compatible header files (suggested Carsten Pfeiffer)
 
-2002-01-09  Christian Zuckschwerdt  <zany@triq.net>
+2002-01-09  Christian W. Zuckschwerdt  <zany@triq.net>
 
 	* Big file transmission problem solved
 
-2002-11-22  Christian Zuckschwerdt  <zany@triq.net>
+2002-11-22  Christian W. Zuckschwerdt  <zany@triq.net>
 
 	* Jan Metz <metz@jamecs.de> supplied me with his RH8 box and
 	  some SL45i connected to it. Finally S45(i) is working.
 
-2002-11-19  Christian Zuckschwerdt  <zany@triq.net>
+2002-11-19  Christian W. Zuckschwerdt  <zany@triq.net>
 
 	* this is the last release to support OpenOBEX 0.9.8
 
-2002-11-14  Christian Zuckschwerdt  <zany@triq.net>
+2002-11-14  Christian W. Zuckschwerdt  <zany@triq.net>
 
 	* Removed glib dependancy
 	* win32 target is working (tested with mingw)
 	
-2002-10-17  Christian Zuckschwerdt  <zany@triq.net>
+2002-10-17  Christian W. Zuckschwerdt  <zany@triq.net>
 
 	* Removed Siemens references in favor of OBEX enabled devices
 	* Enhancements for upcoming OpenOBEX 1.0.0
 	
-2002-04-29  Christian Zuckschwerdt  <zany@triq.net>
+2002-04-29  Christian W. Zuckschwerdt  <zany@triq.net>
 
 	* Erricsson T39m support, req. by Ole Streicher <ole.streicher@gmx.de>
 	
-2002-03-04  Christian Zuckschwerdt  <zany@triq.net>
+2002-03-04  Christian W. Zuckschwerdt  <zany@triq.net>
 
 	* Try harder to connect. IRDA needs patience.
 	* Wrote a man page. Should really be a docbook refentry.
 
-2002-02-11  Christian Zuckschwerdt  <zany@triq.net>
+2002-02-11  Christian W. Zuckschwerdt  <zany@triq.net>
 
 	* cobex now capable of asynch operation
 
-2002-02-09  Christian Zuckschwerdt  <zany@triq.net>
+2002-02-09  Christian W. Zuckschwerdt  <zany@triq.net>
 
 	* Rewrote main using getopt.
 
-2002-02-08  Christian Zuckschwerdt  <zany@triq.net>
+2002-02-08  Christian W. Zuckschwerdt  <zany@triq.net>
 
 	* Fixed BFB protocol (Code 0x01 is ACK not PREPARE...).
 
-2002-02-07  Christian Zuckschwerdt  <zany@triq.net>
+2002-02-07  Christian W. Zuckschwerdt  <zany@triq.net>
 
 	* Implemented BFB protocol.
 
-2002-01-19  Christian Zuckschwerdt  <zany@triq.net>
+2002-01-19  Christian W. Zuckschwerdt  <zany@triq.net>
 
 	* Implemented delete and rename.
 
-2002-01-18  Christian Zuckschwerdt  <zany@triq.net>
+2002-01-18  Christian W. Zuckschwerdt  <zany@triq.net>
 
 	* Initial beta.
 	* It's work in progress so expect errors and report/fix then!

@@ -24,7 +24,7 @@ mobile equipment, i.e. S45, ME45 and SL42/SL45/SL45i (IrDA only, for now):
  - obexmd - create a directory on the mobile
  - obexrd - remove an empty directory on the mobile
  - obexrm - remove files on the mobile
- - flexmem - all in one application (heavy on options)
+ - obexftp - all in one application (heavy on options)
 
 Applications to hack Siemens mobile equipment using datalink cable
 
@@ -55,13 +55,12 @@ Further Development
 ===================
 
 If you find this tool useful or actually like it let me know.
-Development will focus on your needs. Currently I know of 20 people
-using this tool (including me). So that proposal is not too
-unfair, see?
+Development will focus on your needs. Currently I know of very few
+people using this tool.
 
 This package lacks a full featured GUI. There is some proof of concept
-code for GTK and GNOME-VFS. Somebody needs to work on that or perhaps a
-KDE tool though.
+code for GTK and GNOME-VFS. There is ongoing work on KDE kio slave and
+general FS support.
 
 If you are a developer and want to use obexftp library or even
 cobex/bfb library do so. But please keep me informed - I'll send
@@ -83,4 +82,8 @@ Author and Contact
 ==================
 
 Author: Christian W. Zuckschwerdt <zany@triq.net>
- http://triq.net/obexftp and http://savannah.gnu.org/projects/obexftp/
+ http://triq.net/obexftp
+ http://openobex.sourceforge.net/
+ http://sourceforge.net/tracker/?group_id=8960
+ http://sourceforge.net/forum/?group_id=8960
+ 

@@ -1,7 +1,7 @@
 ## Process this file with autoconf to produce a configure script.
 # try CFLAGS="$CFLAGS -g -Wall -Wmissing-declarations -Wmissing-prototypes -Werror"
-AC_INIT(obexftp, 0.10.1, zany@triq.net)
-AM_INIT_AUTOMAKE(obexftp, 0.10.1)
+AC_INIT(obexftp, 0.10.2, zany@triq.net)
+AM_INIT_AUTOMAKE(obexftp, 0.10.2)
 AM_CONFIG_HEADER(config.h)
 
 dnl AM_MAINTAINER_MODE
@@ -42,7 +42,7 @@ AC_SUBST(LDFLAGS)
 CFLAGS="$CFLAGS -Wall"
 
 # Project-specific settings
-# VERSION="0.10.1" already set my AM_INIT_AUTOMAKE above
+# VERSION="0.10.2" already set my AM_INIT_AUTOMAKE above
 RELEASE="1"
 # libtool uses current:release:age to produce .c-a.a.r
 OBEXFTP_VERSION="0:11:0"
@@ -59,6 +59,7 @@ AC_SUBST(BFB_VERSION)
 AC_OUTPUT([
 Makefile 
 doc/Makefile
+vmo/Makefile
 apps/Makefile
 bfb/Makefile
 cobexbfb/Makefile

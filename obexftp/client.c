@@ -399,6 +399,20 @@ int obexftp_cli_connect(obexftp_client_t *cli)
         }
 	ret = cli_sync_request(cli, object);
 
+	if(ret < 0) {
+		cli->infocb(OBEXFTP_EV_ERR, "UUID", 0, cli->infocb_data);
+		object = OBEX_ObjectNew(cli->obexhandle, OBEX_CMD_CONNECT);
+		if(OBEX_ObjectAddHeader(cli->obexhandle, object, OBEX_HDR_TARGET,
+                	                (obex_headerdata_t) UUID_FBS,
+        	                        sizeof(UUID_FBS),
+	                                OBEX_FL_FIT_ONE_PACKET) < 0)    {
+        	        DEBUG(1, "Error adding header\n");
+	                OBEX_ObjectDelete(cli->obexhandle, object);
+                	return -1;
+        	}
+		ret = cli_sync_request(cli, object);
+	}
+
 	if(ret < 0)
 		cli->infocb(OBEXFTP_EV_ERR, "target", 0, cli->infocb_data);
 	else
