@@ -22,7 +22,7 @@ void ircp_info_cb(gint event, gchar *param)
 		break;
 
 	case IRCP_EV_ERR:
-		g_print("failed\n");
+		g_print("failed: %s\n", param);
 		break;
 	case IRCP_EV_OK:
 		g_print("done\n");
@@ -69,10 +69,12 @@ int main(int argc, char *argv[])
 	gchar *inbox;
         obex_ctrans_t *ctrans = NULL;
 
-	/* broken -- don't use 
-        if( (argc >= 2) && (strcmp(argv[1], "cable") == 0 ) )
+	gchar *p;
+
+        p = strchr(argv[0], '/') + 1;
+        if( strcmp(p, "cable") == 0 ) {
                 ctrans = cobex_ctrans();
-	*/
+	}
 
 	if(argc >= 2 && strcmp(argv[1], "-r") == 0) {
 		srv = ircp_srv_open(ircp_info_cb);
@@ -100,12 +102,33 @@ int main(int argc, char *argv[])
 			"  or:  %s -g [SOURCE]\n"
 			"  or:  %s -m [SOURCE] [DEST]\n"
 			"  or:  %s -d [SOURCE]\n"
-			"  or:  %s -r [DEST]\n\n"
+			"  or:  %s -r [DEST]\n"
+			"  or:  %s -i\n\n"
 			"Send files over IR. Use -l to list a folder,\n"
 			"use -g to fetch files, use -m to move files,\n"
-			"use -d to delete files, use -r to receive files.\n",
-			argv[0], argv[0], argv[0], argv[0], argv[0], argv[0]);
+			"use -d to delete files, use -r to receive files.\n"
+			"use -i to retrieve misc infos.\n",
+			argv[0], argv[0], argv[0], argv[0],
+			argv[0], argv[0], argv[0]);
 		return 0;
+	}
+	else if(strcmp(argv[1], "-i") == 0) {
+		cli = ircp_cli_open(ircp_info_cb, ctrans);
+		if(cli == NULL) {
+			g_print("Error opening ircp-client\n");
+			return -1;
+		}
+			
+		// Connect
+		if(ircp_cli_connect(cli) >= 0) {
+			// Retrieve Info
+			ircp_info(cli, 0x01);
+			ircp_info(cli, 0x02);
+
+			// Disconnect
+			ircp_cli_disconnect(cli);
+		}
+		ircp_cli_close(cli);
 	}
 	else if(strcmp(argv[1], "-l") == 0) {
 		cli = ircp_cli_open(ircp_info_cb, ctrans);

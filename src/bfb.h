@@ -1,17 +1,14 @@
 /*********************************************************************
  *                
- * Filename:      cobex_S45.h
+ * Filename:      bfb.h
  * Version:       
  * Description:   
  * Status:        Experimental.
  * Author:        Christian W. Zuckschwerdt <zany@triq.net>
- * Created at:    Don, 17 Jan 2002 18:27:25 +0100
- * Modified at:   Don, 17 Jan 2002 23:46:52 +0100
+ * Created at:    Die,  5 Feb 2002 22:46:19 +0100
+ * Modified at:   Don,  7 Feb 2002 12:24:55 +0100
  * Modified by:   Christian W. Zuckschwerdt <zany@triq.net>
  * 
- * Based on code by Pontus Fuchs <pontus@tactel.se>
- * Original Copyright (c) 1998, 1999, Dag Brattli, All Rights Reserved.
- *      
  *     This library is free software; you can redistribute it and/or
  *     modify it under the terms of the GNU Lesser General Public
  *     License as published by the Free Software Foundation; either
@@ -29,24 +26,46 @@
  *     
  ********************************************************************/
 
-#include "bfb.h"
+#include <glib.h>
 
 typedef struct {
-	int fd;
-	guint8 recv[500];
-	gint recv_len;
+        guint8 type;
+        guint8 len;
+        guint8 chk;
+        guint8 payload[0]; //...
+} bfb_frame_t;
+
+typedef struct {
+	guint8 cmd;
+	guint8 chk;
 	guint8 seq;
-	bfb_data_t *data;
-	gint data_len;
-} cobex_t;
+	guint8 len0;
+	guint8 len1;
+        guint8 data[0]; //...
+        // guint16 crc;
+} bfb_data_t;
 
-int cobex_init(char *ttyname);
-void cobex_cleanup(int force);
-int cobex_start_io(void);
 
-gint cobex_connect(obex_t *self, gpointer userdata);
-gint cobex_disconnect(obex_t *self, gpointer userdata);
-gint cobex_write(obex_t *self, gpointer userdata, guint8 *buffer, gint length);
-gint cobex_handleinput(obex_t *self, gpointer userdata, gint timeout);
+#define BFB_FRAME_CONNECT 0x02
+#define BFB_FRAME_INTERFACE 0x01
+#define BFB_FRAME_AT 0x06
+#define BFB_FRAME_DATA 0x16
 
-obex_ctrans_t *cobex_ctrans(void);
+#define MAX_PACKET_DATA 32
+#define BFB_DATA_PREPARE 0x01 /* maybe a continuation command */
+#define BFB_DATA_FIRST 0x02 /* first transmission in a row */
+#define BFB_DATA_NEXT 0x03 /* continued transmission */
+
+
+
+gint bfb_stuff_data(guint8 *buffer, guint8 type, guint8 *data, gint len, gint seq);
+
+gint bfb_write_packets(int fd, guint8 type, guint8 *buffer, gint length);
+
+gint bfb_send_data(int fd, guint8 type, guint8 *data, gint length, gint seq);
+
+bfb_frame_t *bfb_read_packets(guint8 *buffer, gint *length);
+
+bfb_data_t *bfb_assemble_data(bfb_data_t *data, gint *fraglen, bfb_frame_t *frame);
+
+gint bfb_check_data(bfb_data_t *data, gint fraglen);

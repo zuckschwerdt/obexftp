@@ -20,8 +20,9 @@
 #include <sys/socket.h>
 #include <arpa/inet.h>
 #include <netdb.h>
-#include <netinet/in.h>
+// #include <netinet/in.h>
 #endif
+#include <netinet/in.h>
 
 //
 // Add more data to stream.
@@ -87,6 +88,14 @@ static void client_done(obex_t *handle, obex_object_t *object, gint obex_cmd, gi
         const guint8 *body = NULL;
         gint body_len;
 
+	typedef struct { // fixed to 6 bytes
+		guint8 code;
+		guint8 info_len;
+		guint8 info[4];
+	} apparam_t;
+	apparam_t *app = NULL;
+	guint32 info;
+
         g_print(__FUNCTION__ "()\n");
 
         while(OBEX_ObjectGetNextHeader(handle, object, &hi, &hv, &hlen)) {
@@ -94,6 +103,24 @@ static void client_done(obex_t *handle, obex_object_t *object, gint obex_cmd, gi
 			g_print(__FUNCTION__ "() Found body\n");
                         body = hv.bs;
                         body_len = hlen;
+                        break;
+                }
+                else if(hi == OBEX_HDR_CONNECTION) {
+			g_print(__FUNCTION__ "() Found connection number: %ld\n", hv.bq4);
+		}
+                else if(hi == OBEX_HDR_WHO) {
+			g_print(__FUNCTION__ "() Sender identified\n");
+		}
+                else if(hi == OBEX_HDR_APPARAM) {
+			g_print(__FUNCTION__ "() Found application parameters\n");
+                        if(hlen == sizeof(apparam_t)) {
+				app = (apparam_t *)hv.bs;
+				 // needed for alignment
+				memcpy(&info, &(app->info), 4);
+				info = ntohl(info);
+			}
+			else
+				g_print(__FUNCTION__ "() Application parameters don't fit %d vs. %d.\n", hlen, sizeof(apparam_t));
                         break;
                 }
                 else    {
@@ -107,6 +134,11 @@ static void client_done(obex_t *handle, obex_object_t *object, gint obex_cmd, gi
                 //} else {
 		print_body("folder", body, body_len);
 		//}
+        }
+        if(app) {
+		g_print(__FUNCTION__ "() Appcode %d, data (%d) %d\n",
+			app->code, app->info_len, info);
+
         }
 }
 
@@ -272,7 +304,7 @@ gint ircp_cli_connect(ircp_client_t *cli)
 	ret = IrOBEX_TransportConnect(cli->obexhandle, "OBEX");
 #endif
 	if (ret < 0) {
-		cli->infocb(IRCP_EV_ERR, "");
+		cli->infocb(IRCP_EV_ERR, "connect");
 		return -1;
 	}
 
@@ -288,7 +320,7 @@ gint ircp_cli_connect(ircp_client_t *cli)
 	ret = cli_sync_request(cli, object);
 
 	if(ret < 0)
-		cli->infocb(IRCP_EV_ERR, "");
+		cli->infocb(IRCP_EV_ERR, "target");
 	else
 		cli->infocb(IRCP_EV_OK, "");
 
@@ -312,12 +344,51 @@ gint ircp_cli_disconnect(ircp_client_t *cli)
 	ret = cli_sync_request(cli, object);
 
 	if(ret < 0)
-		cli->infocb(IRCP_EV_ERR, "");
+		cli->infocb(IRCP_EV_ERR, "disconnect");
 	else
 		cli->infocb(IRCP_EV_OK, "");
 
 	OBEX_TransportDisconnect(cli->obexhandle);
 	return ret;
+}
+
+//
+// Do an OBEX GET with app info opcode.
+//
+gint ircp_info(ircp_client_t *cli, guint8 opcode)
+{
+	obex_object_t *object = NULL;
+        obex_headerdata_t hdd;
+	guint8 cmdstr[] = {'2', 0x01, 0x00};
+	int ret;
+
+	cli->infocb(IRCP_EV_RECEIVING, "info");
+
+	DEBUG(4, G_GNUC_FUNCTION "() Retrieving info %d\n", opcode);
+	g_return_val_if_fail(cli != NULL, -1);
+
+        object = OBEX_ObjectNew(cli->obexhandle, OBEX_CMD_GET);
+        if(object == NULL)
+                return -1;
+ 
+        cmdstr[2] = opcode;
+        hdd.bs = cmdstr;
+	OBEX_ObjectAddHeader(cli->obexhandle, object, OBEX_HDR_APPARAM, hdd, sizeof(cmdstr), OBEX_FL_FIT_ONE_PACKET);
+ 
+	ret = cli_sync_request(cli, object);
+		
+	if(ret < 0) 
+		cli->infocb(IRCP_EV_ERR, "info");
+	else {
+		cli->infocb(IRCP_EV_OK, "info");
+	}
+
+	return ret;
+
+err:
+        if(object != NULL)
+                OBEX_ObjectDelete(cli->obexhandle, object);
+        return -1;
 }
 
 //
