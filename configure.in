@@ -1,7 +1,7 @@
 ## Process this file with autoconf to produce a configure script.
 # try CFLAGS="$CFLAGS -g -Wall -Wmissing-declarations -Wmissing-prototypes -Werror"
-AC_INIT(obexftp, 0.10.4, zany@triq.net)
-AM_INIT_AUTOMAKE(obexftp, 0.10.4)
+AC_INIT(obexftp, 0.10.5, zany@triq.net)
+AM_INIT_AUTOMAKE(obexftp, 0.10.5)
 AM_CONFIG_HEADER(config.h)
 
 dnl AM_MAINTAINER_MODE

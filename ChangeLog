@@ -1,48 +1,52 @@
+2004-11-12  Christian W. Zuckschwerdt  <zany@triq.net>
+
+	* Don't send S45 UUID first (broke other phones too, sorry S45 users)
+
 2004-09-26  Christian W. Zuckschwerdt  <zany@triq.net>
 
 	* Moved vmo converter into a seperate package
-	
+
 2004-09-05  Christian W. Zuckschwerdt  <zany@triq.net>
 
 	* Serial-USB converter fix, Gerhard Reithofer
-	
+
 2004-08-10  Christian W. Zuckschwerdt  <zany@triq.net>
 
 	* Uploads discard path info now.
-	
+
 2004-07-25  Christian W. Zuckschwerdt  <zany@triq.net>
 
 	* Added support for Sony-Ericsson phones, debian Bug#261328
-	
+
 2004-06-11  Christian W. Zuckschwerdt  <zany@triq.net>
 
 	* Version option added
-	
+
 2004-03-05  Christian W. Zuckschwerdt  <zany@triq.net>
 
 	* NetBSD portability patch by Soren S. Jorvang <soren@wheel.dk>
-	
+
 2004-02-04  Christian W. Zuckschwerdt  <zany@triq.net>
 
 	* Skip transports not linked, François Fleuret <francois.fleuret@inria.fr>
-	
+
 2004-01-30  Christian W. Zuckschwerdt  <zany@triq.net>
 
 	* IrCOMM 1-line show stopper fixed by Stefan Behnel <Stefan@Behnel.de>
-	
+
 2003-12-28  Christian W. Zuckschwerdt  <zany@triq.net>
 
 	* setpath patch for T610 by Adam Goode <adam@evdebs.org>
-	
+
 2003-10-22  Christian W. Zuckschwerdt  <zany@triq.net>
 
 	* bfb_write_packets patch by Jorge Ventura <jorge.ventura@varig.com>
 	* connection setup fixes (cobex)
-	
+
 2003-10-01  Christian W. Zuckschwerdt  <zany@triq.net>
 
 	* Bluetooth support
-	
+
 2003-09-24  Christian W. Zuckschwerdt  <zany@triq.net>
 
 	* Ericsson phones are now working with the unified cobex.
@@ -91,16 +95,16 @@
 
 	* Removed glib dependancy
 	* win32 target is working (tested with mingw)
-	
+
 2002-10-17  Christian W. Zuckschwerdt  <zany@triq.net>
 
 	* Removed Siemens references in favor of OBEX enabled devices
 	* Enhancements for upcoming OpenOBEX 1.0.0
-	
+
 2002-04-29  Christian W. Zuckschwerdt  <zany@triq.net>
 
 	* Erricsson T39m support, req. by Ole Streicher <ole.streicher@gmx.de>
-	
+
 2002-03-04  Christian W. Zuckschwerdt  <zany@triq.net>
 
 	* Try harder to connect. IRDA needs patience.

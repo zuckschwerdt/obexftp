@@ -1,18 +1,18 @@
 #
-# spec file for package ObexFTP (Version 0.10.0)
+# spec file for package ObexFTP (Version 0.10.5)
 # 
-# Author: Christian W. Zuckschwerdt <zany@triq.net>, Dec 2001 - Jan 2003
+# Author: Christian W. Zuckschwerdt <zany@triq.net>, Dec 2001 - Sep 2004
 #
 
-Summary:      Access devices via ObexFTP e.g. Siemens Moblile Equipment
+Summary:      Access devices via ObexFTP e.g. mobile phones
 Name:         obexftp
 Version:      @VERSION@
 Release:      @RELEASE@
 Copyright:    GPL
 Group:        Utilities/Console
 Autoreqprov:  on
-Source:       http://triq.net/gsmlib/%{name}-%{version}.tar.gz
-URL:          http://triq.net/gsm.html
+Source:       http://triq.net/obexftp/%{name}-%{version}.tar.gz
+URL:          http://triq.net/obex/
 BuildRoot:    %{_tmppath}/%{name}-%{version}-root
 Packager:     Christian W. Zuckschwerdt <zany@triq.net>
 

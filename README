@@ -50,6 +50,10 @@ To compile and install:
 	# make
 	# make install (as superuser)
 
+If you plan to use a Siemens S45 and no S65 or Ericsson use
+	CFLAGS="$CFLAGS -DCOMPAT_S45" ./configure
+instead
+
 Consider using pedantic error checking:
 	CFLAGS="$CFLAGS -Werror" ./configure
 
@@ -91,7 +95,7 @@ Author and Contact
 ------------------
 
 Author: Christian W. Zuckschwerdt <zany@triq.net>
-     http://triq.net/obexftp
+     http://triq.net/obex
      http://openobex.sourceforge.net/
      http://sourceforge.net/tracker/?group_id=8960
      http://sourceforge.net/forum/?group_id=8960

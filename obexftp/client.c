@@ -440,6 +440,8 @@ int obexftp_cli_connect(obexftp_client_t *cli, const char *device, int port)
 		return -1;
 	}
 
+#ifdef COMPAT_S45
+	// try S45 UUID first.
 	object = OBEX_ObjectNew(cli->obexhandle, OBEX_CMD_CONNECT);
 	if(OBEX_ObjectAddHeader(cli->obexhandle, object, OBEX_HDR_TARGET,
                                 (obex_headerdata_t) UUID_S45,
@@ -453,6 +455,7 @@ int obexftp_cli_connect(obexftp_client_t *cli, const char *device, int port)
 
 	if(ret < 0) {
 		cli->infocb(OBEXFTP_EV_ERR, "S45 UUID", 0, cli->infocb_data);
+#endif
 		object = OBEX_ObjectNew(cli->obexhandle, OBEX_CMD_CONNECT);
 		if(OBEX_ObjectAddHeader(cli->obexhandle, object, OBEX_HDR_TARGET,
                 	                (obex_headerdata_t) UUID_FBS,
@@ -463,7 +466,9 @@ int obexftp_cli_connect(obexftp_client_t *cli, const char *device, int port)
                 	return -1;
         	}
 		ret = cli_sync_request(cli, object);
+#ifdef COMPAT_S45
 	}
+#endif
 
 	if(ret < 0)
 		cli->infocb(OBEXFTP_EV_ERR, "FBS UUID", 0, cli->infocb_data);
@@ -523,14 +528,13 @@ int obexftp_info(obexftp_client_t *cli, uint8_t opcode)
 	return ret;
 }
 
-/* Do an OBEX GET with TYPE. Directories will be changed into first. */
+/* Do an OBEX GET with TYPE. localname and remotename may be null. */
 int obexftp_list(obexftp_client_t *cli, const char *localname, const char *remotename)
 {
 	obex_object_t *object = NULL;
 	int ret;
 
 	return_val_if_fail(cli != NULL, -1);
-	return_val_if_fail(remotename != NULL, -1);
 
 	cli->infocb(OBEXFTP_EV_RECEIVING, remotename, 0, cli->infocb_data);
 
@@ -541,7 +545,7 @@ int obexftp_list(obexftp_client_t *cli, const char *localname, const char *remot
 	else
 		cli->target_fn = NULL;
 
-	while (*remotename == '/') remotename++;
+	while (remotename && *remotename == '/') remotename++;
 	object = obexftp_build_get_type (cli->obexhandle, remotename, XOBEX_LISTING);
         if(object == NULL)
                 return -1;
