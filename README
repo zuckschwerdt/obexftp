@@ -1,5 +1,5 @@
 Introduction:
-s45obex is used to access Flex. Memory on Siemens mobile equipment, i.e. S45.
+flexmem is used to access Flex. Memory on Siemens mobile equipment, i.e. S45.
 
 To compile and install:
 # ./configure
@@ -7,21 +7,21 @@ To compile and install:
 # make install (as superuser)
 
 To send files or directories:
-# s45obex file/dir file/dir ...
+# flexmem file/dir file/dir ...
 
 To list folder contents:
-# s45obex -l <FOLDER> ...
+# flexmem -l <FOLDER> ...
 
 To get files from your mobile: (not fully implemented yet)
-# s45obex -g dir/file ...
+# flexmem -g dir/file ...
 
 To delete files from your mobile:
-# s45obex -d dir/file ...
+# flexmem -d dir/file ...
 
 To rename files on your mobile:
-# s45obex -m oldname newname
+# flexmem -m oldname newname
 
 To receive files or directories:
-# s45obex -r [DEST]
+# flexmem -r [DEST]
 If no destination is specified files will be written to the current directory.
 Then use your mobiles "Send via IrDA" functions.

@@ -16,6 +16,6 @@ libircp_a_SOURCES = \
 
 noinst_LIBRARIES = libircp.a
 
-s45obex_SOURCES = ircp.c cobex_S45.c bfb.c crc.c
+flexmem_SOURCES = ircp.c cobex_bfb.c bfb.c crc.c
 
-bin_PROGRAMS = s45obex 
+bin_PROGRAMS = flexmem 

@@ -1,3 +1,15 @@
+2002-02-09  Christian Zuckschwerdt  <zany@triq.net>
+
+	* Rewrote main using getopt.
+
+2002-02-08  Christian Zuckschwerdt  <zany@triq.net>
+
+	* Fixed BFB protocol (Code 0x01 is ACK not PREPARE...).
+
+2002-02-07  Christian Zuckschwerdt  <zany@triq.net>
+
+	* Implemented BFB protocol.
+
 2002-01-19  Christian Zuckschwerdt  <zany@triq.net>
 
 	* Implemented delete and rename.

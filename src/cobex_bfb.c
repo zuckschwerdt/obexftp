@@ -1,7 +1,7 @@
-/*********************************************************************
+/*
  *                
- * Filename:      cobex_S45.c
- * Version:       0.1
+ * Filename:      cobex_bfb.c
+ * Version:       0.2
  * Description:   Talk OBEX over a serial port (Siemens specific)
  * Status:        Experimental.
  * Author:        Christian W. Zuckschwerdt <zany@triq.net>
@@ -9,29 +9,26 @@
  * Modified at:   Don,  7 Feb 2002 12:24:55 +0100
  * Modified by:   Christian W. Zuckschwerdt <zany@triq.net>
  *
- * Based on code by Pontus Fuchs <pontus@tactel.se>
- * Original Copyright (c) 1998, 1999, Dag Brattli, All Rights Reserved.
- *      
- *     This library is free software; you can redistribute it and/or
- *     modify it under the terms of the GNU Lesser General Public
- *     License as published by the Free Software Foundation; either
- *     version 2 of the License, or (at your option) any later version.
+ *   Copyright (c) 2002 Christian W. Zuckschwerdt <zany@triq.net>
  *
- *     This library is distributed in the hope that it will be useful,
- *     but WITHOUT ANY WARRANTY; without even the implied warranty of
- *     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- *     Lesser General Public License for more details.
+ *   This program is free software; you can redistribute it and/or modify it
+ *   under the terms of the GNU General Public License as published by the Free
+ *   Software Foundation; either version 2 of the License, or (at your option)
+ *   any later version.
  *
- *     You should have received a copy of the GNU Lesser General Public
- *     License along with this library; if not, write to the Free Software
- *     Foundation, Inc., 59 Temple Place, Suite 330, Boston, 
- *     MA  02111-1307  USA
+ *   This program is distributed in the hope that it will be useful, but
+ *   WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+ *   or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
+ *   for more details.
+ *
+ *   You should have received a copy of the GNU General Public License
+ *   along with this program; if not, write to the Free Software
+ *   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *     
- ********************************************************************/
+ */
 
-#define SERPORT "/dev/ttyS1"
+#define SERPORT "/dev/ttyS0"
 
-#include <stdio.h>
 #include <sys/types.h>
 #include <sys/time.h>
 #include <sys/ioctl.h>
@@ -43,7 +40,7 @@
 
 #include <glib.h>
 #include <openobex/obex.h>
-#include "cobex_S45.h"
+#include "cobex_bfb.h"
 #include "debug.h"
 
 
@@ -83,7 +80,7 @@ int cobex_do_at_cmd(int fd, char *cmd, char *rspbuf, int rspbuflen)
 	struct timeval tv;
 
 	char *answer;
-	char *answer_end;
+	char *answer_end = NULL;
 	unsigned int answer_size;
 
 	char tmpbuf[100] = {0,};
@@ -95,11 +92,11 @@ int cobex_do_at_cmd(int fd, char *cmd, char *rspbuf, int rspbuflen)
 	cmdlen = strlen(cmd);
 
 	rspbuf[0] = 0;
-/*	printf("Sending %d: %s\n", cmdlen, cmd); */
+	DEBUG(4, G_GNUC_FUNCTION "() Sending %d: %s\n", cmdlen, cmd);
 
 	// Write command
 	if(write(fd, cmd, cmdlen) < cmdlen)	{
-		perror("Error writing to port");
+		g_print("Error writing to port");
 		return -1;
 	}
 
@@ -114,7 +111,7 @@ int cobex_do_at_cmd(int fd, char *cmd, char *rspbuf, int rspbuflen)
 				return actual;
 			total += actual;
 
-//			printf("tmpbuf=%d: %s\n", total, tmpbuf);
+			DEBUG(4, G_GNUC_FUNCTION "() tmpbuf=%d: %s\n", total, tmpbuf);
 
 			// Answer not found within 100 bytes. Cancel
 			if(total == sizeof(tmpbuf))
@@ -135,10 +132,10 @@ int cobex_do_at_cmd(int fd, char *cmd, char *rspbuf, int rspbuflen)
 	}
 
 
-//	printf("buf:%08lx answer:%08lx end:%08lx\n", tmpbuf, answer, answer_end);
+//	DEBUG(4, G_GNUC_FUNCTION "() buf:%08lx answer:%08lx end:%08lx\n", tmpbuf, answer, answer_end);
 
 
-//	printf("Answer: %s\n", answer);
+	DEBUG(4, G_GNUC_FUNCTION "() Answer: %s\n", answer);
 
 	// Remove heading and trailing \r
 	if((*answer_end == '\r') || (*answer_end == '\n'))
@@ -149,11 +146,11 @@ int cobex_do_at_cmd(int fd, char *cmd, char *rspbuf, int rspbuflen)
 		answer++;
 	if((*answer == '\r') || (*answer == '\n'))
 		answer++;
-//	printf("Answer: %s\n", answer);
+	DEBUG(4, G_GNUC_FUNCTION "() Answer: %s\n", answer);
 
 	answer_size = (answer_end) - answer +1;
 
-//	printf("Answer size=%d\n", answer_size);
+	DEBUG(1, G_GNUC_FUNCTION "() Answer size=%d\n", answer_size);
 	if( (answer_size) >= rspbuflen )
 		return -1;
 
@@ -172,14 +169,16 @@ gint cobex_init(char *ttyname)
 
 	int actual;
 	bfb_frame_t *frame;
-	guint8 init_magic = 0x14;
-	guint8 init_magic2 = 0xaa;
-	guint8 speed[] = {0xc0,'1','1','5','2','0','0',0x13,0xd2,0x2b};
-	guint8 sifs[] = {'a','t','^','s','i','f','s',0x13};
-
 	guint8 rspbuf[200];
 
-	printf(__FUNCTION__ "()\n");
+	guint8 init_magic = 0x14;
+	guint8 init_magic2 = 0xaa;
+	/*
+	guint8 speed[] = {0xc0,'1','1','5','2','0','0',0x13,0xd2,0x2b};
+	guint8 sifs[] = {'a','t','^','s','i','f','s',0x13};
+	*/
+
+	DEBUG(1, G_GNUC_FUNCTION "() \n");
 
 	if( (ttyfd = open(ttyname, O_RDWR | O_NONBLOCK | O_NOCTTY, 0)) < 0 )	{
 		perror("Can' t open tty");
@@ -195,29 +194,29 @@ gint cobex_init(char *ttyname)
 	tcsetattr(ttyfd, TCSANOW, &newtio);
 
 	if(cobex_do_at_cmd(ttyfd, "ATZ\r\n", rspbuf, sizeof(rspbuf)) < 0)	{
-		printf("Comm-error\n");
+		g_print("Comm-error\n");
 		goto bfbmode;
 	}
 	if(strcasecmp("OK", rspbuf) != 0)	{
-		printf("Error doing ATZ (%s)\n", rspbuf);
+		g_print("Error doing ATZ (%s)\n", rspbuf);
 		goto err;
 	}
 
 	if(cobex_do_at_cmd(ttyfd, "AT^SIFS\r\n", rspbuf, sizeof(rspbuf)) < 0)	{
-		printf("Comm-error\n");
+		g_print("Comm-error\n");
 		goto err;
 	}
 	if(strcasecmp("^SIFS: WIRE", rspbuf) != 0)	{ // expect "OK" also!
-		printf("Error doing AT^SIFS (%s)\n", rspbuf);
+		g_print("Error doing AT^SIFS (%s)\n", rspbuf);
 		goto err;
 	}
 
 	if(cobex_do_at_cmd(ttyfd, "AT^SBFB=1\r\n", rspbuf, sizeof(rspbuf)) < 0)	{
-		printf("Comm-error\n");
+		g_print("Comm-error\n");
 		goto err;
 	}
 	if(strcasecmp("OK", rspbuf) != 0)	{
-		printf("Error doing AT^SBFB=1 (%s)\n", rspbuf);
+		g_print("Error doing AT^SBFB=1 (%s)\n", rspbuf);
 		goto err;
 	}
 
@@ -231,7 +230,7 @@ gint cobex_init(char *ttyname)
 	DEBUG(2, G_GNUC_FUNCTION  "() Unstuffed, %d bytes remaining\n", actual);
 
 	if ((frame->len != 2) || (frame->payload[0] != init_magic) || (frame->payload[1] != init_magic2)) {
-		printf("Error doing BFB init (%d, %x %x)\n",
+		g_print("Error doing BFB init (%d, %x %x)\n",
 		       frame->len, frame->payload[0], frame->payload[1]);
 		goto err;
 	}
@@ -255,7 +254,7 @@ void cobex_cleanup(int force)
 	if(force)	{
 		// Send a break to get out of OBEX-mode
 		if(ioctl(c->fd, TCSBRKP, 0) < 0)	{
-			printf("Unable to send break!\n");
+			g_print("Unable to send break!\n");
 		}
 		sleep(1);
 	}
@@ -266,7 +265,7 @@ void cobex_cleanup(int force)
 
 gint cobex_connect(obex_t *self, gpointer userdata)
 {
-	printf(__FUNCTION__ "()\n");
+	DEBUG(1, G_GNUC_FUNCTION "() \n");
 
 	cobex_handle = self;
 
@@ -280,7 +279,7 @@ gint cobex_connect(obex_t *self, gpointer userdata)
 
 gint cobex_disconnect(obex_t *self, gpointer userdata)
 {
-	printf(__FUNCTION__ "()\n");
+	DEBUG(1, G_GNUC_FUNCTION "() \n");
 	cobex_cleanup(FALSE);
 	return 1;
 }
@@ -315,8 +314,6 @@ gint cobex_handleinput(obex_t *self, gpointer userdata, gint timeout)
 	struct timeval time;
 	fd_set fdset;
 	bfb_frame_t *frame;
-
-	gint j;
 
 	time.tv_sec = timeout;
 	time.tv_usec = 0;

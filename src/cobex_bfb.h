@@ -1,16 +1,16 @@
 /*
  *                
- * Filename:      flexmem.h
+ * Filename:      cobex_bfb.h
  * Version:       
- * Description:   Transfer from/to Siemens Mobile Equipment via OBEX
+ * Description:   
  * Status:        Experimental.
  * Author:        Christian W. Zuckschwerdt <zany@triq.net>
  * Created at:    Don, 17 Jan 2002 18:27:25 +0100
- * Modified at:   Don,  7 Feb 2002 12:24:55 +0100
+ * Modified at:   Don, 17 Jan 2002 23:46:52 +0100
  * Modified by:   Christian W. Zuckschwerdt <zany@triq.net>
  *
  *   Copyright (c) 2002 Christian W. Zuckschwerdt <zany@triq.net>
- *
+ * 
  *   This program is free software; you can redistribute it and/or modify it
  *   under the terms of the GNU General Public License as published by the Free
  *   Software Foundation; either version 2 of the License, or (at your option)
@@ -27,30 +27,24 @@
  *     
  */
 
-#ifndef IRCP_H
-#define IRCP_H
+#include "bfb.h"
 
-#include <glib.h>
+typedef struct {
+	int fd;
+	guint8 recv[500];
+	gint recv_len;
+	guint8 seq;
+	bfb_data_t *data;
+	gint data_len;
+} cobex_t;
 
-typedef void (*ircp_info_cb_t)(gint event, gchar *param);
+int cobex_init(char *ttyname);
+void cobex_cleanup(int force);
+int cobex_start_io(void);
 
-enum {
-	IRCP_EV_ERRMSG,
+gint cobex_connect(obex_t *self, gpointer userdata);
+gint cobex_disconnect(obex_t *self, gpointer userdata);
+gint cobex_write(obex_t *self, gpointer userdata, guint8 *buffer, gint length);
+gint cobex_handleinput(obex_t *self, gpointer userdata, gint timeout);
 
-	IRCP_EV_OK,
-	IRCP_EV_ERR,
-
-	IRCP_EV_CONNECTING,
-	IRCP_EV_DISCONNECTING,
-	IRCP_EV_SENDING,
-
-	IRCP_EV_LISTENING,
-	IRCP_EV_CONNECTIND,
-	IRCP_EV_DISCONNECTIND,
-	IRCP_EV_RECEIVING,
-};
-
-/* Number of bytes passed at one time to OBEX */
-#define STREAM_CHUNK 4096
-
-#endif
+obex_ctrans_t *cobex_ctrans(void);

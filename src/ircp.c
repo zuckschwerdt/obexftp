@@ -1,12 +1,43 @@
+/*
+ *                
+ * Filename:      flexmem.c
+ * Version:       0.5
+ * Description:   Transfer from/to Siemens Mobile Equipment via OBEX
+ * Status:        Experimental.
+ * Author:        Christian W. Zuckschwerdt <zany@triq.net>
+ * Created at:    Don, 17 Jan 2002 18:27:25 +0100
+ * Modified at:   Don,  7 Feb 2002 12:24:55 +0100
+ * Modified by:   Christian W. Zuckschwerdt <zany@triq.net>
+ *
+ *   Copyright (c) 2002 Christian W. Zuckschwerdt <zany@triq.net>
+ *
+ *   This program is free software; you can redistribute it and/or modify it
+ *   under the terms of the GNU General Public License as published by the Free
+ *   Software Foundation; either version 2 of the License, or (at your option)
+ *   any later version.
+ *
+ *   This program is distributed in the hope that it will be useful, but
+ *   WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+ *   or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
+ *   for more details.
+ *
+ *   You should have received a copy of the GNU General Public License
+ *   along with this program; if not, write to the Free Software
+ *   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
+ *     
+ */
+
 #include <glib.h>
 #include <string.h>
+#define _GNU_SOURCE
+#include <getopt.h>
 
 #include "debug.h"
 #include "ircp.h"
 #include "ircp_client.h"
 #include "ircp_server.h"
 
-#include "cobex_S45.h"
+#include "cobex_bfb.h"
 
 
 //
@@ -63,165 +94,208 @@ void ircp_info_cb(gint event, gchar *param)
 //
 int main(int argc, char *argv[])
 {
-	int i;
+	int c;
+
 	ircp_client_t *cli;
 	ircp_server_t *srv;
 	gchar *inbox;
+	gchar *device = NULL;
         obex_ctrans_t *ctrans = NULL;
 
-	gchar *p;
-
-        p = strchr(argv[0], '/') + 1;
-        if( strcmp(p, "cable") == 0 ) {
-                ctrans = cobex_ctrans();
-	}
-
-	if(argc >= 2 && strcmp(argv[1], "-r") == 0) {
-		srv = ircp_srv_open(ircp_info_cb);
-		if(srv == NULL) {
-			g_print("Error opening ircp-server\n");
-			return -1;
-		}
-
-		if(argc >= 3)
-			inbox = argv[2];
-		else
-			inbox = ".";
-
-		ircp_srv_recv(srv, inbox);
-#ifdef DEBUG_TCP
-		sleep(2);
-#endif
-		ircp_srv_close(srv);
-	}
+	while (1) {
+		int option_index = 0;
+		static struct option long_options[] = {
+			{"device", 1, 0, 'd'},
+			{"cable", 0, 0, 'c'},
+			{"list", 2, 0, 'l'},
+			{"get", 1, 0, 'g'},
+			{"put", 1, 0, 'p'},
+			{"info", 0, 0, 'i'},
+			{"move", 1, 0, 'm'},
+			{"delete", 1, 0, 'k'},
+			{"receive", 0, 0, 'r'},
+			{"help", 0, 0, 'h'},
+			{"usage", 0, 0, 'u'},
+			{0, 0, 0, 0}
+		};
 		
-
-	else if(argc == 1) {
-		g_print("Usage: %s file1, file2, ...\n"
-			"  or:  %s -l [FOLDER]\n"
-			"  or:  %s -g [SOURCE]\n"
-			"  or:  %s -m [SOURCE] [DEST]\n"
-			"  or:  %s -d [SOURCE]\n"
-			"  or:  %s -r [DEST]\n"
-			"  or:  %s -i\n\n"
-			"Send files over IR. Use -l to list a folder,\n"
-			"use -g to fetch files, use -m to move files,\n"
-			"use -d to delete files, use -r to receive files.\n"
-			"use -i to retrieve misc infos.\n",
-			argv[0], argv[0], argv[0], argv[0],
-			argv[0], argv[0], argv[0]);
-		return 0;
-	}
-	else if(strcmp(argv[1], "-i") == 0) {
-		cli = ircp_cli_open(ircp_info_cb, ctrans);
-		if(cli == NULL) {
-			g_print("Error opening ircp-client\n");
-			return -1;
-		}
+		c = getopt_long (argc, argv, "d:cl::g:p:im:k:rh",
+				 long_options, &option_index);
+		if (c == -1)
+			break;
+		
+		switch (c) {
 			
-		// Connect
-		if(ircp_cli_connect(cli) >= 0) {
-			// Retrieve Info
-			ircp_info(cli, 0x01);
-			ircp_info(cli, 0x02);
+		case 'd':
+			g_print ("device `%s'\n", optarg);
+			device = optarg;
+			break;
 
-			// Disconnect
-			ircp_cli_disconnect(cli);
-		}
-		ircp_cli_close(cli);
-	}
-	else if(strcmp(argv[1], "-l") == 0) {
-		cli = ircp_cli_open(ircp_info_cb, ctrans);
-		if(cli == NULL) {
-			g_print("Error opening ircp-client\n");
-			return -1;
-		}
+		case 'c':
+			ctrans = cobex_ctrans();
+			break;
+
+		case 'l':
+			cli = ircp_cli_open(ircp_info_cb, ctrans);
+			if(cli == NULL) {
+				g_print("Error opening ircp-client\n");
+				return -1;
+			}
 			
-		// Connect
-		if(ircp_cli_connect(cli) >= 0) {
-			// Send all files
-			for(i = 2; i < argc; i++) {
-				ircp_list(cli, argv[i], argv[i]);
+			// Connect
+			if(ircp_cli_connect(cli) >= 0) {
+				ircp_list(cli, optarg, optarg);
+
+				// Disconnect
+				ircp_cli_disconnect(cli);
+			}
+			ircp_cli_close(cli);
+			break;
+
+		case 'g':
+			cli = ircp_cli_open(ircp_info_cb, ctrans);
+			if(cli == NULL) {
+				g_print("Error opening ircp-client\n");
+				return -1;
+			}
+			
+			// Connect
+			if(ircp_cli_connect(cli) >= 0) {
+				// Get all files
+				ircp_get(cli, optarg, optarg);
+
+				// Disconnect
+				ircp_cli_disconnect(cli);
+			}
+			ircp_cli_close(cli);
+			break;
+
+		case 'p':
+			cli = ircp_cli_open(ircp_info_cb, ctrans);
+			if(cli == NULL) {
+				g_print("Error opening ircp-client\n");
+				return -1;
+			}
+			
+			// Connect
+			if(ircp_cli_connect(cli) >= 0) {
+				// Send all files
+				ircp_put(cli, optarg);
+
+				// Disconnect
+				ircp_cli_disconnect(cli);
+			}
+			ircp_cli_close(cli);
+			break;
+
+		case 'i':
+			cli = ircp_cli_open(ircp_info_cb, ctrans);
+			if(cli == NULL) {
+				g_print("Error opening ircp-client\n");
+				return -1;
+			}
+			
+			// Connect
+			if(ircp_cli_connect(cli) >= 0) {
+				// Retrieve Info
+				ircp_info(cli, 0x01);
+				ircp_info(cli, 0x02);
+
+				// Disconnect
+				ircp_cli_disconnect(cli);
+			}
+			ircp_cli_close(cli);
+			break;
+
+		case 'm':
+			cli = ircp_cli_open(ircp_info_cb, ctrans);
+			if(cli == NULL) {
+				g_print("Error opening ircp-client\n");
+				return -1;
+			}
+			
+			// Connect
+			if(ircp_cli_connect(cli) >= 0) {
+				// Rename a file
+				g_print ("ircp_rename(cli, %s, %s);\n", optarg, argv[optind+2]);
+				//ircp_rename(cli, optarg, argv[optind+2]);
+
+				// Disconnect
+				ircp_cli_disconnect(cli);
+			}
+			ircp_cli_close(cli);
+			break;
+
+		case 'k':
+			cli = ircp_cli_open(ircp_info_cb, ctrans);
+			if(cli == NULL) {
+				g_print("Error opening ircp-client\n");
+				return -1;
+			}
+			
+			// Connect
+			if(ircp_cli_connect(cli) >= 0) {
+				// Delete file
+				ircp_del(cli, optarg);
+
+				// Disconnect
+				ircp_cli_disconnect(cli);
+			}
+			ircp_cli_close(cli);
+			break;
+
+		case 'r':
+			srv = ircp_srv_open(ircp_info_cb);
+			if(srv == NULL) {
+				g_print("Error opening ircp-server\n");
+				return -1;
 			}
 
-			// Disconnect
-			ircp_cli_disconnect(cli);
-		}
-		ircp_cli_close(cli);
-	}
-	else if(strcmp(argv[1], "-g") == 0) {
-		cli = ircp_cli_open(ircp_info_cb, ctrans);
-		if(cli == NULL) {
-			g_print("Error opening ircp-client\n");
-			return -1;
-		}
-			
-		// Connect
-		if(ircp_cli_connect(cli) >= 0) {
-			// Get all files
-			for(i = 2; i < argc; i++) {
-				ircp_get(cli, argv[i], argv[i]);
-			}
+			if(optarg)
+				inbox = optarg;
+			else
+				inbox = ".";
 
-			// Disconnect
-			ircp_cli_disconnect(cli);
-		}
-		ircp_cli_close(cli);
-	}
-	else if(strcmp(argv[1], "-m") == 0) {
-		cli = ircp_cli_open(ircp_info_cb, ctrans);
-		if(cli == NULL) {
-			g_print("Error opening ircp-client\n");
-			return -1;
-		}
-			
-		// Connect
-		if(ircp_cli_connect(cli) >= 0) {
-			// Rename a file
-			ircp_rename(cli, argv[2], argv[3]);
+			ircp_srv_recv(srv, inbox);
+#ifdef DEBUG_TCP
+			sleep(2);
+#endif
+			ircp_srv_close(srv);
+			break;
 
-			// Disconnect
-			ircp_cli_disconnect(cli);
-		}
-		ircp_cli_close(cli);
-	}
-	else if(strcmp(argv[1], "-d") == 0) {
-		cli = ircp_cli_open(ircp_info_cb, ctrans);
-		if(cli == NULL) {
-			g_print("Error opening ircp-client\n");
-			return -1;
-		}
-			
-		// Connect
-		if(ircp_cli_connect(cli) >= 0) {
-			// Delete all files
-			for(i = 2; i < argc; i++) {
-				ircp_del(cli, argv[i]);
-			}
+		case 'h':
+		case 'u':
+			g_print("Usage: %s -[dclgpimkrh]... [<file>...]\n"
+				"Transfer files from/to Siemens Mobile Equipment.\n"
+				"Copyright (c) 2002 Christian W. Zuckschwerdt\n"
+				"\n"
+				" -d, --device <device>       use this device\n"
+				" -c, --cable                 use serial cable\n"
+				" -l, --list [<FOLDER>]       list a folder\n"
+				" -g, --get <SOURCE>          fetch files\n"
+				" -p, --put <SOURCE>          send files\n"
+				" -i, --info                  retrieve misc infos\n\n"
+				" -m, --move <SRC> <DEST>     move files\n"
+				" -k, --delete <SOURCE>       delete files\n"
+				" -r, --receive [<DEST>       receive files\n"
+				" -h, --help, --usage         this help text\n"
+				"\n",
+				argv[0]);
+			break;
 
-			// Disconnect
-			ircp_cli_disconnect(cli);
+		default:
+			g_print ("Try `%s --help' for more information.\n",
+				 argv[0]);
 		}
-		ircp_cli_close(cli);
 	}
-	else {
-		cli = ircp_cli_open(ircp_info_cb, ctrans);
-		if(cli == NULL) {
-			g_print("Error opening ircp-client\n");
-			return -1;
-		}
-			
-		// Connect
-		if(ircp_cli_connect(cli) >= 0) {
-			// Send all files
-			for(i = 1; i < argc; i++) {
-				ircp_put(cli, argv[i]);
-			}
 
-			// Disconnect
-			ircp_cli_disconnect(cli);
-		}
-		ircp_cli_close(cli);
+	if (optind < argc) {
+		g_print ("non-option ARGV-elements: ");
+		while (optind < argc)
+			g_print ("%s ", argv[optind++]);
+		g_print ("\n");
 	}
-	return 0;
+
+	exit (0);
+
 }

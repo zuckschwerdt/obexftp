@@ -12,6 +12,7 @@ typedef struct ircp_client
 	gint obex_rsp;
 	ircp_info_cb_t infocb;
 	gint fd;
+	gint out_fd;
 	guint8 *buf;
 } ircp_client_t;
 

@@ -20,9 +20,8 @@
 #include <sys/socket.h>
 #include <arpa/inet.h>
 #include <netdb.h>
-// #include <netinet/in.h>
-#endif
 #include <netinet/in.h>
+#endif
 
 //
 // Add more data to stream.
@@ -65,17 +64,6 @@ static gint cli_fillstream(ircp_client_t *cli, obex_object_t *object)
 }
 
 
-static void print_body(gchar *name, const guint8 *buf, gint len)
-{
-        gchar *s;
-        // we need \0 termination
-        s = g_malloc(len + 1);
-        memcpy(s, buf, len);
-        s[len] = 0;
-        g_print( s );
-}
-
-
 //
 // Save body from object
 //
@@ -86,7 +74,7 @@ static void client_done(obex_t *handle, obex_object_t *object, gint obex_cmd, gi
         guint32 hlen;
 
         const guint8 *body = NULL;
-        gint body_len;
+        gint body_len = 0;
 
 	typedef struct { // fixed to 6 bytes
 		guint8 code;
@@ -95,6 +83,10 @@ static void client_done(obex_t *handle, obex_object_t *object, gint obex_cmd, gi
 	} apparam_t;
 	apparam_t *app = NULL;
 	guint32 info;
+
+	ircp_client_t *cli;
+
+	cli = OBEX_GetUserData(handle);
 
         g_print(__FUNCTION__ "()\n");
 
@@ -106,7 +98,7 @@ static void client_done(obex_t *handle, obex_object_t *object, gint obex_cmd, gi
                         break;
                 }
                 else if(hi == OBEX_HDR_CONNECTION) {
-			g_print(__FUNCTION__ "() Found connection number: %ld\n", hv.bq4);
+			g_print(__FUNCTION__ "() Found connection number: %d\n", hv.bq4);
 		}
                 else if(hi == OBEX_HDR_WHO) {
 			g_print(__FUNCTION__ "() Sender identified\n");
@@ -117,7 +109,7 @@ static void client_done(obex_t *handle, obex_object_t *object, gint obex_cmd, gi
 				app = (apparam_t *)hv.bs;
 				 // needed for alignment
 				memcpy(&info, &(app->info), 4);
-				info = ntohl(info);
+				info = g_ntohl(info);
 			}
 			else
 				g_print(__FUNCTION__ "() Application parameters don't fit %d vs. %d.\n", hlen, sizeof(apparam_t));
@@ -129,11 +121,8 @@ static void client_done(obex_t *handle, obex_object_t *object, gint obex_cmd, gi
         }
 
         if(body) {
-                //if(*req_name != 0) {
-                //        safe_save_file(req_name, body, body_len);
-                //} else {
-		print_body("folder", body, body_len);
-		//}
+		if(cli->out_fd > 0)
+			write(cli->out_fd, body, body_len);
         }
         if(app) {
 		g_print(__FUNCTION__ "() Appcode %d, data (%d) %d\n",
@@ -362,10 +351,11 @@ gint ircp_info(ircp_client_t *cli, guint8 opcode)
 	guint8 cmdstr[] = {'2', 0x01, 0x00};
 	int ret;
 
+	g_return_val_if_fail(cli != NULL, -1);
+
 	cli->infocb(IRCP_EV_RECEIVING, "info");
 
 	DEBUG(4, G_GNUC_FUNCTION "() Retrieving info %d\n", opcode);
-	g_return_val_if_fail(cli != NULL, -1);
 
         object = OBEX_ObjectNew(cli->obexhandle, OBEX_CMD_GET);
         if(object == NULL)
@@ -384,11 +374,6 @@ gint ircp_info(ircp_client_t *cli, guint8 opcode)
 	}
 
 	return ret;
-
-err:
-        if(object != NULL)
-                OBEX_ObjectDelete(cli->obexhandle, object);
-        return -1;
 }
 
 //
@@ -403,10 +388,13 @@ gint ircp_list(ircp_client_t *cli, gchar *localname, gchar *remotename)
         char type_name[] = "x-obex/folder-listing";
 	int ret;
 
+	g_return_val_if_fail(cli != NULL, -1);
+
 	cli->infocb(IRCP_EV_RECEIVING, localname);
 
 	DEBUG(4, G_GNUC_FUNCTION "() Listing %s -> %s\n", remotename, localname);
-	g_return_val_if_fail(cli != NULL, -1);
+
+	cli->out_fd = STDOUT_FILENO;
 
         object = OBEX_ObjectNew(cli->obexhandle, OBEX_CMD_GET);
         if(object == NULL)
@@ -454,10 +442,13 @@ gint ircp_get(ircp_client_t *cli, gchar *localname, gchar *remotename)
         gint ucname_len;
 	int ret;
 
+	g_return_val_if_fail(cli != NULL, -1);
+
 	cli->infocb(IRCP_EV_RECEIVING, localname);
 
 	DEBUG(4, G_GNUC_FUNCTION "() Getting %s -> %s\n", remotename, localname);
-	g_return_val_if_fail(cli != NULL, -1);
+
+	cli->out_fd = ircp_open_safe("", localname);
 
         object = OBEX_ObjectNew(cli->obexhandle, OBEX_CMD_GET);
         if(object == NULL)
@@ -504,10 +495,11 @@ gint ircp_rename(ircp_client_t *cli, gchar *sourcename, gchar *targetname)
 	int ret;
 	char opname[] = {'m','o','v','e'};
 
+	g_return_val_if_fail(cli != NULL, -1);
+
 	cli->infocb(IRCP_EV_SENDING, sourcename);
 
 	DEBUG(4, G_GNUC_FUNCTION "() Moving %s -> %s\n", sourcename, targetname);
-	g_return_val_if_fail(cli != NULL, -1);
 
         object = OBEX_ObjectNew(cli->obexhandle, OBEX_CMD_PUT);
         if(object == NULL)
@@ -566,10 +558,11 @@ gint ircp_del(ircp_client_t *cli, gchar *name)
         gint ucname_len;
 	int ret;
 
+	g_return_val_if_fail(cli != NULL, -1);
+
 	cli->infocb(IRCP_EV_SENDING, name);
 
 	DEBUG(4, G_GNUC_FUNCTION "() Deleting %s\n", name);
-	g_return_val_if_fail(cli != NULL, -1);
 
         object = OBEX_ObjectNew(cli->obexhandle, OBEX_CMD_PUT);
         if(object == NULL)
@@ -612,10 +605,11 @@ static gint ircp_put_file(ircp_client_t *cli, gchar *localname, gchar *remotenam
 	obex_object_t *object;
 	int ret;
 
+	g_return_val_if_fail(cli != NULL, -1);
+
 	cli->infocb(IRCP_EV_SENDING, localname);
 
 	DEBUG(4, G_GNUC_FUNCTION "() Sending %s -> %s\n", localname, remotename);
-	g_return_val_if_fail(cli != NULL, -1);
 
 	object = build_object_from_file(cli->obexhandle, localname, remotename);
 	
