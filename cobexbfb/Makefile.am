@@ -1,8 +1,8 @@
 lib_LTLIBRARIES =		libcobexbfb.la
 
 INCLUDES =			@OPENOBEX_CFLAGS@ \
-				-I.. \
-				-I../includes
+				-I$(top_srcdir) \
+				-I$(top_srcdir)/includes
 
 LDADD =				@OPENOBEX_LIBS@ \
 				../bfb/libbfb.la

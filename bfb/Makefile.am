@@ -1,6 +1,6 @@
 lib_LTLIBRARIES =		libbfb.la
 
-INCLUDES =			-I../includes
+INCLUDES =			-I$(top_srcdir)/includes
 
 LDADD =				
 

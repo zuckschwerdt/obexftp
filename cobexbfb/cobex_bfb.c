@@ -23,14 +23,22 @@
  * v0.6  Fre, 15 Feb 2002 15:41:10 +0100
  */
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
+#include <unistd.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sys/time.h>
 #include <sys/types.h>
-#include <unistd.h>
 #include <sys/select.h>
 #include <fcntl.h>
 #include <errno.h>
+
+#ifdef HAVE_SYS_TIME_H
+#include <sys/time.h>
+#endif
+
 #ifdef _WIN32
 #include <windows.h>
 #include <stdlib.h>

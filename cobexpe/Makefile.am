@@ -1,7 +1,8 @@
 lib_LTLIBRARIES =		libcobexpe.la
 
 INCLUDES =			@OPENOBEX_CFLAGS@ \
-				-I../includes
+				-I$(top_srcdir) \
+				-I$(top_srcdir)/includes
 
 LDADD =				@OPENOBEX_LIBS@
 

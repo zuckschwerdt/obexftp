@@ -1,8 +1,8 @@
 
 INCLUDES =			@OPENOBEX_CFLAGS@ \
 				@BLUETOOTH_CFLAGS@ \
-				-I.. \
-				-I../includes
+				-I$(top_srcdir) \
+				-I$(top_srcdir)/includes
 
 LDADD =				@OPENOBEX_LIBS@ \
 				@BLUETOOTH_LIBS@ \

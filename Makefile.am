@@ -1,4 +1,4 @@
-SUBDIRS =			bfb cobexbfb cobexpe obexftp apps vmo
+SUBDIRS =			bfb cobexbfb cobexpe obexftp apps doc vmo
 
 EXTRA_DIST =			obexftp.spec.in \
 				obexftp.spec \
