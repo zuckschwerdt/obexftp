@@ -1,12 +1,13 @@
 /*
  *                
  * Filename:      obexftp_cli.c
- * Version:       0.6
+ * Version:       0.7
  * Description:   Transfer from/to Siemens Mobile Equipment via OBEX
  * Status:        Experimental.
  * Author:        Christian W. Zuckschwerdt <zany@triq.net>
  * Created at:    Don, 17 Jan 2002 18:27:25 +0100
- * Modified at:   Don,  7 Feb 2002 12:24:55 +0100
+ * Modified at:   Mon, 29 Apr 2002 22:58:53 +0100
+
  * Modified by:   Christian W. Zuckschwerdt <zany@triq.net>
  *
  *   Copyright (c) 2002 Christian W. Zuckschwerdt <zany@triq.net>
@@ -35,8 +36,9 @@
 #include <obexftp/obexftp.h>
 #include <obexftp/client.h>
 #include <cobexbfb/cobex_bfb.h>
+#include <cobexpe/cobex_pe.h>
 
-void info_cb(gint event, const gchar *msg, gint len, gpointer data)
+static void info_cb(gint event, const gchar *msg, /*@unused@*/ gint len, /*@unused@*/ gpointer data)
 {
 	switch (event) {
 
@@ -82,13 +84,31 @@ void info_cb(gint event, const gchar *msg, gint len, gpointer data)
 	}
 }
 
-obexftp_client_t *cli = NULL;
-obex_ctrans_t *ctrans = NULL;
+/*@only@*/ /*@null@*/ static obexftp_client_t *cli = NULL;
+/*@only@*/ /*@null@*/ static gchar *tty = NULL;
+/*@only@*/ /*@null@*/ static gchar *transport = NULL;
 
-gboolean cli_connect()
+static gboolean cli_connect()
 {
+/*@only@*/ /*@null@*/ static obex_ctrans_t *ctrans = NULL;
+	int retry;
+
 	if (cli != NULL)
 		return TRUE;
+
+	if (tty != NULL) {
+		if (!strcasecmp(transport, "ericsson")) {
+			g_print("Custom transport set to 'Ericsson'\n");
+			ctrans = cobex_pe_ctrans (tty);
+		} else {
+			ctrans = cobex_ctrans (tty);
+			g_print("Custom transport set to 'Siemens'\n");
+		}
+	}
+	else {
+		ctrans = NULL;
+		g_print("No custom transport\n");
+	}
 
 	/* Open */
 	cli = obexftp_cli_open (info_cb, ctrans, NULL);
@@ -97,19 +117,23 @@ gboolean cli_connect()
 		return FALSE;
 	}
 
-	/* Connect */
-	if (obexftp_cli_connect (cli) >= 0)
-		return TRUE;
+	for (retry = 0; retry < 3; retry++) {
+
+		/* Connect */
+		if (obexftp_cli_connect (cli) >= 0)
+			return TRUE;
+		g_print("Still trying to connect\n");
+	}
 
 	cli = NULL;
 	return FALSE;
 }
 
-void cli_disconnect()
+static void cli_disconnect()
 {
 	if (cli != NULL) {
 		/* Disconnect */
-		obexftp_cli_disconnect (cli);
+		(void) obexftp_cli_disconnect (cli);
 		/* Close */
 		obexftp_cli_close (cli);
 	}
@@ -120,27 +144,26 @@ int main(int argc, char *argv[])
 	int c;
 	int most_recent_cmd = 0;
 	gchar *move_src = NULL;
-	gchar *inbox;
-	gchar *tty = NULL;
+	/* gchar *inbox; */
 
 	while (1) {
 		int option_index = 0;
 		static struct option long_options[] = {
-			{"device", 1, 0, 'd'},
-			{"list", 2, 0, 'l'},
-			{"chdir", 1, 0, 'c'},
-			{"get", 1, 0, 'g'},
-			{"put", 1, 0, 'p'},
-			{"info", 0, 0, 'i'},
-			{"move", 1, 0, 'm'},
-			{"delete", 1, 0, 'k'},
-			{"receive", 0, 0, 'r'},
-			{"help", 0, 0, 'h'},
-			{"usage", 0, 0, 'u'},
+			{"device",	required_argument, NULL, 'd'},
+			{"transport",	required_argument, NULL, 't'},
+			{"list",	optional_argument, NULL, 'l'},
+			{"chdir",	required_argument, NULL, 'c'},
+			{"get",		required_argument, NULL, 'g'},
+			{"put",		required_argument, NULL, 'p'},
+			{"info",	no_argument, NULL, 'i'},
+			{"move",	required_argument, NULL, 'm'},
+			{"delete",	required_argument, NULL, 'k'},
+			{"help",	no_argument, NULL, 'h'},
+			{"usage",	no_argument, NULL, 'u'},
 			{0, 0, 0, 0}
 		};
 		
-		c = getopt_long (argc, argv, "-d:l::c:g:p:im:k:rh",
+		c = getopt_long (argc, argv, "-d:t:l::c:g:p:im:k:rh",
 				 long_options, &option_index);
 		if (c == -1)
 			break;
@@ -151,22 +174,28 @@ int main(int argc, char *argv[])
 		switch (c) {
 		
 		case 'd':
+			if (tty != NULL)
+				g_free (tty);
+
 			if (!strcasecmp(optarg, "irda"))
 				tty = NULL;
 			else
 				tty = optarg;
 
-			if (tty != NULL)
-				ctrans = cobex_ctrans (tty);
-			else
-				ctrans = NULL;
+			break;
+		
+		case 't':
+			if (transport != NULL)
+				g_free (transport);
+
+			transport = optarg;
 
 			break;
 
 		case 'l':
 			if(cli_connect ()) {
 				/* List folder */
-				obexftp_list(cli, optarg, optarg);
+				(void) obexftp_list(cli, optarg, optarg);
 			}
 			most_recent_cmd = c;
 			break;
@@ -174,7 +203,7 @@ int main(int argc, char *argv[])
 		case 'c':
 			if(cli_connect ()) {
 				/* Get file */
-				obexftp_setpath(cli, optarg, FALSE);
+				(void) obexftp_setpath(cli, optarg, FALSE);
 			}
 			most_recent_cmd = c;
 			break;
@@ -182,7 +211,7 @@ int main(int argc, char *argv[])
 		case 'g':
 			if(cli_connect ()) {
 				/* Get file */
-				obexftp_get(cli, optarg, optarg);
+				(void) obexftp_get(cli, optarg, optarg);
 			}
 			most_recent_cmd = c;
 			break;
@@ -190,7 +219,7 @@ int main(int argc, char *argv[])
 		case 'p':
 			if(cli_connect ()) {
 				/* Send file */
-				obexftp_put(cli, optarg);
+				(void) obexftp_put(cli, optarg);
 			}
 			most_recent_cmd = c;
 			break;
@@ -198,8 +227,8 @@ int main(int argc, char *argv[])
 		case 'i':
 			if(cli_connect ()) {
 				/* Retrieve Infos */
-				obexftp_info(cli, 0x01);
-				obexftp_info(cli, 0x02);
+				(void) obexftp_info(cli, 0x01);
+				(void) obexftp_info(cli, 0x02);
 			}
 			break;
 
@@ -212,7 +241,7 @@ int main(int argc, char *argv[])
 			}
 			if(cli_connect ()) {
 				/* Rename a file */
-				obexftp_rename(cli, move_src, optarg);
+				(void) obexftp_rename(cli, move_src, optarg);
 			}
 			move_src = NULL;
 			break;
@@ -220,7 +249,7 @@ int main(int argc, char *argv[])
 		case 'k':
 			if(cli_connect ()) {
 				/* Delete file */
-				obexftp_del(cli, optarg);
+				(void) obexftp_del(cli, optarg);
 			}
 			most_recent_cmd = c;
 			break;
@@ -233,8 +262,7 @@ int main(int argc, char *argv[])
 				"Copyright (c) 2002 Christian W. Zuckschwerdt\n"
 				"\n"
 				" -d, --device <device>       connect to this device\n"
-				"                             fallback to $MOBILEPHONE_DEV\n"
-				"                             then /dev/mobilephone and /dev/ttyS0\n"
+				" -t, --transport <type>      use a custom transport\n"
 				" -l, --list [<FOLDER>]       list a folder\n"
 				" -c, --chdir <DIR>           chdir / mkdir\n"
 				" -g, --get <SOURCE>          fetch files\n"
@@ -242,7 +270,6 @@ int main(int argc, char *argv[])
 				" -i, --info                  retrieve misc infos\n\n"
 				" -m, --move <SRC> <DEST>     move files\n"
 				" -k, --delete <SOURCE>       delete files\n"
-				" -r, --receive [<DEST>       receive files\n"
 				" -h, --help, --usage         this help text\n"
 				"\n",
 				argv[0]);

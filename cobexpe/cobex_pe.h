@@ -1,14 +1,15 @@
 /*
  *                
- * Filename:      cobex_bfb.h
+ * Filename:      cobex_pe.h
  * Version:       
  * Description:   
  * Status:        Experimental.
- * Author:        Christian W. Zuckschwerdt <zany@triq.net>
- * Created at:    Don, 17 Jan 2002 18:27:25 +0100
- * Modified at:   Don, 17 Jan 2002 23:46:52 +0100
+ * Author:        Pontus Fuchs <pontus@tactel.se>
+ * Created at:    Wed Nov 17 22:05:16 1999
+ * Modified at:   Mon, 29 Apr 2002 22:58:53 +0100
  * Modified by:   Christian W. Zuckschwerdt <zany@triq.net>
  *
+ *   Copyright (c) 1998, 1999, Dag Brattli, All Rights Reserved.
  *   Copyright (c) 2002 Christian W. Zuckschwerdt <zany@triq.net>
  * 
  *   This program is free software; you can redistribute it and/or modify it
@@ -29,13 +30,13 @@
 
 /* session handling */
 
-obex_ctrans_t *cobex_ctrans (const gchar *tty);
-void cobex_free (obex_ctrans_t * ctrans);
+obex_ctrans_t *cobex_pe_ctrans (const gchar *tty);
+void cobex_pe_free (obex_ctrans_t * ctrans);
 
 /* callbacks */
 
-gint cobex_connect (obex_t *self, gpointer userdata);
-gint cobex_disconnect (obex_t *self, gpointer userdata);
-gint cobex_write (obex_t *self, gpointer userdata, guint8 *buffer, gint length);
-gint cobex_handleinput (obex_t *self, gpointer userdata, gint timeout);
+gint cobex_pe_connect (obex_t *self, gpointer userdata);
+gint cobex_pe_disconnect (obex_t *self, gpointer userdata);
+gint cobex_pe_write (obex_t *self, gpointer userdata, guint8 *buffer, gint length);
+gint cobex_pe_handleinput (obex_t *self, gpointer userdata, gint timeout);
 

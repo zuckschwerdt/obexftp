@@ -4,3 +4,16 @@
 
 * Transfers of large files (i.e. > 1k) over cable (BFB) seems broken.
   Maybe I need to split into multiple frames?
+
+* Stefan Schmidt <stefan@schmidt1.de> promised a KDE VFS layer
+
+* Document the general vs Siemens specific features
+
+> Bei -g sind mir einige Bugs aufgefallen: So wird ein Erfolg gemeldet,
+> selbst wenn das Ausgangsfile nicht angelegt werden konnte (wie das
+> Verzeichnis nicht existiert). Mir scheint es auch nicht intuitiv, das
+> das empfangene File nicht in das Arbeitsverzeichnis, sondern in ein
+> Unterverzeichnis (entsprechend der Struktur im Telefon) abgelegt wird.
+> Ungekehrt wird auch bei fehlendem File im Telefon ein File im PC
+> angelegt; dann mit null bytes.
+

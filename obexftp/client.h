@@ -17,20 +17,42 @@ typedef struct obexftp_client
 	guint8 *buf;
 } obexftp_client_t;
 
+/* session */
 
 gint obexftp_sync(obexftp_client_t *cli);
 
-obexftp_client_t *obexftp_cli_open(obexftp_info_cb_t infocb, const obex_ctrans_t *ctrans, gpointer infocb_data);
+obexftp_client_t *obexftp_cli_open(/*@null@*/ obexftp_info_cb_t infocb,
+				   /*@null@*/ const obex_ctrans_t *ctrans,
+				   /*@null@*/ gpointer infocb_data);
+
 void obexftp_cli_close(obexftp_client_t *cli);
+
 gint obexftp_cli_connect(obexftp_client_t *cli);
+
 gint obexftp_cli_disconnect(obexftp_client_t *cli);
 
-gint obexftp_setpath(obexftp_client_t *cli, const gchar *name, gboolean up);
+/* transfer */
+
+gint obexftp_setpath(obexftp_client_t *cli,
+		     /*@null@*/ const gchar *name,
+		     gboolean up);
+
 gint obexftp_put(obexftp_client_t *cli, const gchar *name);
+
 gint obexftp_del(obexftp_client_t *cli, const gchar *name);
+
 gint obexftp_info(obexftp_client_t *cli, guint8 opcode);
-gint obexftp_list(obexftp_client_t *cli, const gchar *localname, const gchar *remotename);
-gint obexftp_get(obexftp_client_t *cli, const gchar *localname, const gchar *remotename);
-gint obexftp_rename(obexftp_client_t *cli, const gchar *sourcename, const gchar *targetname);
+
+gint obexftp_list(obexftp_client_t *cli,
+		  /*@null@*/ const gchar *localname,
+		  /*@null@*/ const gchar *remotename);
+
+gint obexftp_get(obexftp_client_t *cli,
+		 /*@null@*/  const gchar *localname,
+		 const gchar *remotename);
+
+gint obexftp_rename(obexftp_client_t *cli,
+		    const gchar *sourcename,
+		    const gchar *targetname);
 
 #endif // OBEXFTP_CLIENT_H

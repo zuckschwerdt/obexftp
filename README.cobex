@@ -1,0 +1,38 @@
+================================================================
+                   ObexFTP over serial lines
+                    (cobex custom transport)
+================================================================
+
+  Christian Zuckschwerdt  <zany@triq.net>  2002-04-29
+
+
+1. Introduction
+
+ It is possible to access your phone or general mobile device
+ using a serial line. However there is no common protocol used by
+ different manufactures. Therefor each specific device needs a cobex
+ custom transport library.
+ There are currently two of the available:
+
+
+2. COBEX BFB
+
+ This custom transport library supports many Siemens Mobile Equipment.
+ Namely the x45 series phones.
+
+ Its named like the Siemens protocol its based on -- BFB.
+ BFB may stand for Bloody-Fucking-Bits. On the other hand that would not
+ be nice at all. I can't imagine another name though.
+
+
+3. COBEX ERICSSON
+
+ Is a custom transport for Ericsson phones.
+ It is tested with T39m and ported from an old R320 driver. Therefor might
+ work for those phones.
+
+
+4. COBEX <Your Phone>
+
+ Be sure to mail me about other phones. It might be worth it.
+

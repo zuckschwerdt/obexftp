@@ -292,8 +292,6 @@ gint obexftp_cli_connect(obexftp_client_t *cli)
 	DEBUG(4, G_GNUC_FUNCTION "\n");
 	g_return_val_if_fail(cli != NULL, -1);
 
-	g_print("%d", sizeof(UUID_S45));
-
 	cli->infocb(OBEXFTP_EV_CONNECTING, "", 0, cli->infocb_data);
 #ifdef DEBUG_TCP
 	{

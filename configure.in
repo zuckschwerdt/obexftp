@@ -1,6 +1,6 @@
 ## Process this file with autoconf to produce a configure script.
 AC_INIT(apps/flexmem_cli.c)
-AM_INIT_AUTOMAKE(obexftp, 0.9.2)
+AM_INIT_AUTOMAKE(obexftp, 0.9.3)
 AM_CONFIG_HEADER(config.h)
 
 dnl AM_MAINTAINER_MODE
@@ -30,18 +30,23 @@ AC_SUBST(LDFLAGS)
 CFLAGS="$CFLAGS -Wall"
 
 # Project-specific settings
-VERSION="0.9.2"
+VERSION="0.9.3"
 RELEASE="1"
 OBEXFTP_VERSION="0:9:0"
 COBEXBFB_VERSION="0:6:0"
+COBEXPE_VERSION="0:2:0"
 AC_SUBST(VERSION)
 AC_SUBST(RELEASE)
 AC_SUBST(OBEXFTP_VERSION)
 AC_SUBST(COBEXBFB_VERSION)
+AC_SUBST(COBEXPE_VERSION)
 
 AC_OUTPUT([
 Makefile 
+doc/Makefile
 apps/Makefile
 cobexbfb/Makefile
+cobexpe/Makefile
 obexftp/Makefile
-obexftp.spec])
+obexftp.spec
+])

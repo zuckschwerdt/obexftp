@@ -1,12 +1,12 @@
 /*
  *                
- * Filename:      cobex_bfb.h
+ * Filename:      cobex_pe_private.h
  * Version:       
  * Description:   
  * Status:        Experimental.
  * Author:        Christian W. Zuckschwerdt <zany@triq.net>
- * Created at:    Don, 17 Jan 2002 18:27:25 +0100
- * Modified at:   Don, 17 Jan 2002 23:46:52 +0100
+ * Created at:    Mon, 29 Apr 2002 22:58:53 +0100
+ * Modified at:   Mon, 29 Apr 2002 22:58:53 +0100
  * Modified by:   Christian W. Zuckschwerdt <zany@triq.net>
  *
  *   Copyright (c) 2002 Christian W. Zuckschwerdt <zany@triq.net>
@@ -27,15 +27,9 @@
  *     
  */
 
-/* session handling */
+#define SERPORT "/dev/ttyS0"
 
-obex_ctrans_t *cobex_ctrans (const gchar *tty);
-void cobex_free (obex_ctrans_t * ctrans);
-
-/* callbacks */
-
-gint cobex_connect (obex_t *self, gpointer userdata);
-gint cobex_disconnect (obex_t *self, gpointer userdata);
-gint cobex_write (obex_t *self, gpointer userdata, guint8 *buffer, gint length);
-gint cobex_handleinput (obex_t *self, gpointer userdata, gint timeout);
-
+typedef struct {
+	gchar *tty;
+	int fd;
+} cobex_t;
