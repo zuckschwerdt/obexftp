@@ -1,10 +1,11 @@
 
 INCLUDES =			@OPENOBEX_CFLAGS@ \
+				@BLUETOOTH_CFLAGS@ \
 				-I.. \
 				-I../includes
 
 LDADD =				@OPENOBEX_LIBS@ \
-				/usr/lib/libbluetooth.la \
+				@BLUETOOTH_LIBS@ \
 				../obexftp/libobexftp.la \
 				../cobexbfb/libcobexbfb.la \
 				../bfb/libbfb.la \

@@ -404,6 +404,7 @@ int obexftp_cli_connect(obexftp_client_t *cli, const char *device, int port)
 #else
 
 #ifdef HAVE_BLUETOOTH
+	if (device != NULL)
 	{
 		bdaddr_t bdaddr;
 		uint8_t channel = port;

@@ -400,9 +400,11 @@ fd_t bfb_io_open(const char *ttyname, int *typeinfo)
 		DEBUG(1, "Comm-error\n");
 		goto err;
 	}
-	if(strcasecmp("^SIFS: WIRE", rspbuf) != 0)	{ /* expect "OK" also! */
-		DEBUG(1, "Error doing AT^SIFS (%s)\n", rspbuf);
-		goto err;
+	if(strcasecmp("^SIFS: WIRE", rspbuf) != 0)	{ /* expect "OK" too! */
+		if(strcasecmp("^SIFS: BLUE", rspbuf) != 0)	{
+			DEBUG(1, "Error doing AT^SIFS (%s)\n", rspbuf);
+			goto err;
+		}
 	}
 
 	if(do_at_cmd(ttyfd, "AT^SBFB=1\r\n", rspbuf, sizeof(rspbuf)) < 0)	{

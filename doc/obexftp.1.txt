@@ -22,6 +22,9 @@ OPTIONS
     -b *device*, --bluetooth *device*
             Connect to this bluetooth device.
 
+    -B *number*, --channel *number*
+            Use this bluetooth channel when connecting.
+
     -t *device*, --tty *device*
             Connect to this tty device.
 

@@ -213,6 +213,7 @@ int main(int argc, char *argv[])
 		static struct option long_options[] = {
 			{"irda",	no_argument, NULL, 'i'},
 			{"bluetooth",	required_argument, NULL, 'b'},
+			{"channel",	required_argument, NULL, 'B'},
 			{"tty",		required_argument, NULL, 't'},
 			{"list",	optional_argument, NULL, 'l'},
 			{"chdir",	required_argument, NULL, 'c'},
@@ -227,7 +228,7 @@ int main(int argc, char *argv[])
 			{0, 0, 0, 0}
 		};
 		
-		c = getopt_long (argc, argv, "-ib:t:l::c:g:p:k:xm:vh",
+		c = getopt_long (argc, argv, "-ib:B:t:l::c:g:p:k:xm:vh",
 				 long_options, &option_index);
 		if (c == -1)
 			break;
@@ -246,6 +247,10 @@ int main(int argc, char *argv[])
 			if (btaddr != NULL)
 				free (btaddr);
        			btaddr = optarg;
+			break;
+			
+		case 'B':
+			btchannel = atoi(optarg);
 			break;
 		
 		case 't':
@@ -346,6 +351,7 @@ int main(int argc, char *argv[])
 				"\n"
 				" -i, --irda                  connect using IrDA transport\n"
 				" -b, --bluetooth <device>    connect to this bluetooth device\n"
+				" -B, --channel <number>      use this bluetooth channel when connecting\n"
 				" -t, --tty <device>          connect to this tty using a custom transport\n"
 				" -l, --list [<FOLDER>]       list a folder\n"
 				" -c, --chdir <DIR>           chdir / mkdir\n"
