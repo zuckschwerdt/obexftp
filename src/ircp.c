@@ -6,6 +6,8 @@
 #include "ircp_client.h"
 #include "ircp_server.h"
 
+#include "cobex_S45.h"
+
 
 //
 //
@@ -65,6 +67,12 @@ int main(int argc, char *argv[])
 	ircp_client_t *cli;
 	ircp_server_t *srv;
 	gchar *inbox;
+        obex_ctrans_t *ctrans = NULL;
+
+	/* broken -- don't use 
+        if( (argc >= 2) && (strcmp(argv[1], "cable") == 0 ) )
+                ctrans = cobex_ctrans();
+	*/
 
 	if(argc >= 2 && strcmp(argv[1], "-r") == 0) {
 		srv = ircp_srv_open(ircp_info_cb);
@@ -90,14 +98,17 @@ int main(int argc, char *argv[])
 		g_print("Usage: %s file1, file2, ...\n"
 			"  or:  %s -l [FOLDER]\n"
 			"  or:  %s -g [SOURCE]\n"
+			"  or:  %s -m [SOURCE] [DEST]\n"
+			"  or:  %s -d [SOURCE]\n"
 			"  or:  %s -r [DEST]\n\n"
 			"Send files over IR. Use -l to list a folder,\n"
-			"use -g to fetch files, use -r to receive files.\n",
-			argv[0], argv[0], argv[0], argv[0]);
+			"use -g to fetch files, use -m to move files,\n"
+			"use -d to delete files, use -r to receive files.\n",
+			argv[0], argv[0], argv[0], argv[0], argv[0], argv[0]);
 		return 0;
 	}
 	else if(strcmp(argv[1], "-l") == 0) {
-		cli = ircp_cli_open(ircp_info_cb);
+		cli = ircp_cli_open(ircp_info_cb, ctrans);
 		if(cli == NULL) {
 			g_print("Error opening ircp-client\n");
 			return -1;
@@ -116,7 +127,7 @@ int main(int argc, char *argv[])
 		ircp_cli_close(cli);
 	}
 	else if(strcmp(argv[1], "-g") == 0) {
-		cli = ircp_cli_open(ircp_info_cb);
+		cli = ircp_cli_open(ircp_info_cb, ctrans);
 		if(cli == NULL) {
 			g_print("Error opening ircp-client\n");
 			return -1;
@@ -134,8 +145,44 @@ int main(int argc, char *argv[])
 		}
 		ircp_cli_close(cli);
 	}
+	else if(strcmp(argv[1], "-m") == 0) {
+		cli = ircp_cli_open(ircp_info_cb, ctrans);
+		if(cli == NULL) {
+			g_print("Error opening ircp-client\n");
+			return -1;
+		}
+			
+		// Connect
+		if(ircp_cli_connect(cli) >= 0) {
+			// Rename a file
+			ircp_rename(cli, argv[2], argv[3]);
+
+			// Disconnect
+			ircp_cli_disconnect(cli);
+		}
+		ircp_cli_close(cli);
+	}
+	else if(strcmp(argv[1], "-d") == 0) {
+		cli = ircp_cli_open(ircp_info_cb, ctrans);
+		if(cli == NULL) {
+			g_print("Error opening ircp-client\n");
+			return -1;
+		}
+			
+		// Connect
+		if(ircp_cli_connect(cli) >= 0) {
+			// Delete all files
+			for(i = 2; i < argc; i++) {
+				ircp_del(cli, argv[i]);
+			}
+
+			// Disconnect
+			ircp_cli_disconnect(cli);
+		}
+		ircp_cli_close(cli);
+	}
 	else {
-		cli = ircp_cli_open(ircp_info_cb);
+		cli = ircp_cli_open(ircp_info_cb, ctrans);
 		if(cli == NULL) {
 			g_print("Error opening ircp-client\n");
 			return -1;

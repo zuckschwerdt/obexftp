@@ -179,7 +179,7 @@ static gint cli_sync_request(ircp_client_t *cli, obex_object_t *object)
 //
 // Create an ircp client
 //
-ircp_client_t *ircp_cli_open(ircp_info_cb_t infocb)
+ircp_client_t *ircp_cli_open(ircp_info_cb_t infocb, obex_ctrans_t *ctrans)
 {
 	ircp_client_t *cli;
 
@@ -194,12 +194,24 @@ ircp_client_t *ircp_cli_open(ircp_info_cb_t infocb)
 #ifdef DEBUG_TCP
 	cli->obexhandle = OBEX_Init(OBEX_TRANS_INET, cli_obex_event, 0);
 #else
-	cli->obexhandle = OBEX_Init(OBEX_TRANS_IRDA, cli_obex_event, 0);
+	if ( ctrans ) {
+                g_print("Do the cable-OBEX!\n");
+		cli->obexhandle = OBEX_Init(OBEX_TRANS_CUST, cli_obex_event, 0);
+        }
+	else
+		cli->obexhandle = OBEX_Init(OBEX_TRANS_IRDA, cli_obex_event, 0);
 #endif
 
 	if(cli->obexhandle == NULL) {
 		goto out_err;
 	}
+
+	if ( ctrans ) {
+                if(OBEX_RegisterCTransport(cli->obexhandle, ctrans) < 0) {
+                        g_print("Custom transport callback-registration failed\n");
+                }
+        }
+
 	OBEX_SetUserData(cli->obexhandle, cli);
 	
 	/* Buffer for body */
@@ -359,6 +371,7 @@ err:
         return -1;
 }
 
+
 //
 // Do an OBEX GET.
 //
@@ -396,6 +409,120 @@ gint ircp_get(ircp_client_t *cli, gchar *localname, gchar *remotename)
 		cli->infocb(IRCP_EV_ERR, localname);
 	else
 		cli->infocb(IRCP_EV_OK, localname);
+
+	return ret;
+
+err:
+        if(object != NULL)
+                OBEX_ObjectDelete(cli->obexhandle, object);
+        return -1;
+}
+
+
+//
+// Do an OBEX rename.
+//
+gint ircp_rename(ircp_client_t *cli, gchar *sourcename, gchar *targetname)
+{
+	obex_object_t *object = NULL;
+        obex_headerdata_t hdd;
+        guint8 *appstr;
+        guint8 *appstr_p;
+        gint appstr_len;
+        gint ucname_len;
+	int ret;
+	char opname[] = {'m','o','v','e'};
+
+	cli->infocb(IRCP_EV_SENDING, sourcename);
+
+	DEBUG(4, G_GNUC_FUNCTION "() Moving %s -> %s\n", sourcename, targetname);
+	g_return_val_if_fail(cli != NULL, -1);
+
+        object = OBEX_ObjectNew(cli->obexhandle, OBEX_CMD_PUT);
+        if(object == NULL)
+                return -1;
+
+        appstr_len = 1 + 1 + sizeof(opname) +
+		strlen(sourcename)*2 + 2 +
+		strlen(targetname)*2 + 2 + 2;
+        appstr = g_malloc(appstr_len);
+        if(appstr == NULL)
+                goto err;
+
+	appstr_p = appstr;
+	*appstr_p++ = 0x34;
+	*appstr_p++ = sizeof(opname);
+	memcpy(appstr_p, opname, sizeof(opname));
+	appstr_p += sizeof(opname);
+
+	*appstr_p++ = 0x35;
+        ucname_len = OBEX_CharToUnicode(appstr_p + 1, sourcename, strlen(sourcename)*2 + 2);
+	*appstr_p = ucname_len - 2; // no trailing 0
+	appstr_p += ucname_len - 1;
+
+	*appstr_p++ = 0x36;
+        ucname_len = OBEX_CharToUnicode(appstr_p + 1, targetname, strlen(targetname)*2 + 2);
+	*appstr_p = ucname_len - 2; // no trailing 0
+	
+        hdd.bs = appstr;
+        OBEX_ObjectAddHeader(cli->obexhandle, object, OBEX_HDR_APPARAM, hdd, appstr_len - 2, 0);
+        g_free(appstr);
+	
+	ret = cli_sync_request(cli, object);
+		
+	if(ret < 0)
+		cli->infocb(IRCP_EV_ERR, sourcename);
+	else
+		cli->infocb(IRCP_EV_OK, sourcename);
+
+	return ret;
+
+err:
+        if(object != NULL)
+                OBEX_ObjectDelete(cli->obexhandle, object);
+        return -1;
+}
+
+
+//
+// Do an OBEX PUT with empty file (delete)
+//
+gint ircp_del(ircp_client_t *cli, gchar *name)
+{
+	obex_object_t *object;
+        obex_headerdata_t hdd;
+        guint8 *ucname;
+        gint ucname_len;
+	int ret;
+
+	cli->infocb(IRCP_EV_SENDING, name);
+
+	DEBUG(4, G_GNUC_FUNCTION "() Deleting %s\n", name);
+	g_return_val_if_fail(cli != NULL, -1);
+
+        object = OBEX_ObjectNew(cli->obexhandle, OBEX_CMD_PUT);
+        if(object == NULL)
+                return -1;
+
+        ucname_len = strlen(name)*2 + 2;
+        ucname = g_malloc(ucname_len);
+        if(ucname == NULL)
+                goto err;
+
+        ucname_len = OBEX_CharToUnicode(ucname, name, ucname_len);
+
+        hdd.bs = ucname;
+        OBEX_ObjectAddHeader(cli->obexhandle, object, OBEX_HDR_NAME, hdd, ucname_len, OBEX_FL_FIT_ONE_PACKET);
+        g_free(ucname);
+	
+	ret = cli_sync_request(cli, object);
+	
+	close(cli->fd);
+		
+	if(ret < 0)
+		cli->infocb(IRCP_EV_ERR, name);
+	else
+		cli->infocb(IRCP_EV_OK, name);
 
 	return ret;
 

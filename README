@@ -15,6 +15,12 @@ To list folder contents:
 To get files from your mobile:
 # s45obex -g dir/file ...
 
+To delete files from your mobile:
+# s45obex -d dir/file ...
+
+To rename files on your mobile:
+# s45obex -m oldname newname
+
 To receive files or directories:
 # s45obex -r [DEST]
 If no destination is specified files will be written to the current directory.
