@@ -4,6 +4,7 @@ INCLUDES =			@OPENOBEX_CFLAGS@ \
 				-I../includes
 
 LDADD =				@OPENOBEX_LIBS@ \
+				/usr/lib/libbluetooth.la \
 				../obexftp/libobexftp.la \
 				../cobexbfb/libcobexbfb.la \
 				../bfb/libbfb.la \

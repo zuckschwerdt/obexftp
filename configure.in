@@ -23,6 +23,8 @@ AC_CHECK_HEADERS([arpa/inet.h errno.h fcntl.h netdb.h netinet/in.h stdlib.h stri
 # Checks for libraries.
 AM_PATH_OPENOBEX(1.0.0)
 
+BLUETOOTH_CHECK
+
 dnl Check for C99 __func__
 AC_TRY_COMPILE([
     #include<stdio.h>],

@@ -66,13 +66,14 @@ typedef struct obexftp_client
 
 /* session */
 
-/*@null@*/ obexftp_client_t *obexftp_cli_open(/*@null@*/ obexftp_info_cb_t infocb,
-				   /*@null@*/ /*const*/ obex_ctrans_t *ctrans,
-				   /*@null@*/ void *infocb_data);
+/*@null@*/ obexftp_client_t *obexftp_cli_open(int transport,
+				 /*@null@*/ /*const*/ obex_ctrans_t *ctrans,
+				 /*@null@*/ obexftp_info_cb_t infocb,
+				 /*@null@*/ void *infocb_data);
 
 void obexftp_cli_close(/*@only@*/ /*@out@*/ /*@null@*/ obexftp_client_t *cli);
 
-int obexftp_cli_connect(obexftp_client_t *cli);
+int obexftp_cli_connect(obexftp_client_t *cli, const char *device, int port);
 
 int obexftp_cli_disconnect(obexftp_client_t *cli);
 

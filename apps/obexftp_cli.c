@@ -126,8 +126,10 @@ static void info_cb(int event, const char *msg, /*@unused@*/ int len, /*@unused@
 }
 
 /*@only@*/ /*@null@*/ static obexftp_client_t *cli = NULL;
+static int transport = OBEX_TRANS_IRDA;
 /*@only@*/ /*@null@*/ static char *tty = NULL;
 /*@only@*/ /*@null@*/ static char *btaddr = NULL;
+static int btchannel = 10;
 
 static int cli_connect()
 {
@@ -147,7 +149,7 @@ static int cli_connect()
 	}
 
 	/* Open */
-	cli = obexftp_cli_open (info_cb, ctrans, NULL);
+	cli = obexftp_cli_open (transport, ctrans, info_cb, NULL);
 	if(cli == NULL) {
 		fprintf(stderr, "Error opening obexftp-client\n");
 		return FALSE;
@@ -156,7 +158,7 @@ static int cli_connect()
 	for (retry = 0; retry < 3; retry++) {
 
 		/* Connect */
-		if (obexftp_cli_connect (cli) >= 0)
+		if (obexftp_cli_connect (cli, btaddr, btchannel) >= 0)
 			return TRUE;
 		fprintf(stderr, "Still trying to connect\n");
 	}
@@ -236,20 +238,18 @@ int main(int argc, char *argv[])
 		switch (c) {
 		
 		case 'i':
-
-			/*	irda = "on";	*/
-
+			transport = OBEX_TRANS_IRDA;
 			break;
 		
 		case 'b':
-
-			printf("No bluetooth support in this preview!");
-			exit(-1);
-			/*	destaddr = optarg;	*/
-
+			transport = OBEX_TRANS_BLUETOOTH;
+			if (btaddr != NULL)
+				free (btaddr);
+       			btaddr = optarg;
 			break;
 		
 		case 't':
+			transport = OBEX_TRANS_CUSTOM;
 			if (tty != NULL)
 				free (tty);
 
@@ -257,7 +257,6 @@ int main(int argc, char *argv[])
 				tty = NULL;
 			else
 				tty = optarg;
-
 			break;
 
 		case 'l':

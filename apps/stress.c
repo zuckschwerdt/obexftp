@@ -105,14 +105,14 @@ int main(int argc, char *argv[])
 	for (i = 0; i < 20; i++) {
 
 		/* Open */
-		cli = obexftp_cli_open (info_cb, ctrans, NULL);
+		cli = obexftp_cli_open (OBEX_TRANS_IRDA, ctrans, info_cb, NULL);
 		if(cli == NULL) {
 			printf("Error opening obexftp-client\n");
 			exit (-1);
 		}
 
 		/* Connect */
-		if (obexftp_cli_connect (cli) < 0) {
+		if (obexftp_cli_connect (cli, NULL, 0) < 0) {
 			printf("Error connecting to obexftp-client\n");
 			exit (-2);
 		}

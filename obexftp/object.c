@@ -39,17 +39,21 @@ obex_object_t *obexftp_build_info (obex_t obex, uint8_t opcode)
 	return object;
 }
 
-/* name may be null for current directory */
-obex_object_t *obexftp_build_list (obex_t obex, const char *name)
+/* XOBEX_LISTING: name may be null for current directory */
+obex_object_t *obexftp_build_get_type (obex_t obex, const char *name, const char *type)
 {
 	obex_object_t *object = NULL;
         uint8_t *ucname;
         int ucname_len;
 
+        object = OBEX_ObjectNew(obex, OBEX_CMD_GET);
         if(object == NULL)
                 return NULL;
  
-	(void) OBEX_ObjectAddHeader(obex, object, OBEX_HDR_TYPE, (obex_headerdata_t) (const uint8_t *) XOBEX_LISTING, sizeof(XOBEX_LISTING), OBEX_FL_FIT_ONE_PACKET);
+        if(type != NULL) {
+		// maybe this needs to be unicode as well?
+		(void) OBEX_ObjectAddHeader(obex, object, OBEX_HDR_TYPE, (obex_headerdata_t) (const uint8_t *) type, strlen(type), OBEX_FL_FIT_ONE_PACKET);
+	}	
  
 	if (name != NULL) {
 		ucname_len = strlen(name)*2 + 2;

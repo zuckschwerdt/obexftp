@@ -19,6 +19,10 @@
  *     
  */
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
 #include <string.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -35,6 +39,11 @@
 #ifdef _WIN32
 #define PATH_MAX MAX_PATH
 #endif /* _WIN32 */
+
+#ifdef HAVE_BLUETOOTH
+#include <bluetooth/bluetooth.h>
+#include <bluetooth/rfcomm.h>
+#endif
 
 #include <openobex/obex.h>
 
@@ -179,6 +188,10 @@ static void client_done(obex_t *handle, obex_object_t *object, /*@unused@*/ int 
                 else if(hi == OBEX_HDR_WHO) {
 			DEBUG(3, "%s() Sender identified\n", __func__);
 		}
+                else if(hi == OBEX_HDR_NAME) {
+			DEBUG(3, "%s() Sender name\n", __func__);
+			DEBUGBUFFER(hv.bs, hlen);
+		}
                 else if(hi == OBEX_HDR_APPARAM) {
 			DEBUG(3, "%s() Found application parameters\n", __func__);
                         if(hlen == sizeof(apparam_t)) {
@@ -243,8 +256,10 @@ static void cli_obex_event(obex_t *handle, obex_object_t *object, /*@unused@*/ i
 		cli->finished = TRUE;
 		if(obex_rsp == OBEX_RSP_SUCCESS)
 			cli->success = TRUE;
-		else
+		else {
 			cli->success = FALSE;
+			DEBUG(2, "%s() OBEX_EV_REQDONE: obex_rsp=%02x\n", __func__, obex_rsp);
+		}
 		cli->obex_rsp = obex_rsp;
 		client_done(handle, object, obex_cmd, obex_rsp);
 		break;
@@ -301,7 +316,7 @@ static int cli_sync_request(obexftp_client_t *cli, obex_object_t *object)
 	
 
 /* Create an obexftp client */
-obexftp_client_t *obexftp_cli_open(obexftp_info_cb_t infocb, /*const*/ obex_ctrans_t *ctrans, void *infocb_data)
+obexftp_client_t *obexftp_cli_open(int transport, /*const*/ obex_ctrans_t *ctrans, obexftp_info_cb_t infocb, void *infocb_data)
 {
 	obexftp_client_t *cli;
 
@@ -319,10 +334,14 @@ obexftp_client_t *obexftp_cli_open(obexftp_info_cb_t infocb, /*const*/ obex_ctra
 #else
 	if ( ctrans ) {
                 DEBUG(2, "Do the cable-OBEX!\n");
-		cli->obexhandle = OBEX_Init(OBEX_TRANS_CUST, cli_obex_event, 0);
+		cli->obexhandle = OBEX_Init(OBEX_TRANS_CUSTOM, cli_obex_event, 0);
         }
 	else
+#ifdef HAVE_BLUETOOTH
+		cli->obexhandle = OBEX_Init(OBEX_TRANS_BLUETOOTH, cli_obex_event, 0);
+#else
 		cli->obexhandle = OBEX_Init(OBEX_TRANS_IRDA, cli_obex_event, 0);
+#endif		
 #endif
 
 	if(cli->obexhandle == NULL) {
@@ -360,7 +379,7 @@ void obexftp_cli_close(obexftp_client_t *cli)
 }
 
 /* Do connect as client */
-int obexftp_cli_connect(obexftp_client_t *cli)
+int obexftp_cli_connect(obexftp_client_t *cli, const char *device, int port)
 {
 	obex_object_t *object;
 	int ret;
@@ -383,6 +402,20 @@ int obexftp_cli_connect(obexftp_client_t *cli)
 	}
 		
 #else
+
+#ifdef HAVE_BLUETOOTH
+	{
+		bdaddr_t bdaddr;
+		uint8_t channel = port;
+
+		str2ba(device, &bdaddr);
+		ret = BtOBEX_TransportConnect(cli->obexhandle, BDADDR_ANY, &bdaddr, channel);
+
+		fprintf(stderr,"bt: %d\n",ret);
+
+	}
+	if (ret == -1 /* -ESOCKTNOSUPPORT */)
+#endif
 	ret = IrOBEX_TransportConnect(cli->obexhandle, "OBEX");
 	if (ret == -1 /* -ESOCKTNOSUPPORT */)
 		ret = OBEX_TransportConnect(cli->obexhandle, NULL, 0);
@@ -405,7 +438,7 @@ int obexftp_cli_connect(obexftp_client_t *cli)
 	ret = cli_sync_request(cli, object);
 
 	if(ret < 0) {
-		cli->infocb(OBEXFTP_EV_ERR, "UUID", 0, cli->infocb_data);
+		cli->infocb(OBEXFTP_EV_ERR, "S45 UUID", 0, cli->infocb_data);
 		object = OBEX_ObjectNew(cli->obexhandle, OBEX_CMD_CONNECT);
 		if(OBEX_ObjectAddHeader(cli->obexhandle, object, OBEX_HDR_TARGET,
                 	                (obex_headerdata_t) UUID_FBS,
@@ -419,7 +452,7 @@ int obexftp_cli_connect(obexftp_client_t *cli)
 	}
 
 	if(ret < 0)
-		cli->infocb(OBEXFTP_EV_ERR, "target", 0, cli->infocb_data);
+		cli->infocb(OBEXFTP_EV_ERR, "FBS UUID", 0, cli->infocb_data);
 	else
 		cli->infocb(OBEXFTP_EV_OK, "", 0, cli->infocb_data);
 
@@ -495,7 +528,7 @@ int obexftp_list(obexftp_client_t *cli, const char *localname, const char *remot
 		cli->target_fn = NULL;
 
 	while (*remotename == '/') remotename++;
-        object = obexftp_build_list (cli->obexhandle, remotename);
+	object = obexftp_build_get_type (cli->obexhandle, remotename, XOBEX_LISTING);
         if(object == NULL)
                 return -1;
 
@@ -801,7 +834,7 @@ char *obexftp_fast_list(obexftp_client_t *cli, const char *name)
        	cli->target_fn = NULL;
 
 	while (*name == '/') name++;
-        object = obexftp_build_list (cli->obexhandle, name);
+        object = obexftp_build_get_type (cli->obexhandle, name, XOBEX_LISTING);
         if(object == NULL)
                 return NULL;
 
