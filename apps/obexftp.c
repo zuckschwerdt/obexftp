@@ -45,7 +45,9 @@ void DUMPBUFFER(unsigned int n, char *label, char *msg) { }
 
 #include <common.h>
 
+#ifdef HAVE_BLUETOOTH
 #include "bt_discovery.h"
+#endif
 
 #define OBEXFTP_PORT "OBEXFTP_PORT"
 #define OBEXFTP_ADDR "OBEXFTP_ADDR"
@@ -240,6 +242,7 @@ int main(int argc, char *argv[])
 				free (tty);
 			break;
 		
+#ifdef HAVE_BLUETOOTH
 		case 'b':
 			transport = OBEX_TRANS_BLUETOOTH;
 			if (tty != NULL)
@@ -259,6 +262,7 @@ int main(int argc, char *argv[])
 		case 'B':
 			btchannel = atoi(optarg);
 			break;
+#endif /* HAVE_BLUETOOTH */
 		
 		case 't':
 			transport = OBEX_TRANS_CUSTOM;
@@ -414,13 +418,13 @@ int main(int argc, char *argv[])
 				" -i, --irda                  connect using IrDA transport (default)\n"
 #ifdef HAVE_BLUETOOTH
 				" -b, --bluetooth [<device>]  use or search a bluetooth device\n"
-				" -B, --channel <number>      use this bluetooth channel when connecting\n"
+				" [ -B, --channel <number> ]  use this bluetooth channel when connecting\n"
 #endif
 				" -t, --tty <device>          connect to this tty using a custom transport\n\n"
 				" -l, --list [<FOLDER>]       list current/given folder\n"
 				" -c, --chdir <DIR>           chdir\n"
 				" -C, --mkdir <DIR>           mkdir and chdir\n"
-				" -f, --path <PATH>           specify the local file name or directory\n"
+				// " -f, --path <PATH>           specify the local file name or directory\n"
 				"                             get and put always specify the remote name.\n"
 				" -g, --get <SOURCE>          fetch files\n"
 				" -G, --getdelete <SOURCE>    fetch and delete (move) files \n"
