@@ -1,5 +1,5 @@
-#ifndef IO_H
-#define IO_H
+#ifndef OBEXFTP_IO_H
+#define OBEXFTP_IO_H
 
 #include <glib.h>
 
@@ -12,4 +12,4 @@ obex_object_t *build_object_from_file(obex_t *handle, const gchar *localname, co
 gint open_safe(const gchar *path, const gchar *name);
 gint checkdir(const gchar *path, const gchar *dir, cd_flags flags);
 
-#endif /* IO_H */
+#endif /* OBEXFTP_IO_H */

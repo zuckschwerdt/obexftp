@@ -10,7 +10,7 @@
 #include "obexftp.h"
 #include "client.h"
 #include "object.h"
-#include "io.h"
+#include "obexftp_io.h"
 #include "uuid.h"
 
 #include "dirtraverse.h"
@@ -19,10 +19,15 @@
 #ifdef DEBUG_TCP
 #include <unistd.h>
 
+#ifdef _WIN32
+#include <winsock.h>
+#else
+
 #include <sys/socket.h>
 #include <arpa/inet.h>
 #include <netdb.h>
 #include <netinet/in.h>
+#endif
 #endif
 
 
@@ -308,8 +313,11 @@ gint obexftp_cli_connect(obexftp_client_t *cli)
 		
 #else
 	ret = IrOBEX_TransportConnect(cli->obexhandle, "OBEX");
+	if (ret == -1 /* -ESOCKTNOSUPPORT */)
+		ret = OBEX_TransportConnect(cli->obexhandle, NULL, 0);
 #endif
 	if (ret < 0) {
+		/* could be -EBUSY or -ESOCKTNOSUPPORT */
 		cli->infocb(OBEXFTP_EV_ERR, "connect", 0, cli->infocb_data);
 		return -1;
 	}

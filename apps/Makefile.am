@@ -10,6 +10,9 @@ LDADD =				@GLIB_LIBS@ \
 				../cobexbfb/libcobexbfb.la \
 				../bfb/libbfb.la \
 				../cobexpe/libcobexpe.la
+# need on win32:
+# getopt.o getopt1.o libopenobex.a libwsock32.a
+# glib-1.3.dll iconv-1.3.dll
 
 obexftp_SOURCES =		obexftp_cli.c
 

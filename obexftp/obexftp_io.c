@@ -8,8 +8,17 @@
 #include <glib.h>
 #include <openobex/obex.h>
 
-#include "io.h"
+#include "obexftp_io.h"
 #include <g_debug.h>
+
+#ifdef _WIN32
+#define S_IRGRP 0
+#define S_IROTH 0
+#define S_IXGRP 0
+#define S_IXOTH 0
+#endif
+#define DEFFILEMOD (S_IRUSR|S_IWUSR|S_IRGRP|S_IROTH) /* 0644 */
+#define DEFXFILEMOD (DEFFILEMOD | S_IXGRP | S_IXUSR | S_IXOTH) /* 0755 */
 
 //
 // Get some file-info. (size and lastmod)
@@ -130,7 +139,7 @@ gint open_safe(const gchar *path, const gchar *name)
 
 	g_debug(G_GNUC_FUNCTION "() Creating file %s", diskname->str);
 
-	fd = open(diskname->str, O_RDWR | O_CREAT | O_TRUNC, DEFFILEMODE);
+	fd = open(diskname->str, O_RDWR | O_CREAT | O_TRUNC, DEFFILEMOD);
 	g_string_free(diskname, TRUE);
 	return fd;
 }
@@ -171,7 +180,11 @@ gint checkdir(const gchar *path, const gchar *dir, cd_flags flags)
 	}
 	if(flags & CD_CREATE) {
 		g_debug(G_GNUC_FUNCTION "() Will try to create %s", newpath->str);
-		ret = mkdir(newpath->str, DEFFILEMODE | S_IXGRP | S_IXUSR | S_IXOTH);
+#ifdef _WIN32
+		ret = mkdir(newpath->str);
+#else
+		ret = mkdir(newpath->str, DEFXFILEMOD);
+#endif
 	}
 	else {
 		ret = -1;

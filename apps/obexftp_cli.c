@@ -34,13 +34,11 @@
 
 #include <obexftp/obexftp.h>
 #include <obexftp/client.h>
-/* serial io is broken on win32 */
-#ifndef _WIN32
 #include <cobexbfb/cobex_bfb.h>
+/* waring: cobexpe serial io is broken on win32 */
 #include <cobexpe/cobex_pe.h>
-#endif /* _WIN32 */
 
-#ifdef _WIN32
+#ifdef _WIN32_FIXME
 /* OpenOBEX won't define a handler on win32 */
 void DEBUG(unsigned int n, ...) { }
 #endif /* _WIN32 */
@@ -119,9 +117,6 @@ static gboolean cli_connect()
 		return TRUE;
 
 	if (tty != NULL) {
-#ifdef _WIN32
-       		g_print("Custom transport not available\n");
-#else /* _WIN32 */
 		if ((transport != NULL) && !strcasecmp(transport, "ericsson")) {
 			g_print("Custom transport set to 'Ericsson'\n");
 			ctrans = cobex_pe_ctrans (tty);
@@ -129,7 +124,6 @@ static gboolean cli_connect()
 			ctrans = cobex_ctrans (tty);
 			g_print("Custom transport set to 'Siemens'\n");
 		}
-#endif /* _WIN32 */
 	}
 	else {
 		ctrans = NULL;
@@ -183,6 +177,7 @@ int main(int argc, char *argv[])
 	if (strstr(argv[0], "rm") != NULL)	most_recent_cmd = 'k';
 
 	/* by default don't debug anything */
+
 	log_handler = g_log_set_handler (NULL,
 					 G_LOG_LEVEL_DEBUG | G_LOG_LEVEL_INFO,
 					 g_log_null_handler, NULL);
@@ -300,14 +295,15 @@ int main(int argc, char *argv[])
 
 		case 'v':
 			if (verbose++ > 0)
-				//g_log_default_handler (NULL, G_LOG_LEVEL_DEBUG,
-			       	//		"", NULL);
 				log_handler = g_log_set_handler (NULL,
-					 G_LOG_LEVEL_DEBUG | G_LOG_LEVEL_INFO,
-					 g_log_print_handler, NULL);
+					 G_LOG_LEVEL_DEBUG,
+					 g_log_default_handler, NULL);
 			else
-				/* remove muting handler */
-				g_log_remove_handler (NULL, log_handler);
+				/* remove muting handler? */
+				/* g_log_remove_handler (NULL, log_handler); */
+				log_handler = g_log_set_handler (NULL,
+					 G_LOG_LEVEL_INFO,
+					 g_log_default_handler, NULL);
 			break;
 		case 'h':
 		case 'u':

@@ -30,12 +30,18 @@
 
 #include <sys/types.h>
 #include <sys/time.h>
-#include <sys/ioctl.h>
 #include <fcntl.h>
 #include <errno.h>
 #include <string.h>
 #include <unistd.h>
+#ifdef _WIN32
+#include <windows.h>
+#include <stdlib.h>
+#define sleep(n)	_sleep(n*1000)
+#else
+#include <sys/ioctl.h>
 #include <termios.h>
+#endif
 
 #include <glib.h>
 #include <openobex/obex.h>
@@ -47,6 +53,8 @@
 #undef G_LOG_DOMAIN
 #define	G_LOG_DOMAIN	COBEX_PE_LOG_DOMAIN
 
+#ifdef _WIN32
+#else
 /* Send an AT-command an expect 1 line back as answer */
 static gint cobex_do_at_cmd(int fd, char *cmd, char *rspbuf, int rspbuflen)
 {
@@ -94,9 +102,9 @@ static gint cobex_do_at_cmd(int fd, char *cmd, char *rspbuf, int rspbuflen)
 			if(total == sizeof(tmpbuf))
 				return -1;
 
-			if( (answer = index(tmpbuf, '\n')) )	{
+			if( (answer = strchr(tmpbuf, '\n')) )	{
 				// Remove first line (echo)
-				if( (answer_end = index(answer+1, '\n')) )	{
+				if( (answer_end = strchr(answer+1, '\n')) )	{
 					// Found end of answer
 					done = 1;
 				}
@@ -136,9 +144,12 @@ static gint cobex_do_at_cmd(int fd, char *cmd, char *rspbuf, int rspbuflen)
 	rspbuf[answer_size] = 0;
 	return 0;
 }
+#endif
 
 static void cobex_pe_cleanup(obex_t *self, int force)
 {
+#ifdef _WIN32
+#else
         g_return_if_fail (self != NULL);
         g_return_if_fail (OBEX_FD(self) > 0);
 
@@ -151,8 +162,11 @@ static void cobex_pe_cleanup(obex_t *self, int force)
 	}
 	close(OBEX_FD(self));
 	OBEX_FD(self) = -1;
+#endif
 }
 
+#ifdef _WIN32
+#else
 /* Init the phone and set it in BFB-mode */
 /* Returns fd or -1 on failure */
 static gint cobex_pe_init(obex_t *self, const gchar *ttyname)
@@ -202,6 +216,7 @@ static gint cobex_pe_init(obex_t *self, const gchar *ttyname)
 	cobex_pe_cleanup(self, TRUE);
 	return -1;
 }
+#endif
 
 
 gint cobex_pe_connect(obex_t *self, gpointer userdata)
@@ -213,7 +228,10 @@ gint cobex_pe_connect(obex_t *self, gpointer userdata)
 
 	g_debug(G_GNUC_FUNCTION "() \n");
 
+#ifdef _WIN32
+#else
 	if((OBEX_FD(self) = cobex_pe_init(self, c->tty)) < 0)
+#endif
 		return -1;
 
 	return 1;
@@ -229,6 +247,9 @@ gint cobex_pe_disconnect(obex_t *self, gpointer userdata)
 /* Called from OBEX-lib when data needs to be written */
 gint cobex_pe_write(obex_t *self, gpointer userdata, guint8 *buffer, gint length)
 {
+#ifdef _WIN32
+  return -1;
+#else
 	int actual;
 	cobex_t *c;
         g_return_val_if_fail (self != NULL, -1);
@@ -246,11 +267,15 @@ gint cobex_pe_write(obex_t *self, gpointer userdata, guint8 *buffer, gint length
 	}
 
 	return actual;
+#endif
 }
 
 /* Called when input data is needed */
 gint cobex_pe_handleinput(obex_t *self, gpointer userdata, gint timeout)
 {
+#ifdef _WIN32
+  return 1;
+#else
 	gint ret;
 	struct timeval time;
 	fd_set fdset;
@@ -286,6 +311,7 @@ gint cobex_pe_handleinput(obex_t *self, gpointer userdata, gint timeout)
 		return 1;
 	}
 	return ret;
+#endif
 }
 
 

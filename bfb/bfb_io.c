@@ -28,11 +28,9 @@
 #include <fcntl.h>
 #include <unistd.h>
 #ifdef _WIN32
+#include <windows.h>
 #include <stdlib.h>
-#include <winsock.h>
-#define ioctl(s,c,a)	ioctlsocket(s,c, (long *) a)
-#define sleep(n)	_sleep(n)
-#define index(s,c)	strchr(s,c)
+#define sleep(n)	_sleep(n*1000)
 #else /* _WIN32 */
 #include <sys/ioctl.h>
 #include <termios.h>
@@ -44,9 +42,33 @@
 #undef G_LOG_DOMAIN
 #define	G_LOG_DOMAIN	BFB_LOG_DOMAIN
 
-/* Read a BFB answer */
-gint do_bfb_read(int fd, guint8 *buffer, gint length)
+/* Write out a BFB buffer */
+gint bfb_io_write(FD fd, guint8 *buffer, gint length)
 {
+#ifdef _WIN32
+	DWORD bytes;
+	g_debug(G_GNUC_FUNCTION "() WriteFile");
+	if(!WriteFile(fd, buffer, length, &bytes, NULL))
+		g_info(G_GNUC_FUNCTION "() Write error: %ld", bytes);
+	return bytes;
+#else
+	return write(fd, buffer, length);
+#endif
+}
+
+/* Read a BFB answer */
+gint do_bfb_read(FD fd, guint8 *buffer, gint length)
+{
+#ifdef _WIN32
+	DWORD bytes;
+
+	g_debug(G_GNUC_FUNCTION "() ReadFile");
+	if (!ReadFile(fd, buffer, length, &bytes, NULL)) {
+		g_info(G_GNUC_FUNCTION "() Read error: %ld", bytes);
+	}
+
+	return bytes;
+#else
 	struct timeval time;
 	fd_set fdset;
 	int actual;
@@ -69,10 +91,11 @@ gint do_bfb_read(int fd, guint8 *buffer, gint length)
 		g_warning(G_GNUC_FUNCTION "() No data");
 		return 0;
 	}
+#endif
 }
 
 /* Send an BFB init command an check for a valid answer frame */
-gboolean do_bfb_init(int fd)
+gboolean do_bfb_init(FD fd)
 {
 	gint actual;
 	bfb_frame_t *frame;
@@ -125,17 +148,21 @@ gboolean do_bfb_init(int fd)
 }
 
 /* Send an AT-command an expect 1 line back as answer */
-gint do_at_cmd(int fd, char *cmd, char *rspbuf, int rspbuflen)
+gint do_at_cmd(FD fd, char *cmd, char *rspbuf, int rspbuflen)
 {
+#ifdef _WIN32
+	DWORD actual;
+#else
 	fd_set ttyset;
 	struct timeval tv;
+	int actual;
+#endif
 
 	char *answer;
 	char *answer_end = NULL;
 	unsigned int answer_size;
 
 	char tmpbuf[100] = {0,};
-	int actual;
 	int total = 0;
 	int done = 0;
 	int cmdlen;
@@ -149,18 +176,27 @@ gint do_at_cmd(int fd, char *cmd, char *rspbuf, int rspbuflen)
 	g_debug(G_GNUC_FUNCTION "() Sending %d: %s", cmdlen, cmd);
 
 	// Write command
+#ifdef _WIN32
+	if(!WriteFile(fd, cmd, cmdlen, &actual, NULL) || (actual != cmdlen)) {
+#else
 	if(write(fd, cmd, cmdlen) < cmdlen)	{
+#endif
 		g_warning("Error writing to port");
 		return -1;
 	}
 
 	while(!done)	{
+#ifdef _WIN32
+			if (!ReadFile(fd, &tmpbuf[total], sizeof(tmpbuf) - total, &actual, NULL))
+				g_info(G_GNUC_FUNCTION "() Read error: %ld", actual);
+#else
 		FD_ZERO(&ttyset);
 		FD_SET(fd, &ttyset);
 		tv.tv_sec = 2;
 		tv.tv_usec = 0;
 		if(select(fd+1, &ttyset, NULL, NULL, &tv))	{
 			actual = read(fd, &tmpbuf[total], sizeof(tmpbuf) - total);
+#endif
 			if(actual < 0)
 				return actual;
 			total += actual;
@@ -171,18 +207,20 @@ gint do_at_cmd(int fd, char *cmd, char *rspbuf, int rspbuflen)
 			if(total == sizeof(tmpbuf))
 				return -1;
 
-			if( (answer = index(tmpbuf, '\n')) )	{
+			if( (answer = strchr(tmpbuf, '\n')) )	{
 				// Remove first line (echo)
-				if( (answer_end = index(answer+1, '\n')) )	{
+				if( (answer_end = strchr(answer+1, '\n')) )	{
 					// Found end of answer
 					done = 1;
 				}
 			}
+#ifndef _WIN32
 		}
 		else	{
 			// Anser didn't come in time. Cancel
 			return -1;
 		}
+#endif
 	}
 
 
@@ -215,34 +253,84 @@ gint do_at_cmd(int fd, char *cmd, char *rspbuf, int rspbuflen)
 }
 
 /* close the connection */
-void bfb_io_close(int fd, int force)
+void bfb_io_close(FD fd, int force)
 {
+	g_debug(G_GNUC_FUNCTION "()");
 #ifdef _WIN32
-	g_error("Someone needs to implement win32 serial io.");
-#else /* _WIN32 */
+        g_return_if_fail (fd != INVALID_HANDLE_VALUE);
+#else
         g_return_if_fail (fd > 0);
+#endif
 
 	if(force)	{
 		// Send a break to get out of OBEX-mode
+#ifdef _WIN32
+		if(SetCommBreak(fd) != TRUE)	{
+#else
 		if(ioctl(fd, TCSBRKP, 0) < 0)	{
+#endif
 			g_warning("Unable to send break!");
 		}
 		sleep(1);
 	}
+#ifdef _WIN32
+	CloseHandle(fd);
+#else
 	close(fd);
-#endif /* _WIN32 */
+#endif
 }
 
 /* Init the phone and set it in BFB-mode */
 /* Returns fd or -1 on failure */
-gint bfb_io_open(const gchar *ttyname)
+FD bfb_io_open(const gchar *ttyname)
 {
+	guint8 rspbuf[200];
 #ifdef _WIN32
-	g_error("Someone needs to implement win32 serial io.");
+	HANDLE ttyfd;
+	DCB dcb;
+	COMMTIMEOUTS ctTimeOuts;
+
+        g_return_val_if_fail (ttyname != NULL, INVALID_HANDLE_VALUE);
+
+	g_debug(G_GNUC_FUNCTION "() CreateFile");
+	ttyfd = CreateFile (ttyname, GENERIC_READ | GENERIC_WRITE, 0, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+	if (ttyfd == INVALID_HANDLE_VALUE)
+		g_error ("CreateFile");
+
+	if(!GetCommState(ttyfd, &dcb))
+		g_error ("GetCommState");
+	dcb.fBinary = TRUE;
+	dcb.BaudRate = CBR_57600;
+	dcb.fParity = FALSE;
+	dcb.Parity = 0;
+	dcb.ByteSize = 8;
+	dcb.StopBits = 1;
+	dcb.fInX = FALSE;
+	dcb.fOutX = FALSE;
+	dcb.fOutxDsrFlow = FALSE;
+	dcb.fOutxCtsFlow = FALSE;
+	dcb.fDtrControl = DTR_CONTROL_ENABLE;
+	dcb.fRtsControl = RTS_CONTROL_ENABLE;
+	if(!SetCommState(ttyfd, &dcb))
+		g_error ("SetCommState");
+
+	ctTimeOuts.ReadIntervalTimeout = 250;
+	ctTimeOuts.ReadTotalTimeoutMultiplier = 1; /* no good with big buffer */
+	ctTimeOuts.ReadTotalTimeoutConstant = 500;
+	ctTimeOuts.WriteTotalTimeoutMultiplier = 1;
+	ctTimeOuts.WriteTotalTimeoutConstant = 5000;
+	if(!SetCommTimeouts(ttyfd, &ctTimeOuts))
+		g_error ("SetCommTimeouts");
+       
+	Sleep(500);
+
+	// flush all pending input
+	if(!PurgeComm(ttyfd, PURGE_RXABORT | PURGE_RXCLEAR))
+		g_error ("PurgeComm");
+
 #else /* _WIN32 */
 	gint ttyfd;
 	struct termios oldtio, newtio;
-	guint8 rspbuf[200];
 
         g_return_val_if_fail (ttyname != NULL, -1);
 
@@ -260,6 +348,7 @@ gint bfb_io_open(const gchar *ttyname)
 	newtio.c_oflag = 0;
 	tcflush(ttyfd, TCIFLUSH);
 	tcsetattr(ttyfd, TCSANOW, &newtio);
+#endif /* _WIN32 */
 
 	/* do we need to handle an error? */
 	if (do_bfb_init (ttyfd)) {
@@ -307,7 +396,10 @@ gint bfb_io_open(const gchar *ttyname)
 	return ttyfd;
  err:
 	bfb_io_close(ttyfd, TRUE);
+#ifdef _WIN32
+	return INVALID_HANDLE_VALUE;
+#else
 	return -1;
-#endif /* _WIN32 */
+#endif
 }
 

@@ -11,7 +11,7 @@ obexftpincludedir =		$(includedir)/obexftp
 
 libobexftp_la_SOURCES =		object.c object.h \
 				client.c client.h \
-				io.c io.h \
+				obexftp_io.c obexftp_io.h \
 				dirtraverse.c dirtraverse.h \
 				uuid.h obexftp.h
 

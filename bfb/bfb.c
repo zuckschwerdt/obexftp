@@ -102,7 +102,7 @@ gint bfb_stuff_data(guint8 *buffer, guint8 type, guint8 *data, gint len, gint se
 }
 
 /* send a cmd, subcmd packet, add chk (no parameters) */
-gint bfb_write_subcmd(int fd, guint8 type, guint8 subtype)
+gint bfb_write_subcmd(FD fd, guint8 type, guint8 subtype)
 {
 	guint8 buffer[2];
 
@@ -113,13 +113,13 @@ gint bfb_write_subcmd(int fd, guint8 type, guint8 subtype)
 }
 
 /* send a cmd, subcmd packet */
-gint bfb_write_subcmd0(int fd, guint8 type, guint8 subtype)
+gint bfb_write_subcmd0(FD fd, guint8 type, guint8 subtype)
 {
 	return bfb_write_packets(fd, type, &subtype, 1);
 }
 
 /* send a cmd, subcmd, data packet */
-gint bfb_write_subcmd8(int fd, guint8 type, guint8 subtype, guint8 p1)
+gint bfb_write_subcmd8(FD fd, guint8 type, guint8 subtype, guint8 p1)
 {
 	guint8 buffer[2];
 
@@ -130,7 +130,7 @@ gint bfb_write_subcmd8(int fd, guint8 type, guint8 subtype, guint8 p1)
 }
 
 /* send a cmd, subcmd packet, add chk (one word parameter) */
-gint bfb_write_subcmd1(int fd, guint8 type, guint8 subtype, guint16 p1)
+gint bfb_write_subcmd1(FD fd, guint8 type, guint8 subtype, guint16 p1)
 {
 	guint8 buffer[4];
 
@@ -148,7 +148,7 @@ gint bfb_write_subcmd1(int fd, guint8 type, guint8 subtype, guint16 p1)
 }
 
 /* send a cmd, subcmd packet, add chk (two word parameter) */
-gint bfb_write_subcmd2(int fd, guint8 type, guint8 subtype, guint16 p1, guint16 p2)
+gint bfb_write_subcmd2(FD fd, guint8 type, guint8 subtype, guint16 p1, guint16 p2)
 {
 	guint8 buffer[6];
 
@@ -170,7 +170,7 @@ gint bfb_write_subcmd2(int fd, guint8 type, guint8 subtype, guint16 p1, guint16 
 }
 
 /* send a cmd, subcmd packet, add chk (three word parameter) */
-gint bfb_write_subcmd3(int fd, guint8 type, guint8 subtype, guint16 p1, guint16 p2, guint16 p3)
+gint bfb_write_subcmd3(FD fd, guint8 type, guint8 subtype, guint16 p1, guint16 p2, guint16 p3)
 {
 	guint8 buffer[8];
 
@@ -195,7 +195,7 @@ gint bfb_write_subcmd3(int fd, guint8 type, guint8 subtype, guint16 p1, guint16 
 }
 
 /* send a cmd, subcmd packet, add long, word parameter */
-gint bfb_write_subcmd_lw(int fd, guint8 type, guint8 subtype, guint32 p1, guint16 p2)
+gint bfb_write_subcmd_lw(FD fd, guint8 type, guint8 subtype, guint32 p1, guint16 p2)
 {
 	guint8 buffer[8];
 
@@ -220,12 +220,16 @@ gint bfb_write_subcmd_lw(int fd, guint8 type, guint8 subtype, guint32 p1, guint1
 
 
 /* send actual packets */
-gint bfb_write_packets(int fd, guint8 type, guint8 *buffer, gint length)
+gint bfb_write_packets(FD fd, guint8 type, guint8 *buffer, gint length)
 {
 	bfb_frame_t *frame;
 	gint i;
 	gint l;
+#ifdef _WIN32
+	DWORD actual;
+#else
 	gint actual;
+#endif
 	
 	// alloc frame buffer
 	frame = g_malloc((length > MAX_PACKET_DATA ? MAX_PACKET_DATA : length) + sizeof (bfb_frame_t));
@@ -242,9 +246,16 @@ gint bfb_write_packets(int fd, guint8 type, guint8 *buffer, gint length)
 
 		memcpy(frame->payload, &buffer[i], l);
 
+		/* actual = bfb_io_write(fd, frame, l + sizeof (bfb_frame_t)); */
+#ifdef _WIN32
+		if(!WriteFile(fd, frame, l + sizeof (bfb_frame_t), &actual, NULL))
+			g_info(G_GNUC_FUNCTION "() Write error: %ld", actual);
+		g_debug(G_GNUC_FUNCTION "() Wrote %ld bytes (expected %d)", actual, l + sizeof (bfb_frame_t));
+#else
 		actual = write(fd, frame, l + sizeof (bfb_frame_t));
-
 		g_debug(G_GNUC_FUNCTION "() Wrote %d bytes (expected %d)", actual, l + sizeof (bfb_frame_t));
+#endif
+
 
 		if (actual < 0 || actual < l + sizeof (bfb_frame_t)) {
 			g_warning(G_GNUC_FUNCTION "() Write failed");
@@ -257,7 +268,7 @@ gint bfb_write_packets(int fd, guint8 type, guint8 *buffer, gint length)
 	return i / MAX_PACKET_DATA;
 }
 
-gint bfb_send_data(int fd, guint8 type, guint8 *data, gint length, gint seq)
+gint bfb_send_data(FD fd, guint8 type, guint8 *data, gint length, gint seq)
 {
 	guint8 *buffer;
 	gint actual;
