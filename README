@@ -42,6 +42,8 @@ To compile and install:
 # make
 # make install (as superuser)
 
+Consider using pedantic error checking:
+ CFLAGS="$CFLAGS -Werror" ./configure
 
 
 Further Development

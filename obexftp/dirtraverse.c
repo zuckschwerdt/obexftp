@@ -125,18 +125,18 @@ gint visit(gint action, gchar *name, gchar *path, gpointer userdata)
 {
 	switch(action) {
 	case VISIT_FILE:
-		g_print("Visiting %s\n", filename);
+		g_info("Visiting %s", filename);
 		break;
 
 	case VISIT_GOING_DEEPER:
-		g_print("Going deeper %s\n", filename);
+		g_info("Going deeper %s", filename);
 		break;
 
 	case VISIT_GOING_UP:
-		g_print("Going up\n");
+		g_info("Going up");
 		break;
 	default:
-		g_print("going %d\n", action);
+		g_info("going %d", action);
 	}
 	return 1;
 }

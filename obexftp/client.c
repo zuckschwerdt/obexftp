@@ -92,28 +92,28 @@ static void client_done(obex_t *handle, obex_object_t *object, gint obex_cmd, gi
 
 	cli = OBEX_GetUserData(handle);
 
-        g_print(__FUNCTION__ "()\n");
+        g_debug(G_GNUC_FUNCTION "()\n");
 
 	if (cli->fd > 0)
 		close(cli->fd);
 
         while(OBEX_ObjectGetNextHeader(handle, object, &hi, &hv, &hlen)) {
                 if(hi == OBEX_HDR_BODY) {
-			g_print(__FUNCTION__ "() Found body\n");
+			g_debug(G_GNUC_FUNCTION "() Found body\n");
                         body = hv.bs;
                         body_len = hlen;
 			cli->infocb(OBEXFTP_EV_BODY, body, body_len, cli->infocb_data);
-			g_print(__FUNCTION__ "() Done body\n");
+			g_debug(G_GNUC_FUNCTION "() Done body\n");
                         //break;
                 }
                 else if(hi == OBEX_HDR_CONNECTION) {
-			g_print(__FUNCTION__ "() Found connection number: %d\n", hv.bq4);
+			g_debug(G_GNUC_FUNCTION "() Found connection number: %d\n", hv.bq4);
 		}
                 else if(hi == OBEX_HDR_WHO) {
-			g_print(__FUNCTION__ "() Sender identified\n");
+			g_debug(G_GNUC_FUNCTION "() Sender identified\n");
 		}
                 else if(hi == OBEX_HDR_APPARAM) {
-			g_print(__FUNCTION__ "() Found application parameters\n");
+			g_debug(G_GNUC_FUNCTION "() Found application parameters\n");
                         if(hlen == sizeof(apparam_t)) {
 				app = (apparam_t *)hv.bs;
 				 // needed for alignment
@@ -122,11 +122,11 @@ static void client_done(obex_t *handle, obex_object_t *object, gint obex_cmd, gi
 				cli->infocb(OBEXFTP_EV_INFO, GUINT_TO_POINTER (info), 0, cli->infocb_data);
 			}
 			else
-				g_print(__FUNCTION__ "() Application parameters don't fit %d vs. %d.\n", hlen, sizeof(apparam_t));
+				g_debug(G_GNUC_FUNCTION "() Application parameters don't fit %d vs. %d.\n", hlen, sizeof(apparam_t));
                         break;
                 }
                 else    {
-                        g_print(__FUNCTION__ "() Skipped header %02x\n", hi);
+                        g_debug(G_GNUC_FUNCTION "() Skipped header %02x\n", hi);
                 }
         }
 
@@ -135,7 +135,7 @@ static void client_done(obex_t *handle, obex_object_t *object, gint obex_cmd, gi
 			write(cli->out_fd, body, body_len);
         }
         if(app) {
-		g_print(__FUNCTION__ "() Appcode %d, data (%d) %d\n",
+		g_debug(G_GNUC_FUNCTION "() Appcode %d, data (%d) %d\n",
 			app->code, app->info_len, info);
 
         }
@@ -237,7 +237,7 @@ obexftp_client_t *obexftp_cli_open(obexftp_info_cb_t infocb, /*const*/ obex_ctra
 	cli->obexhandle = OBEX_Init(OBEX_TRANS_INET, cli_obex_event, 0);
 #else
 	if ( ctrans ) {
-                g_print("Do the cable-OBEX!\n");
+                g_info("Do the cable-OBEX!\n");
 		cli->obexhandle = OBEX_Init(OBEX_TRANS_CUST, cli_obex_event, 0);
         }
 	else
@@ -251,7 +251,7 @@ obexftp_client_t *obexftp_cli_open(obexftp_info_cb_t infocb, /*const*/ obex_ctra
 	if ( ctrans ) {
 		/* OBEX_RegisterCTransport is const to ctrans ... */
                 if(OBEX_RegisterCTransport(cli->obexhandle, ctrans) < 0) {
-                        g_print("Custom transport callback-registration failed\n");
+                        g_warning("Custom transport callback-registration failed\n");
                 }
         }
 
@@ -319,7 +319,7 @@ gint obexftp_cli_connect(obexftp_client_t *cli)
                                 (obex_headerdata_t) UUID_S45,
                                 sizeof(UUID_S45),
                                 OBEX_FL_FIT_ONE_PACKET) < 0)    {
-                g_print("Error adding header\n");
+                g_warning("Error adding header\n");
                 OBEX_ObjectDelete(cli->obexhandle, object);
                 return -1;
         }

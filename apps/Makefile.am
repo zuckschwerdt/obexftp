@@ -1,7 +1,8 @@
 
 INCLUDES =			@GLIB_CFLAGS@ \
 				@OPENOBEX_CFLAGS@ \
-				-I..
+				-I.. \
+				-I../includes
 
 LDADD =				@GLIB_LIBS@ \
 				@OPENOBEX_LIBS@ \
@@ -14,9 +15,11 @@ flexmem_SOURCES =		flexmem_cli.c
 
 stress_SOURCES =		stress.c
 
-bin_PROGRAMS =			flexmem 
+discovery_SOURCES =		discovery.c
 
-noinst_PROGRAMS =		stress 
+bin_PROGRAMS =			flexmem
+
+noinst_PROGRAMS =		stress discovery
 
 # splint -type -predboolint -nullassign -unrecog -nullpass -I.. flexmem_cli.c
 

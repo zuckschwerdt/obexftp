@@ -143,8 +143,16 @@ int main(int argc, char *argv[])
 {
 	int c;
 	int most_recent_cmd = 0;
+	gchar *p;
 	gchar *move_src = NULL;
 	/* gchar *inbox; */
+
+	/* preset mode of operation depending on our name */
+	if (strstr(argv[0], "ls") != NULL)	most_recent_cmd = 'l';
+	if (strstr(argv[0], "get") != NULL)	most_recent_cmd = 'g';
+	if (strstr(argv[0], "put") != NULL)	most_recent_cmd = 'p';
+	if (strstr(argv[0], "mv") != NULL)	most_recent_cmd = 'm';
+	if (strstr(argv[0], "rm") != NULL)	most_recent_cmd = 'k';
 
 	while (1) {
 		int option_index = 0;
@@ -163,7 +171,7 @@ int main(int argc, char *argv[])
 			{0, 0, 0, 0}
 		};
 		
-		c = getopt_long (argc, argv, "-d:t:l::c:g:p:im:k:rh",
+		c = getopt_long (argc, argv, "-d:t:l::c:g:p:im:k:h",
 				 long_options, &option_index);
 		if (c == -1)
 			break;
@@ -211,7 +219,9 @@ int main(int argc, char *argv[])
 		case 'g':
 			if(cli_connect ()) {
 				/* Get file */
-				(void) obexftp_get(cli, optarg, optarg);
+				if ((p = strrchr(optarg, '/')) != NULL) p++;
+				else p = optarg;
+				(void) obexftp_get(cli, optarg, p);
 			}
 			most_recent_cmd = c;
 			break;
@@ -276,16 +286,16 @@ int main(int argc, char *argv[])
 			break;
 
 		default:
-			g_print ("Try `%s --help' for more information.\n",
+			g_print("Try `%s --help' for more information.\n",
 				 argv[0]);
 		}
 	}
 
 	if (optind < argc) {
-		g_print ("non-option ARGV-elements: ");
+		g_print("non-option ARGV-elements: ");
 		while (optind < argc)
-			g_print ("%s ", argv[optind++]);
-		g_print ("\n");
+			g_print("%s ", argv[optind++]);
+		g_print("\n");
 	}
 
 	cli_disconnect ();

@@ -73,7 +73,7 @@ static gint cobex_do_at_cmd(int fd, char *cmd, char *rspbuf, int rspbuflen)
 
 	// Write command
 	if(write(fd, cmd, cmdlen) < cmdlen)	{
-		g_print("Error writing to port\n");
+		g_warning("Error writing to port");
 		return -1;
 	}
 
@@ -145,7 +145,7 @@ static void cobex_pe_cleanup(obex_t *self, int force)
 	if(force)	{
 		// Send a break to get out of OBEX-mode
 		if(ioctl(OBEX_FD(self), TCSBRKP, 0) < 0)	{
-			g_print("Unable to send break!\n");
+			g_warning("Unable to send break!");
 		}
 		sleep(1);
 	}
@@ -180,20 +180,20 @@ static gint cobex_pe_init(obex_t *self, const gchar *ttyname)
 
 
 	if(cobex_do_at_cmd(ttyfd, "ATZ\r\n", rspbuf, sizeof(rspbuf)) < 0)	{
-		g_print("Comm-error or already in OBEX mode\n");
+		g_warning("Comm-error or already in OBEX mode");
 		goto err;
 	}
 	if(strcasecmp("OK", rspbuf) != 0)	{
-		g_print("Error doing ATZ (%s)\n", rspbuf);
+		g_warning("Error doing ATZ (%s)", rspbuf);
 		goto err;
 	}
 
 	if(cobex_do_at_cmd(ttyfd, "AT*EOBEX\r\n", rspbuf, sizeof(rspbuf)) < 0)	{
-		g_print("Comm-error\n");
+		g_warning("Comm-error");
 		goto err;
 	}
 	if(strcasecmp("CONNECT", rspbuf) != 0)	{
-		g_print("Error doing AT*EOBEX (%s)\n", rspbuf);
+		g_warning("Error doing AT*EOBEX (%s)", rspbuf);
 		goto err;
 	}
 
@@ -241,7 +241,7 @@ gint cobex_pe_write(obex_t *self, gpointer userdata, guint8 *buffer, gint length
 
 	actual = write(OBEX_FD(self), buffer, length);
 	if (actual < length)	{
-		g_print("Error writing to port\n");
+		g_warning("Error writing to port");
 		return -1;
 	}
 

@@ -38,6 +38,8 @@ make
 %install
 rm -rf $RPM_BUILD_ROOT
 %makeinstall
+ln -s flexmem $RPM_BUILD_ROOT%{_bindir}/obexls
+ln -s flexmem $RPM_BUILD_ROOT%{_bindir}/obexget
 
 %clean
 rm -rf $RPM_BUILD_ROOT
@@ -46,7 +48,7 @@ rm -rf $RPM_BUILD_ROOT
 %defattr(-, root, root)
 %doc AUTHORS COPYING ChangeLog NEWS
 %doc README README.bfb README.obexftp README.openobex
-%{_prefix}/bin/*
+%{_bindir}/*
 %{_libdir}/*
 %{_includedir}/*/*
 
