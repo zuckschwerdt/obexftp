@@ -5,6 +5,8 @@ for 0.10.6
 
 * UUID issue (FBS or S45 first?), autodetect phone and re-connect?
 
+* put to specified file (-p file.vcf -f telecom/pb.vcf)
+
 for 0.11
 
 * AT-Kommandos

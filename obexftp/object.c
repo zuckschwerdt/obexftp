@@ -51,8 +51,8 @@ obex_object_t *obexftp_build_get_type (obex_t obex, const char *name, const char
                 return NULL;
  
         if(type != NULL) {
-		// maybe this needs to be unicode as well?
-		(void) OBEX_ObjectAddHeader(obex, object, OBEX_HDR_TYPE, (obex_headerdata_t) (const uint8_t *) type, strlen(type), OBEX_FL_FIT_ONE_PACKET);
+		// type header is a null terminated ascii string
+		(void) OBEX_ObjectAddHeader(obex, object, OBEX_HDR_TYPE, (obex_headerdata_t) (const uint8_t *) type, strlen(type)+1, OBEX_FL_FIT_ONE_PACKET);
 	}	
  
 	if (name != NULL) {
@@ -190,7 +190,8 @@ obex_object_t *obexftp_build_del (obex_t obex, const char *name)
 obex_object_t *obexftp_build_setpath (obex_t obex, const char *name, int create)
 {
 	obex_object_t *object;
-	// "Backup Level" flag and "Don't Create" flag
+	// "Backup Level" and "Don't Create" flag in first bytte
+	// second byte is reserved and needs to be 0
 	uint8_t setpath_nohdr_data[2] = {0, 0};
 	char *ucname;
 	int ucname_len;
@@ -198,7 +199,8 @@ obex_object_t *obexftp_build_setpath (obex_t obex, const char *name, int create)
 	object = OBEX_ObjectNew(obex, OBEX_CMD_SETPATH);
 
 	if (create == 0) {
-		setpath_nohdr_data[1] = 1;
+		// set the 'Don't Create' bit
+		setpath_nohdr_data[1] ^= 2;
 	}
 	if (name) {
 		ucname_len = strlen(name)*2 + 2;

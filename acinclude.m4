@@ -33,12 +33,23 @@ dnl
 AC_DEFUN([BLUETOOTH_CHECK],[
 	AC_MSG_CHECKING(for Bluetooth support)
 
-	AC_TRY_COMPILE(	[	#include <sys/socket.h>
+	AC_TRY_COMPILE(	[
+				#ifdef __FreeBSD__
+				#include <sys/types.h>
+				#include <bluetooth.h>
+				#else /* Linux */
+				#include <sys/socket.h>
 				#include <bluetooth/bluetooth.h>
 				#include <bluetooth/rfcomm.h>
+				#endif
 			],[
+				#ifdef __FreeBSD__
 				bdaddr_t bdaddr;
-				 struct sockaddr_rc addr;
+				struct sockaddr_rfcomm addr;
+				#else /* Linux */
+				bdaddr_t bdaddr;
+				struct sockaddr_rc addr;
+				#endif
 			],
 				am_cv_bluetooth_found=yes,
 				am_cv_bluetooth_found=no

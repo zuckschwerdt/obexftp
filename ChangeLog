@@ -1,6 +1,22 @@
+2004-11-21  Christian W. Zuckschwerdt  <zany@triq.net>
+
+	* Bluetooth device and channel auto-discovery
+
+2004-11-20  Christian W. Zuckschwerdt  <zany@triq.net>
+
+	* FreeBSD patch by Bruce Simpson <bms@spc.org>
+
+2004-11-19  Christian W. Zuckschwerdt  <zany@triq.net>
+
+	* Bug fixes (for Sony-Ericsson) by David Haslam <dhaslam@ntlworld.com>
+
 2004-11-12  Christian W. Zuckschwerdt  <zany@triq.net>
 
 	* Don't send S45 UUID first (broke other phones too, sorry S45 users)
+
+2004-11-10  Christian W. Zuckschwerdt  <zany@triq.net>
+
+	* Fixed linebreaks in contributed backup script.
 
 2004-09-26  Christian W. Zuckschwerdt  <zany@triq.net>
 

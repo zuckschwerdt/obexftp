@@ -329,10 +329,13 @@ int bfb_write_packets(fd_t fd, uint8_t type, uint8_t *buffer, int length)
 			// delay for some USB-serial coverters (Gerhard Reithofer)
 			// usleep(1000); // there has to be a better way
 #endif
-		}
-
-		if (actual < 0 || actual < l + (int) sizeof (bfb_frame_t) || rc <= 0) {
-			DEBUG(1, "%s() Write failed\n", __func__);
+			if (actual < 0 || actual < l + (int) sizeof (bfb_frame_t)) {
+				DEBUG(1, "%s() Write failed\n", __func__);
+				free(frame);
+				return -1;
+			}
+		} else { /* ! rc > 0*/
+			DEBUG(1, "%s() Select failed\n", __func__);
 			free(frame);
 			return -1;
 		}

@@ -36,6 +36,7 @@
 #include <sys/stat.h>
 #include <openobex/obex.h>
 #include "obexftp.h"
+#include "uuid.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -75,7 +76,10 @@ typedef struct obexftp_client
 
 void obexftp_cli_close(/*@only@*/ /*@out@*/ /*@null@*/ obexftp_client_t *cli);
 
-int obexftp_cli_connect(obexftp_client_t *cli, const char *device, int port);
+int obexftp_cli_connect_uuid(obexftp_client_t *cli, const char *device, int port, const uint8_t uuid[]);
+
+#define	obexftp_cli_connect(cli, device, port) \
+	obexftp_cli_connect_uuid(cli, device, port, UUID_FBS)
 
 int obexftp_cli_disconnect(obexftp_client_t *cli);
 

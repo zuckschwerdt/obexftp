@@ -34,6 +34,7 @@
 
 #include <obexftp/obexftp.h>
 #include <obexftp/client.h>
+#include <obexftp/uuid.h>
 #include <cobexbfb/cobex_bfb.h>
 
 #ifdef _WIN32_FIXME
@@ -43,6 +44,8 @@ void DUMPBUFFER(unsigned int n, char *label, char *msg) { }
 #endif /* _WIN32 */
 
 #include <common.h>
+
+#include "bt_discovery.h"
 
 #define OBEXFTP_PORT "OBEXFTP_PORT"
 #define OBEXFTP_ADDR "OBEXFTP_ADDR"
@@ -138,7 +141,8 @@ static int cli_connect()
 	cli = obexftp_cli_open (transport, ctrans, info_cb, NULL);
 	if(cli == NULL) {
 		fprintf(stderr, "Error opening obexftp-client\n");
-		return FALSE;
+		exit(1);
+		//return FALSE;
 	}
 
 	for (retry = 0; retry < 3; retry++) {
@@ -150,7 +154,8 @@ static int cli_connect()
 	}
 
 	cli = NULL;
-	return FALSE;
+	exit(1);
+	//return FALSE;
 }
 
 static void cli_disconnect()
@@ -167,7 +172,7 @@ int main(int argc, char *argv[])
 {
 	int verbose=0;
 	int most_recent_cmd = 0;
-	char *p;
+	char *target_path = NULL;
 	char *move_src = NULL;
 	/* char *inbox; */
 
@@ -198,14 +203,16 @@ int main(int argc, char *argv[])
 		static struct option long_options[] = {
 			{"irda",	no_argument, NULL, 'i'},
 #ifdef HAVE_BLUETOOTH
-			{"bluetooth",	required_argument, NULL, 'b'},
+			{"bluetooth",	optional_argument, NULL, 'b'},
 #endif
 			{"channel",	required_argument, NULL, 'B'},
 			{"tty",		required_argument, NULL, 't'},
 			{"list",	optional_argument, NULL, 'l'},
 			{"chdir",	required_argument, NULL, 'c'},
 			{"mkdir",	required_argument, NULL, 'C'},
+			{"path",	required_argument, NULL, 'f'},
 			{"get",		required_argument, NULL, 'g'},
+			{"getdelete",	required_argument, NULL, 'G'},
 			{"put",		required_argument, NULL, 'p'},
 			{"delete",	required_argument, NULL, 'k'},
 			{"info",	no_argument, NULL, 'x'},
@@ -217,14 +224,14 @@ int main(int argc, char *argv[])
 			{0, 0, 0, 0}
 		};
 		
-		c = getopt_long (argc, argv, "-ib:B:t:L:l::c:C:g:p:k:xm:Vvh",
+		c = getopt_long (argc, argv, "-ib::B:t:L::l::c:C:f:g:G:p:k:xm:Vvh",
 				 long_options, &option_index);
 		if (c == -1)
 			break;
 	
 		if (c == 1)
 			c = most_recent_cmd;
-
+	
 		switch (c) {
 		
 		case 'i':
@@ -239,7 +246,14 @@ int main(int argc, char *argv[])
 				free (tty);
 			if (btaddr != NULL)
 				free (btaddr);
-       			btaddr = optarg;
+       			//btaddr = optarg;
+			/* handle severed optional option argument */
+			if (!optarg && argc > optind && argv[optind][0] != '-') {
+				optarg = argv[optind];
+				optind++;
+			}
+			discover_bt(optarg, &btaddr, &btchannel);
+			//fprintf(stderr, "Got %s channel %d\n", btaddr, btchannel);
 			break;
 			
 		case 'B':
@@ -249,14 +263,19 @@ int main(int argc, char *argv[])
 		case 't':
 			transport = OBEX_TRANS_CUSTOM;
 			if (tty != NULL)
-				free (tty);
-       			tty = optarg;
+				free (tty); /* ok to to free an optarg? */
+       			tty = optarg; /* strdup? */
 
 			if (strstr(optarg, "ir") != NULL)
-				printf("Do you really want to use IrDA via ttys?\n");
+				fprintf(stderr, "Do you really want to use IrDA via ttys?\n");
 			break;
 
 		case 'L':
+			/* handle severed optional option argument */
+			if (!optarg && argc > optind && argv[optind][0] != '-') {
+				optarg = argv[optind];
+				optind++;
+			}
 			if(cli_connect ()) {
 				/* List folder */
 				struct dirent *ent;
@@ -272,6 +291,11 @@ int main(int argc, char *argv[])
 			break;
 
 		case 'l':
+			/* handle severed optional option argument */
+			if (!optarg && argc > optind && argv[optind][0] != '-') {
+				optarg = argv[optind];
+				optind++;
+			}
 			if(cli_connect ()) {
 				/* List folder */
 				(void) obexftp_list(cli, NULL, optarg);
@@ -295,12 +319,29 @@ int main(int argc, char *argv[])
 			most_recent_cmd = c;
 			break;
 
+		case 'f':
+			target_path = optarg;
+			break;
+
 		case 'g':
 			if(cli_connect ()) {
+				char *p;
 				/* Get file */
 				if ((p = strrchr(optarg, '/')) != NULL) p++;
 				else p = optarg;
 				(void) obexftp_get(cli, p, optarg);
+			}
+			most_recent_cmd = c;
+			break;
+
+		case 'G':
+			if(cli_connect ()) {
+				char *p;
+				/* Get file */
+				if ((p = strrchr(optarg, '/')) != NULL) p++;
+				else p = optarg;
+				if (obexftp_get(cli, p, optarg))
+					(void) obexftp_del(cli, optarg);
 			}
 			most_recent_cmd = c;
 			break;
@@ -329,6 +370,9 @@ int main(int argc, char *argv[])
 
 		case 'x':
 			if(cli_connect ()) {
+				/* for S65 */
+				(void) obexftp_cli_disconnect (cli);
+				(void) obexftp_cli_connect_uuid (cli, btaddr, btchannel, UUID_S45);
 				/* Retrieve Infos */
 				(void) obexftp_info(cli, 0x01);
 				(void) obexftp_info(cli, 0x02);
@@ -367,16 +411,19 @@ int main(int argc, char *argv[])
 				"Transfer files from/to Mobile Equipment.\n"
 				"Copyright (c) 2002-2004 Christian W. Zuckschwerdt\n"
 				"\n"
-				" -i, --irda                  connect using IrDA transport\n"
+				" -i, --irda                  connect using IrDA transport (default)\n"
 #ifdef HAVE_BLUETOOTH
-				" -b, --bluetooth <device>    connect to this bluetooth device\n"
+				" -b, --bluetooth [<device>]  use or search a bluetooth device\n"
 				" -B, --channel <number>      use this bluetooth channel when connecting\n"
 #endif
 				" -t, --tty <device>          connect to this tty using a custom transport\n\n"
-				" -l, --list [<FOLDER>]       list a folder\n"
+				" -l, --list [<FOLDER>]       list current/given folder\n"
 				" -c, --chdir <DIR>           chdir\n"
 				" -C, --mkdir <DIR>           mkdir and chdir\n"
+				" -f, --path <PATH>           specify the local file name or directory\n"
+				"                             get and put always specify the remote name.\n"
 				" -g, --get <SOURCE>          fetch files\n"
+				" -G, --getdelete <SOURCE>    fetch and delete (move) files \n"
 				" -p, --put <SOURCE>          send files\n"
 				" -k, --delete <SOURCE>       delete files\n\n"
 				" -x, --info                  retrieve infos (Siemens)\n"

@@ -49,8 +49,13 @@
 #endif /* _WIN32 */
 
 #ifdef HAVE_BLUETOOTH
+#ifdef __FreeBSD__
+#include <sys/types.h>
+#include <bluetooth.h>
+#else /* Linux */
 #include <bluetooth/bluetooth.h>
 #include <bluetooth/rfcomm.h>
+#endif /* __FreeBSD__ */
 #endif
 
 #include <openobex/obex.h>
@@ -388,7 +393,7 @@ void obexftp_cli_close(obexftp_client_t *cli)
 }
 
 /* Do connect as client */
-int obexftp_cli_connect(obexftp_client_t *cli, const char *device, int port)
+int obexftp_cli_connect_uuid(obexftp_client_t *cli, const char *device, int port, const uint8_t uuid[])
 {
 	obex_object_t *object;
 	int ret = -1; /* no connection yet */
@@ -458,7 +463,7 @@ int obexftp_cli_connect(obexftp_client_t *cli, const char *device, int port)
 #endif
 		object = OBEX_ObjectNew(cli->obexhandle, OBEX_CMD_CONNECT);
 		if(OBEX_ObjectAddHeader(cli->obexhandle, object, OBEX_HDR_TARGET,
-                	                (obex_headerdata_t) UUID_FBS,
+                	                (obex_headerdata_t) uuid,
         	                        sizeof(UUID_FBS),
 	                                OBEX_FL_FIT_ONE_PACKET) < 0)    {
         	        DEBUG(1, "Error adding header\n");

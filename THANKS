@@ -1,4 +1,4 @@
-stef <stef@interware.hu> - helped in initial S45 research
+stef <stef@interware.hu> - helped in initial S45 (BFB) research
 
 Erich Schubert <erich.schubert@mucl.de> - provided a debian package
 
@@ -15,4 +15,8 @@ François Fleuret <francois.fleuret@inria.fr> - suggested transport checks
 Adam Goode <adam@evdebs.org> and Ken Booth <ken@booths.org.uk> - setpath
 
 Soren S. Jorvang <soren@wheel.dk> - NetBSD portability fixes
+
+Bruce Simpson <bms@spc.org> - FreeBSD portability fixes
+
+David Haslam <dhaslam@ntlworld.com> - Sony-Ericsson fixes
 
