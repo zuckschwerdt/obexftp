@@ -1,17 +1,17 @@
 lib_LTLIBRARIES =		libcobexbfb.la
 
 INCLUDES =			@GLIB_CFLAGS@ \
-				@OPENOBEX_CFLAGS@
+				@OPENOBEX_CFLAGS@ \
+				-I..
 
 LDADD =				@GLIB_LIBS@ \
-				@OPENOBEX_LIBS@
+				@OPENOBEX_LIBS@ \
+				../bfb/libbfb.la
 
 cobexbfbincludedir =		$(includedir)/cobexbfb
 
 libcobexbfb_la_SOURCES =	cobex_bfb.c cobex_bfb.h \
 				cobex_bfb_private.h \
-				bfb.c bfb.h \
-				crc.c crc.h \
 				obex_t.h \
 				debug.h
 

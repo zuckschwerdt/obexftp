@@ -57,6 +57,18 @@ typedef struct {
 #define BFB_DATA_FIRST 0x02 /* first transmission in a row */
 #define BFB_DATA_NEXT 0x03 /* continued transmission */
 
+guint8 bfb_checksum(guint8 *data, gint len);
+gint bfb_write_subcmd(int fd, guint8 type, guint8 subtype);
+gint bfb_write_subcmd1(int fd, guint8 type, guint8 subtype, guint16 p1);
+
+/* send a cmd, subcmd packet, add chk (two word parameter) */
+gint bfb_write_subcmd2(int fd, guint8 type, guint8 subtype, guint16 p1, guint16 p2);
+
+/* send a cmd, subcmd packet, add chk (three word parameter) */
+gint bfb_write_subcmd3(int fd, guint8 type, guint8 subtype, guint16 p1, guint16 p2, guint16 p3);
+
+/* send a cmd, subcmd packet, add long, word parameter */
+gint bfb_write_subcmd_lw(int fd, guint8 type, guint8 subtype, guint32 p1, guint16 p2);
 
 gint bfb_stuff_data(guint8 *buffer, guint8 type, guint8 *data, gint len, gint seq);
 

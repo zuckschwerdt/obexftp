@@ -5,6 +5,7 @@
 ================================================================
 
   Christian Zuckschwerdt  <zany@triq.net>  2002-02-06
+  added unknown S35i commands from Thierry's logs 2002-06-22
 
 
 0. Disclaimer
@@ -32,10 +33,14 @@
  [ type ][ len ][ chk ][ payload ]
 
  Types are
-  0x02 - single bytes used for connecting
+  0x02 - single bytes used for connecting and data reading
   0x01 - crc'ed sequence to change interface (speed)
+  0x05 - unkown [S35i]
   0x06 - AT-Command
-  0x16 - crc'ed generic data
+  0x09 - unkown (return code from mobile?)
+  0x0E - unkown (return code from mobile?)
+  0x14 - EEPROM block manipulation
+  0x16 - crc'ed generic data (like OBEX)
 
  Len is from 1 to max 32 for a max MTU of 35 bytes.
 

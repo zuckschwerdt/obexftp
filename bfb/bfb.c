@@ -45,6 +45,18 @@
 #include "bfb.h"
 #include "debug.h"
 
+/* returns the whole buffer folded with xor. */
+guint8 bfb_checksum(guint8 *data, gint len)
+{
+	int i;
+	guint8 chk = 0;
+      
+	for (i=0; i < len; i++)
+	     chk ^= data[i];
+
+	return chk;
+}
+
 /* stuff data frame into serial cable encapsulation */
 /* buffer needs to be of at leaset len+7 size */
 /* Type 0x01: "prepare" command. */
@@ -98,6 +110,124 @@ gint bfb_stuff_data(guint8 *buffer, guint8 type, guint8 *data, gint len, gint se
 
 	return len+7;
 }
+
+/* send a cmd, subcmd packet, add chk (no parameters) */
+gint bfb_write_subcmd(int fd, guint8 type, guint8 subtype)
+{
+	guint8 buffer[2];
+
+	buffer[0] = subtype;
+	buffer[1] = bfb_checksum(buffer, 1);
+
+	return bfb_write_packets(fd, type, buffer, 2);
+}
+
+/* send a cmd, subcmd packet, add chk (one word parameter) */
+gint bfb_write_subcmd1(int fd, guint8 type, guint8 subtype, guint16 p1)
+{
+	guint8 buffer[4];
+        union word2byte {
+                guint16 value;
+                guint8 bytes[2];
+        };
+
+	buffer[0] = subtype;
+
+	 /* remember endianess! */
+	buffer[1] = ((union word2byte)p1).bytes[0];
+	buffer[2] = ((union word2byte)p1).bytes[1];
+
+	buffer[3] = bfb_checksum(buffer, 3);
+
+	/* printf("buf: %x %x %x %x\n",
+		  buffer[0], buffer[1], buffer[2], buffer[3]); */
+	return bfb_write_packets(fd, type, buffer, 4);
+}
+
+/* send a cmd, subcmd packet, add chk (two word parameter) */
+gint bfb_write_subcmd2(int fd, guint8 type, guint8 subtype, guint16 p1, guint16 p2)
+{
+	guint8 buffer[6];
+        union word2byte {
+                guint16 value;
+                guint8 bytes[2];
+        };
+
+	buffer[0] = subtype;
+
+	 /* remember endianess! */
+	buffer[1] = ((union word2byte)p1).bytes[0];
+	buffer[2] = ((union word2byte)p1).bytes[1];
+	buffer[3] = ((union word2byte)p2).bytes[0];
+	buffer[4] = ((union word2byte)p2).bytes[1];
+
+	buffer[5] = bfb_checksum(buffer, 5);
+
+	/* printf("buf: %x %x %x %x %x %x\n",
+		  buffer[0], buffer[1], buffer[2], buffer[3], buffer[4], buffer[5]); */
+
+	return bfb_write_packets(fd, type, buffer, 6);
+}
+
+/* send a cmd, subcmd packet, add chk (three word parameter) */
+gint bfb_write_subcmd3(int fd, guint8 type, guint8 subtype, guint16 p1, guint16 p2, guint16 p3)
+{
+	guint8 buffer[8];
+        union word2byte {
+                guint16 value;
+                guint8 bytes[2];
+        };
+
+	buffer[0] = subtype;
+
+	 /* remember endianess! */
+	buffer[1] = ((union word2byte)p1).bytes[0];
+	buffer[2] = ((union word2byte)p1).bytes[1];
+	buffer[3] = ((union word2byte)p2).bytes[0];
+	buffer[4] = ((union word2byte)p2).bytes[1];
+	buffer[5] = ((union word2byte)p3).bytes[0];
+	buffer[6] = ((union word2byte)p3).bytes[1];
+
+	buffer[7] = bfb_checksum(buffer, 7);
+
+	/* printf("buf: %x %x  %x %x  %x %x  %x %x\n",
+		  buffer[0], buffer[1], buffer[2], buffer[3], buffer[4], buffer[5], buffer[6], buffer[7]); */
+
+	return bfb_write_packets(fd, type, buffer, 8);
+}
+
+/* send a cmd, subcmd packet, add long, word parameter */
+gint bfb_write_subcmd_lw(int fd, guint8 type, guint8 subtype, guint32 p1, guint16 p2)
+{
+	guint8 buffer[8];
+        union word2byte {
+                guint16 value;
+                guint8 bytes[2];
+        };
+        union long2byte {
+		guint32 value;
+                guint16 words[2];
+                guint8 bytes[4];
+        };
+
+	buffer[0] = subtype;
+
+	 /* remember endianess! */
+	buffer[1] = ((union long2byte)p1).bytes[0];
+	buffer[2] = ((union long2byte)p1).bytes[1];
+	buffer[3] = ((union long2byte)p1).bytes[2];
+	buffer[4] = ((union long2byte)p1).bytes[3];
+	buffer[5] = ((union word2byte)p2).bytes[0];
+	buffer[6] = ((union word2byte)p2).bytes[1];
+
+	buffer[7] = bfb_checksum(buffer, 7);
+
+	printf("buf: %02x  %02x %02x %02x %02x  %02x %02x\n",
+		  buffer[0], buffer[1], buffer[2], buffer[3], buffer[4], buffer[5], buffer[6]);
+
+	return bfb_write_packets(fd, type, buffer, 7); /* no chk? */
+}
+
 
 /* send actual packets */
 gint bfb_write_packets(int fd, guint8 type, guint8 *buffer, gint length)

@@ -7,6 +7,7 @@ LDADD =				@GLIB_LIBS@ \
 				@OPENOBEX_LIBS@ \
 				../obexftp/libobexftp.la \
 				../cobexbfb/libcobexbfb.la \
+				../bfb/libbfb.la \
 				../cobexpe/libcobexpe.la
 
 flexmem_SOURCES =		flexmem_cli.c

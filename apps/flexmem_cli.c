@@ -97,7 +97,7 @@ static gboolean cli_connect()
 		return TRUE;
 
 	if (tty != NULL) {
-		if (!strcasecmp(transport, "ericsson")) {
+		if ((transport != NULL) && !strcasecmp(transport, "ericsson")) {
 			g_print("Custom transport set to 'Ericsson'\n");
 			ctrans = cobex_pe_ctrans (tty);
 		} else {

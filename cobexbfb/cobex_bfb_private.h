@@ -27,7 +27,7 @@
  *     
  */
 
-#include "bfb.h"
+#include <bfb/bfb.h>
 
 #define SERPORT "/dev/ttyS0"
 
