@@ -1,7 +1,7 @@
 /*
  *                
  * Filename:      bfb.c
- * Version:       0.1
+ * Version:       0.3
  * Description:   BFB transport encapsulation (Siemens specific)
  * Status:        Experimental.
  * Author:        Christian W. Zuckschwerdt <zany@triq.net>

@@ -42,6 +42,8 @@ int cobex_init(char *ttyname);
 void cobex_cleanup(int force);
 int cobex_start_io(void);
 
+gint cobex_set_tty(gchar *tty);
+
 gint cobex_connect(obex_t *self, gpointer userdata);
 gint cobex_disconnect(obex_t *self, gpointer userdata);
 gint cobex_write(obex_t *self, gpointer userdata, guint8 *buffer, gint length);

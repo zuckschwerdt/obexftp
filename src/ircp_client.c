@@ -403,16 +403,18 @@ gint ircp_list(ircp_client_t *cli, gchar *localname, gchar *remotename)
         hdd.bs = type_name;
 	OBEX_ObjectAddHeader(cli->obexhandle, object, OBEX_HDR_TYPE, hdd, sizeof(type_name), OBEX_FL_FIT_ONE_PACKET);
  
-        ucname_len = strlen(remotename)*2 + 2;
-        ucname = g_malloc(ucname_len);
-        if(ucname == NULL)
-                goto err;
+	if (remotename != NULL) {
+		ucname_len = strlen(remotename)*2 + 2;
+		ucname = g_malloc(ucname_len);
+		if(ucname == NULL)
+			goto err;
 
-        ucname_len = OBEX_CharToUnicode(ucname, remotename, ucname_len);
+		ucname_len = OBEX_CharToUnicode(ucname, remotename, ucname_len);
 
-        hdd.bs = ucname;
-        OBEX_ObjectAddHeader(cli->obexhandle, object, OBEX_HDR_NAME, hdd, ucname_len, OBEX_FL_FIT_ONE_PACKET);
-        g_free(ucname);
+		hdd.bs = ucname;
+		OBEX_ObjectAddHeader(cli->obexhandle, object, OBEX_HDR_NAME, hdd, ucname_len, OBEX_FL_FIT_ONE_PACKET);
+		g_free(ucname);
+	}
 	
 	ret = cli_sync_request(cli, object);
 		

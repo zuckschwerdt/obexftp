@@ -1,7 +1,7 @@
 /*
  *                
  * Filename:      cobex_bfb.c
- * Version:       0.2
+ * Version:       0.4
  * Description:   Talk OBEX over a serial port (Siemens specific)
  * Status:        Experimental.
  * Author:        Christian W. Zuckschwerdt <zany@triq.net>
@@ -46,6 +46,15 @@
 
 obex_t *cobex_handle;
 cobex_t *c;
+gchar *_tty;
+
+gint cobex_set_tty(gchar *tty)
+{
+	g_free(_tty);
+	_tty = tty;
+
+	return 0;
+}
 
 /* Read a BFB answer */
 gint cobex_do_bfb_read(int fd, guint8 *buffer, gint length)
@@ -180,8 +189,8 @@ gint cobex_init(char *ttyname)
 
 	DEBUG(1, G_GNUC_FUNCTION "() \n");
 
-	if( (ttyfd = open(ttyname, O_RDWR | O_NONBLOCK | O_NOCTTY, 0)) < 0 )	{
-		perror("Can' t open tty");
+	if( (ttyfd = open(ttyname, O_RDWR | O_NONBLOCK | O_NOCTTY, 0)) < 0 ) {
+		g_error("Can' t open tty");
 		return -1;
 	}
 
@@ -271,7 +280,10 @@ gint cobex_connect(obex_t *self, gpointer userdata)
 
 	c = g_new0(cobex_t, 1);
 
-	if((c->fd = cobex_init(SERPORT)) < 0)
+	if(_tty == NULL)
+		_tty = SERPORT;
+
+	if((c->fd = cobex_init(_tty)) < 0)
 		return -1;
 
 	return 1;

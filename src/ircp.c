@@ -1,7 +1,7 @@
 /*
  *                
  * Filename:      flexmem.c
- * Version:       0.5
+ * Version:       0.6
  * Description:   Transfer from/to Siemens Mobile Equipment via OBEX
  * Status:        Experimental.
  * Author:        Christian W. Zuckschwerdt <zany@triq.net>
@@ -39,10 +39,9 @@
 
 #include "cobex_bfb.h"
 
+#define TTY_PREFIX "/dev/tty"
+#define IR_PREFIX "/dev/ir"
 
-//
-//
-//
 void ircp_info_cb(gint event, gchar *param)
 {
 	DEBUG(4, G_GNUC_FUNCTION "()\n");
@@ -58,7 +57,6 @@ void ircp_info_cb(gint event, gchar *param)
 	case IRCP_EV_OK:
 		g_print("done\n");
 		break;
-
 
 	case IRCP_EV_CONNECTING:
 		g_print("Connecting...");
@@ -84,29 +82,26 @@ void ircp_info_cb(gint event, gchar *param)
 		g_print("Disconnecting\n");
 		break;
 
-
-
 	}
 }
 
-//
-//
-//
+
 int main(int argc, char *argv[])
 {
 	int c;
-
+	int most_recent_cmd = 0;
+	gchar *move_src = NULL;
 	ircp_client_t *cli;
 	ircp_server_t *srv;
 	gchar *inbox;
-	gchar *device = NULL;
         obex_ctrans_t *ctrans = NULL;
 
 	while (1) {
 		int option_index = 0;
 		static struct option long_options[] = {
 			{"device", 1, 0, 'd'},
-			{"cable", 0, 0, 'c'},
+			{"serial", 0, 0, 's'},
+			{"irda", 0, 0, 'a'},
 			{"list", 2, 0, 'l'},
 			{"get", 1, 0, 'g'},
 			{"put", 1, 0, 'p'},
@@ -119,20 +114,30 @@ int main(int argc, char *argv[])
 			{0, 0, 0, 0}
 		};
 		
-		c = getopt_long (argc, argv, "d:cl::g:p:im:k:rh",
+		c = getopt_long (argc, argv, "-d:sal::g:p:im:k:rh",
 				 long_options, &option_index);
 		if (c == -1)
 			break;
-		
+	
+		if (c == 1)
+			c = most_recent_cmd;
+
 		switch (c) {
-			
+		
 		case 'd':
-			g_print ("device `%s'\n", optarg);
-			device = optarg;
+			cobex_set_tty(optarg);
+			if (!strncmp(optarg, TTY_PREFIX, sizeof(TTY_PREFIX)-1))
+				ctrans = cobex_ctrans();
+			if (!strncmp(optarg, IR_PREFIX, sizeof(IR_PREFIX)-1))
+				ctrans = NULL;
 			break;
 
-		case 'c':
+		case 's':
 			ctrans = cobex_ctrans();
+			break;
+
+		case 'a':
+			ctrans = NULL;
 			break;
 
 		case 'l':
@@ -150,6 +155,7 @@ int main(int argc, char *argv[])
 				ircp_cli_disconnect(cli);
 			}
 			ircp_cli_close(cli);
+			most_recent_cmd = c;
 			break;
 
 		case 'g':
@@ -168,6 +174,7 @@ int main(int argc, char *argv[])
 				ircp_cli_disconnect(cli);
 			}
 			ircp_cli_close(cli);
+			most_recent_cmd = c;
 			break;
 
 		case 'p':
@@ -186,6 +193,7 @@ int main(int argc, char *argv[])
 				ircp_cli_disconnect(cli);
 			}
 			ircp_cli_close(cli);
+			most_recent_cmd = c;
 			break;
 
 		case 'i':
@@ -208,6 +216,13 @@ int main(int argc, char *argv[])
 			break;
 
 		case 'm':
+			most_recent_cmd = c;
+
+			if (move_src == NULL) {
+				move_src = optarg;
+				break;
+			}
+
 			cli = ircp_cli_open(ircp_info_cb, ctrans);
 			if(cli == NULL) {
 				g_print("Error opening ircp-client\n");
@@ -217,13 +232,14 @@ int main(int argc, char *argv[])
 			// Connect
 			if(ircp_cli_connect(cli) >= 0) {
 				// Rename a file
-				g_print ("ircp_rename(cli, %s, %s);\n", optarg, argv[optind+2]);
-				//ircp_rename(cli, optarg, argv[optind+2]);
+				ircp_rename(cli, move_src, optarg);
 
 				// Disconnect
 				ircp_cli_disconnect(cli);
 			}
 			ircp_cli_close(cli);
+
+			move_src = NULL;
 			break;
 
 		case 'k':
@@ -242,6 +258,7 @@ int main(int argc, char *argv[])
 				ircp_cli_disconnect(cli);
 			}
 			ircp_cli_close(cli);
+			most_recent_cmd = c;
 			break;
 
 		case 'r':
@@ -265,12 +282,16 @@ int main(int argc, char *argv[])
 
 		case 'h':
 		case 'u':
-			g_print("Usage: %s -[dclgpimkrh]... [<file>...]\n"
+			g_print("Usage: %s [-d <dev>] [-s|-a] [-l <dir> ...]\n"
+				"[-g <file> ...] [-p <files> ...] [-i] [-m <src> <dest> ...] [-k <files> ...]\n"
 				"Transfer files from/to Siemens Mobile Equipment.\n"
 				"Copyright (c) 2002 Christian W. Zuckschwerdt\n"
 				"\n"
-				" -d, --device <device>       use this device\n"
-				" -c, --cable                 use serial cable\n"
+				" -d, --device <device>       connect to this device\n"
+				"                             fallback to $MOBILEPHONE_DEV\n"
+				"                             then /dev/mobilephone and /dev/ttyS0\n"
+				" -s, --serial                use serial cable (default if device is /dev/tty*)\n"
+				" -a, --irda                  use irda (default if device is /dev/ir*)\n"
 				" -l, --list [<FOLDER>]       list a folder\n"
 				" -g, --get <SOURCE>          fetch files\n"
 				" -p, --put <SOURCE>          send files\n"
