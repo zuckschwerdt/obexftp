@@ -1,2 +1,3 @@
 EXTRA_DIST =			README_obexftpbackup \
-				obexftpbackup
+				obexftpbackup \
+				picture-mover

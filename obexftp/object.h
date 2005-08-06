@@ -43,12 +43,11 @@ extern "C" {
 
 
 /*@null@*/ obex_object_t *obexftp_build_info (obex_t obex, uint8_t opcode);
-/*@null@*/ obex_object_t *obexftp_build_get_type (obex_t obex, const char *name, const char *type);
-/*@null@*/ obex_object_t *obexftp_build_get (obex_t obex, const char *name);
+/*@null@*/ obex_object_t *obexftp_build_get (obex_t obex, const char *name, const char *type);
 /*@null@*/ obex_object_t *obexftp_build_rename (obex_t obex, const char *from, const char *to);
 /*@null@*/ obex_object_t *obexftp_build_del (obex_t obex, const char *name);
 /*@null@*/ obex_object_t *obexftp_build_setpath (obex_t obex, const char *name, int create);
-/*@null@*/ obex_object_t *obexftp_build_put (obex_t obex, const char *name);
+/*@null@*/ obex_object_t *obexftp_build_put (obex_t obex, const char *name, int size);
 
 #ifdef __cplusplus
 }

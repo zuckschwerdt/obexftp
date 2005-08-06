@@ -1,5 +1,5 @@
 /*
- *  obexftp/obexftp.h: Transfer from/to Siemens Mobile Equipment via OBEX
+ *  obexftp/cache.h: ObexFTP client library
  *
  *  Copyright (c) 2002 Christian W. Zuckschwerdt <zany@triq.net>
  *
@@ -18,44 +18,25 @@
  *  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *     
  */
-/*
- * Created at:    Don, 17 Jan 2002 18:27:25 +0100
- */
 
-#ifndef OBEXFTP_H
-#define OBEXFTP_H
+#ifndef OBEXFTP_CACHE_H
+#define OBEXFTP_CACHE_H
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-typedef void (*obexftp_info_cb_t) (int event, const char *buf, int len, void *data);
+void cache_purge(cache_object_t **root, const char *path);
 
-enum {
-	OBEXFTP_EV_ERRMSG,
+void xfer_purge(obexftp_client_t *cli);
 
-	OBEXFTP_EV_OK,
-	OBEXFTP_EV_ERR,
+int put_cache_object(obexftp_client_t *cli, const char *name, const char *object, int size);
 
-	OBEXFTP_EV_CONNECTING,
-	OBEXFTP_EV_DISCONNECTING,
-	OBEXFTP_EV_SENDING,
-
-	OBEXFTP_EV_LISTENING,
-	OBEXFTP_EV_CONNECTIND,
-	OBEXFTP_EV_DISCONNECTIND,
-	OBEXFTP_EV_RECEIVING,
-
-	OBEXFTP_EV_BODY,
-	OBEXFTP_EV_INFO,
-	OBEXFTP_EV_PROGRESS, /* approx. every 1KByte */
-};
-
-/* Number of bytes passed at one time to OBEX */
-#define STREAM_CHUNK 4096
-
+int get_cache_object(obexftp_client_t *cli, const char *name, char **object, int *size);
+	
 #ifdef __cplusplus
 }
 #endif
 
-#endif /* OBEXFTP */
+#endif /* OBEXFTP_CACHE_H */
+

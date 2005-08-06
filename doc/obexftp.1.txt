@@ -17,13 +17,15 @@ OPTIONS
     command given most recent. See EXAMPLES
 
     -i, --irda
-            Connect using the IrDA protocol.
+            Connect using the IrDA protocol. This is the default.
 
     -b *device*, --bluetooth *device*
-            Connect to this bluetooth device.
+            Connect to this bluetooth device. If the device is not given the
+            first device found will be used.
 
     -B *number*, --channel *number*
-            Use this bluetooth channel when connecting.
+            Use this bluetooth channel when connecting. The channel will be
+            discoverd automatically if this option is not used.
 
     -t *device*, --tty *device*
             Connect to this tty device.
@@ -32,16 +34,22 @@ OPTIONS
             List a folder.
 
     -c *folder*, --chdir *folder*
+            Set the mobiles current working directory.
+
+    -C *folder*, --mkdir *folder*
             Set the mobiles current working directory. The folder will be
             created if it doesn't exist.
 
     -g *source*, --get *source*
             Retrieve files from mobile.
 
+    -G *source*, --getdelete *source*
+            Retrieve files from mobile and delete them on the mobile
+
     -p *source*, --put *source*
             Send files to the mobile.
 
-    -k *source*, --kill *source*
+    -k *source*, --delete *source*
             Delete files from the mobile.
 
     -x, --info
@@ -54,8 +62,21 @@ OPTIONS
     -v, --verbose
             Be verbose and give some additional infos.
 
+    -V, --version
+            Print version string and exit.
+
     -h, --help, --usage
             Print short usage instructions.
+
+EXAMPLES
+    To get the directory listing from the first irda device:
+            obexftp -i -l or just obexftp -l as IrDA is the default.
+
+    To get the file bar from directory foo from the first bluetooth device:
+            obexftp -b -c foo -g bar
+
+    To send the file bar to directory foo with device on first serial port:
+            obexftp -t /dev/ttyS0 -c foo -p bar
 
 SEE ALSO
     openobex, obexftp, cobex, libbfb.
@@ -65,7 +86,7 @@ BUGS
 
 NOTES
     The software is tailored for Siemens mobiles like the S45/ME45. Ericsson
-    phones are tested and supported too. Tell me if something goes / goes
+    phones are tested and supported, too. Tell me if something goes / goes
     wrong using different mobiles.
 
 AUTHOR

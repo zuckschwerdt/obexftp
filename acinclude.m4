@@ -77,11 +77,8 @@ AC_DEFUN([SDPLIB_CHECK],[
 
 	AC_TRY_COMPILE(	[
 				#include <bluetooth/sdp.h>
-				#include <bluetooth/sdp_lib.h>
 			],[
-				bdaddr_t *src;
-				bdaddr_t *dst;
-				sdp_connect(src, dst, 0);
+				sdp_list_t sdplist;
 			],
 				am_cv_sdplib_found=yes,
 				am_cv_sdplib_found=no
@@ -94,3 +91,36 @@ AC_DEFUN([SDPLIB_CHECK],[
 
 	AC_MSG_RESULT($am_cv_sdplib_found)
 ])
+
+
+dnl
+dnl Check for USB library
+dnl
+
+AC_DEFUN([USB_CHECK],[
+	AC_MSG_CHECKING(for USB support)
+
+	AC_TRY_COMPILE( [
+				#include <usb.h>
+				#include <openobex/obex.h>
+				#include <openobex/obex_const.h>
+			],[
+				struct usb_bus bus;
+				struct usb_obex_intf usb_intf;
+			],
+				am_cv_usb_found=yes,
+				am_cv_usb_found=no
+			)
+
+	if test $am_cv_usb_found = yes; then
+		AC_DEFINE(HAVE_USB,1,[Define if system supports USB])
+
+		USB_CFLAGS=""
+		USB_LIBS="-lusb"
+	fi
+
+	AC_SUBST(USB_CFLAGS)
+	AC_SUBST(USB_LIBS)
+	AC_MSG_RESULT($am_cv_usb_found)
+])
+

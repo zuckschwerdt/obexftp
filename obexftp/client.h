@@ -1,5 +1,5 @@
 /*
- *  obexftp/client.c: ObexFTP client library
+ *  obexftp/client.h: ObexFTP client library
  *
  *  Copyright (c) 2002 Christian W. Zuckschwerdt <zany@triq.net>
  *
@@ -32,40 +32,87 @@
 #endif
      
 #include <inttypes.h>
-#include <dirent.h>
 #include <sys/stat.h>
+#include <time.h>
 #include <openobex/obex.h>
+#ifndef OBEX_TRANS_USB
+#define OBEX_TRANS_USB		6
+#endif
 #include "obexftp.h"
+#include "object.h"
 #include "uuid.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-typedef struct obexlist obexlist_t;
-struct obexlist
+
+/* quirks */
+
+#define OBEXFTP_LEADING_SLASH	0x01	/* used in get (and alike) */
+#define OBEXFTP_TRAILING_SLASH	0x02	/* used in list */
+#define OBEXFTP_SPLIT_SETPATH	0x04	/* some phones dont have a cwd */
+
+#define OBEXFTP_USE_LEADING_SLASH(x)	((x & OBEXFTP_LEADING_SLASH) != 0)
+#define OBEXFTP_USE_TRAILING_SLASH(x)	((x & OBEXFTP_TRAILING_SLASH) != 0)
+#define OBEXFTP_USE_SPLIT_SETPATH(x)	((x & OBEXFTP_SPLIT_SETPATH) != 0)
+
+/* dont disable leading slashes unless you disable split setpath */
+#define DEFAULT_OBEXFTP_QUIRKS	\
+	(OBEXFTP_LEADING_SLASH | OBEXFTP_TRAILING_SLASH | OBEXFTP_SPLIT_SETPATH)
+#define DEFAULT_CACHE_TIMEOUT 180	/* 3 minutes */
+#define DEFAULT_CACHE_MAXSIZE 10240	/* 10k */
+
+
+/* types */
+
+typedef struct stat_entry stat_entry_t;
+struct stat_entry {
+	char name[256];
+	mode_t mode;
+	int size;
+	time_t mtime;
+};
+
+typedef struct cache_object cache_object_t;
+struct cache_object
 {
+	cache_object_t *next;
+	int refcnt;
+	time_t timestamp;
+	int size;	/* or uint32_t */
 	char *name;
-	char *content;
-	obexlist_t *sibling;
-	obexlist_t *child;
+	char *content;	/* or uint8_t */
+	stat_entry_t *stats;	/* only if its a parsed directory */
 };
 
 typedef struct obexftp_client
 {
+	/* state */
 	obex_t *obexhandle;
+	int transport; /* the transport for obexhandle */
 	int finished;
 	int success;
 	int obex_rsp;
+	int mutex;	/* should be using pthreads for this */
+	int quirks;
+	/* client */
 	obexftp_info_cb_t infocb;
 	void *infocb_data;
+	/* transfer */
 	int fd; /* used in put body */
 	char *target_fn; /* used in get body */
+	uint32_t buf_size;
+	uint32_t buf_pos;
+	const uint8_t *buf_data;
 	uint8_t *stream_chunk;
-	uint8_t *body_content;
-	char *cwd;
-	obexlist_t *list_root;
+	uint32_t apparam_info;
+	/* persistence */
+	cache_object_t *cache;
+	int cache_timeout;
+	int cache_maxsize;
 } obexftp_client_t;
+
 
 /* session */
 
@@ -76,58 +123,74 @@ typedef struct obexftp_client
 
 void obexftp_cli_close(/*@only@*/ /*@out@*/ /*@null@*/ obexftp_client_t *cli);
 
-int obexftp_cli_connect_uuid(obexftp_client_t *cli, const char *device, int port, const uint8_t uuid[]);
+int obexftp_cli_connect_uuid(obexftp_client_t *cli,
+				/*@null@*/ const char *device, /* for INET, BLUETOOTH */
+				int port, /* INET(?), BLUETOOTH, USB*/
+				/*@null@*/ const uint8_t uuid[]);
 
 #define	obexftp_cli_connect(cli, device, port) \
 	obexftp_cli_connect_uuid(cli, device, port, UUID_FBS)
 
 int obexftp_cli_disconnect(obexftp_client_t *cli);
 
+
 /* transfer */
 
 int obexftp_setpath(obexftp_client_t *cli, /*@null@*/ const char *name, int create);
 
+#define	obexftp_chpath(cli, name) \
+	obexftp_setpath(cli, name, 0)
+
+#define	obexftp_mkpath(cli, name) \
+	obexftp_setpath(cli, name, 1)
+
 #define	obexftp_cdup(cli) \
-	obexftp_setpath(cli, NULL)
+	obexftp_setpath(cli, NULL, 0)
 
 #define	obexftp_cdtop(cli) \
-	obexftp_setpath(cli, "")
+	obexftp_setpath(cli, "", 0)
 
-int obexftp_put(obexftp_client_t *cli, const char *name);
+int obexftp_put(obexftp_client_t *cli, const char *filename);
 
 int obexftp_put_file(obexftp_client_t *cli, const char *localname,
+		     const char *remotename);
+
+int obexftp_put_data(obexftp_client_t *cli, const char *data, int size,
 		     const char *remotename);
 
 int obexftp_del(obexftp_client_t *cli, const char *name);
 
 int obexftp_info(obexftp_client_t *cli, uint8_t opcode);
 
-int obexftp_list(obexftp_client_t *cli,
+int obexftp_get_type(obexftp_client_t *cli,
+		 const char *type,
 		 /*@null@*/ const char *localname,
 		 /*@null@*/ const char *remotename);
 
-int obexftp_get(obexftp_client_t *cli,
-		/*@null@*/  const char *localname,
-		const char *remotename);
+#define	obexftp_get(cli, localname, remotename) \
+	obexftp_get_type(cli, NULL, localname, remotename)
+
+#define	obexftp_list(cli, localname, remotename) \
+	obexftp_get_type(cli, XOBEX_LISTING, localname, remotename)
+
+#define	obexftp_get_capability(cli, localname, remotename) \
+	obexftp_get_type(cli, XOBEX_CAPABILITY, localname, remotename)
 
 int obexftp_rename(obexftp_client_t *cli,
 		   const char *sourcename,
 		   const char *targetname);
 
+
 /* compatible directory handling */
 
-DIR *obexftp_opendir(obexftp_client_t *cli, const char *name);
+void *obexftp_opendir(obexftp_client_t *cli, const char *name);
 
-int obexftp_closedir(DIR *dir);
+int obexftp_closedir(void *dir);
 
-struct dirent *obexftp_readdir(DIR *dir);
+stat_entry_t *obexftp_readdir(void *dir);
 
-int obexftp_stat(obexftp_client_t *cli, const char *name, struct stat *buf);
+stat_entry_t *obexftp_stat(obexftp_client_t *cli, const char *name);
 
-/* cache wrapper */
-
-/*@null@*/ char *obexftp_fast_list(obexftp_client_t *cli,
-		 /*@null@*/ const char *name);
 
 #ifdef __cplusplus
 }

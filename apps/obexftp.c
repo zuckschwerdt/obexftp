@@ -30,7 +30,6 @@
 #include <getopt.h>
 
 #include <sys/types.h>
-#include <dirent.h>
 
 #include <obexftp/obexftp.h>
 #include <obexftp/client.h>
@@ -51,8 +50,6 @@ void DUMPBUFFER(unsigned int n, char *label, char *msg) { }
 
 #define OBEXFTP_PORT "OBEXFTP_PORT"
 #define OBEXFTP_ADDR "OBEXFTP_ADDR"
-
-#define OBEXVERSION "ObexFTP 0.10.7\n"
 
 /* current command, set by main, read from info_cb */
 int c;
@@ -82,10 +79,10 @@ static void info_cb(int event, const char *msg, /*@unused@*/ int len, /*@unused@
 		fprintf(stderr, "Disconnecting...");
 		break;
 	case OBEXFTP_EV_SENDING:
-		fprintf(stderr, "Sending %s... ", msg);
+		fprintf(stderr, "Sending \"%s\"... ", msg);
 		break;
 	case OBEXFTP_EV_RECEIVING:
-		fprintf(stderr, "Receiving %s... ", msg);
+		fprintf(stderr, "Receiving \"%s\"... ", msg);
 		break;
 
 	case OBEXFTP_EV_LISTENING:
@@ -104,7 +101,7 @@ static void info_cb(int event, const char *msg, /*@unused@*/ int len, /*@unused@
 		break;
 
 	case OBEXFTP_EV_BODY:
-		if (c == 'l')
+		if (c == 'l' || c=='X')
 			write(STDOUT_FILENO, msg, len);
 		break;
 
@@ -123,11 +120,15 @@ static int transport = OBEX_TRANS_IRDA;
 /*@only@*/ /*@null@*/ static char *tty = NULL;
 /*@only@*/ /*@null@*/ static char *btaddr = NULL;
 static int btchannel = 10;
+static int usbinterface = -1;
+/*@only@*/ /*@null@*/ static char *inethost = NULL;
+static int use_fbs=1;
 
 static int cli_connect()
 {
 /*@only@*/ /*@null@*/ static obex_ctrans_t *ctrans = NULL;
 	int retry;
+	const char *fbs;
 
 	if (cli != NULL)
 		return TRUE;
@@ -149,11 +150,26 @@ static int cli_connect()
 		//return FALSE;
 	}
 
+        if (use_fbs)
+		fbs = UUID_FBS;
+	else {
+		fbs = NULL;
+		fprintf(stderr, "Suppressing FBS.\n");
+	}
+	
 	for (retry = 0; retry < 3; retry++) {
 
 		/* Connect */
-		if (obexftp_cli_connect (cli, btaddr, btchannel) >= 0)
-			return TRUE;
+                if (transport == OBEX_TRANS_INET) {
+			if (obexftp_cli_connect_uuid (cli, inethost, 0, fbs) >= 0)
+				return TRUE;
+		} else if (transport == OBEX_TRANS_USB) {
+			if (obexftp_cli_connect_uuid (cli, NULL, usbinterface, fbs) >= 0)
+				return TRUE;
+		} else {
+			if (obexftp_cli_connect_uuid (cli, btaddr, btchannel, fbs) >= 0)
+				return TRUE;
+		}
 		fprintf(stderr, "Still trying to connect\n");
 	}
 
@@ -210,7 +226,12 @@ int main(int argc, char *argv[])
 			{"bluetooth",	optional_argument, NULL, 'b'},
 #endif
 			{"channel",	required_argument, NULL, 'B'},
+#ifdef HAVE_USB
+			{"usb",	required_argument, NULL, 'U'},
+#endif
 			{"tty",		required_argument, NULL, 't'},
+			{"network",	required_argument, NULL, 'N'},
+			{"nofbs",	no_argument, NULL, 'F'},
 			{"list",	optional_argument, NULL, 'l'},
 			{"chdir",	required_argument, NULL, 'c'},
 			{"mkdir",	required_argument, NULL, 'C'},
@@ -219,6 +240,7 @@ int main(int argc, char *argv[])
 			{"getdelete",	required_argument, NULL, 'G'},
 			{"put",		required_argument, NULL, 'p'},
 			{"delete",	required_argument, NULL, 'k'},
+			{"capability",	no_argument, NULL, 'X'},
 			{"info",	no_argument, NULL, 'x'},
 			{"move",	required_argument, NULL, 'm'},
 			{"verbose",	no_argument, NULL, 'v'},
@@ -228,7 +250,7 @@ int main(int argc, char *argv[])
 			{0, 0, 0, 0}
 		};
 		
-		c = getopt_long (argc, argv, "-ib::B:t:L::l::c:C:f:g:G:p:k:xm:Vvh",
+		c = getopt_long (argc, argv, "-ib::B:U:t:N:FL::l::c:C:f:g:G:p:k:Xxm:Vvh",
 				 long_options, &option_index);
 		if (c == -1)
 			break;
@@ -265,6 +287,13 @@ int main(int argc, char *argv[])
 			btchannel = atoi(optarg);
 			break;
 #endif /* HAVE_BLUETOOTH */
+
+#ifdef HAVE_USB
+		case 'U':
+			transport = OBEX_TRANS_USB;
+			usbinterface = atoi(optarg);
+			break;
+#endif /* HAVE_USB */
 		
 		case 't':
 			transport = OBEX_TRANS_CUSTOM;
@@ -276,6 +305,23 @@ int main(int argc, char *argv[])
 				fprintf(stderr, "Do you really want to use IrDA via ttys?\n");
 			break;
 
+		case 'N':
+			transport = OBEX_TRANS_INET;
+			if (inethost != NULL)
+				free (inethost); /* ok to to free an optarg? */
+       			inethost = optarg; /* strdup? */
+
+			{
+				int n;
+				if (sscanf(optarg, "%d.%d.%d.%d", &n, &n, &n, &n) != 4)
+					fprintf(stderr, "Please use dotted quad notation.\n");
+			}
+			break;
+
+		case 'F':
+			use_fbs=0;      // ugly, needed to connect to the Nokia 7610 and alike
+			break;
+
 		case 'L':
 			/* handle severed optional option argument */
 			if (!optarg && argc > optind && argv[optind][0] != '-') {
@@ -284,12 +330,13 @@ int main(int argc, char *argv[])
 			}
 			if(cli_connect ()) {
 				/* List folder */
-				struct dirent *ent;
-				DIR *dir = obexftp_opendir(cli, optarg);
+				stat_entry_t *ent;
+				void *dir = obexftp_opendir(cli, optarg);
 				while ((ent = obexftp_readdir(dir)) != NULL) {
-					struct stat st;
-					obexftp_stat(cli, ent->d_name, &st);
-					printf("%ld %s (%d)\n", st.st_size, ent->d_name, ent->d_type);
+					stat_entry_t *st;
+					st = obexftp_stat(cli, ent->name);
+					if (!st) continue;
+					printf("%d %s (%d)\n", st->size, ent->name, ent->mode);
 				}
 				obexftp_closedir(dir);
 			}
@@ -374,6 +421,14 @@ int main(int argc, char *argv[])
 			most_recent_cmd = c;
 			break;
 
+		case 'X':
+			if(cli_connect ()) {
+				/* Get capabilities */
+				(void) obexftp_get_capability(cli, optarg, 0);
+			}
+			most_recent_cmd = 'h'; // not really
+			break;
+
 		case 'x':
 			if(cli_connect ()) {
 				/* for S65 */
@@ -405,14 +460,15 @@ int main(int argc, char *argv[])
 			break;
 			
 		case 'V':
-			printf(OBEXVERSION);
+			printf("ObexFTP %s\n", VERSION);
 			most_recent_cmd = 'h'; // not really
 			break;
 
 		case 'h':
 		case 'u':
-			printf(OBEXVERSION);
-			printf("Usage: %s [-i | -b <dev> [-B <chan>] | -t <dev>] [-l <dir> ...] [-c <dir>]\n"
+			printf("ObexFTP %s\n", VERSION);
+			printf("Usage: %s [ -i | -b <dev> [-B <chan>] | -U <intf> | -t <dev> | -N <host> ]\n"
+				"[-c <dir> ...] [-C <dir> ] [-l [<dir>]]\n"
 				"[-g <file> ...] [-p <files> ...] [-k <files> ...] [-x] [-m <src> <dest> ...]\n"
 				"Transfer files from/to Mobile Equipment.\n"
 				"Copyright (c) 2002-2004 Christian W. Zuckschwerdt\n"
@@ -422,10 +478,14 @@ int main(int argc, char *argv[])
 				" -b, --bluetooth [<device>]  use or search a bluetooth device\n"
 				" [ -B, --channel <number> ]  use this bluetooth channel when connecting\n"
 #endif
-				" -t, --tty <device>          connect to this tty using a custom transport\n\n"
-				" -l, --list [<FOLDER>]       list current/given folder\n"
+#ifdef HAVE_USB
+				" -U, --usb <intf>            connect to this usb interface\n"
+#endif
+				" -t, --tty <device>          connect to this tty using a custom transport\n"
+				" -N, --network <host>        connect to this host\n\n"
 				" -c, --chdir <DIR>           chdir\n"
 				" -C, --mkdir <DIR>           mkdir and chdir\n"
+				" -l, --list [<FOLDER>]       list current/given folder\n"
 				// " -f, --path <PATH>           specify the local file name or directory\n"
 				"                             get and put always specify the remote name.\n"
 				" -g, --get <SOURCE>          fetch files\n"

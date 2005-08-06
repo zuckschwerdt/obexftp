@@ -27,15 +27,16 @@ command given most recent. See B<EXAMPLES>
 
 =item B<-i>, B<--irda>
 
-Connect using the IrDA protocol.
+Connect using the IrDA protocol. This is the default.
 
 =item B<-b> I<device>, B<--bluetooth> I<device>
 
-Connect to this bluetooth device.
+Connect to this bluetooth device. If the device is not given the first device found will be used.
 
 =item B<-B> I<number>, B<--channel> I<number>
 
 Use this bluetooth channel when connecting.
+The channel will be discoverd automatically if this option is not used.
 
 =item B<-t> I<device>, B<--tty> I<device>
 
@@ -48,17 +49,25 @@ List a folder.
 =item B<-c> I<folder>, B<--chdir> I<folder>
 
 Set the mobiles current working directory.
+
+=item B<-C> I<folder>, B<--mkdir> I<folder>
+
+Set the mobiles current working directory.
 The folder will be created if it doesn't exist.
 
 =item B<-g> I<source>, B<--get> I<source>
 
 Retrieve files from mobile.
 
+=item B<-G> I<source>, B<--getdelete> I<source>
+
+Retrieve files from mobile and delete them on the mobile
+
 =item B<-p> I<source>, B<--put> I<source>
 
 Send files to the mobile.
 
-=item B<-k> I<source>, B<--kill> I<source>
+=item B<-k> I<source>, B<--delete> I<source>
 
 Delete files from the mobile.
 
@@ -74,12 +83,36 @@ Move (rename) files on the mobile. Siemens specific for now.
 
 Be verbose and give some additional infos.
 
+=item B<-V>, B<--version>
+
+Print version string and exit.
+
 =item B<-h>, B<--help>, B<--usage>
 
 Print short usage instructions.
 
 =back
 
+=head1 EXAMPLES
+
+=over 8
+
+=item To get the directory listing from the first irda device:
+
+B<obexftp -i -l>
+or just
+B<obexftp -l>
+as IrDA is the default.
+
+=item To get the file bar from directory foo from the first bluetooth device:
+
+B<obexftp -b -c foo -g bar>
+
+=item To send the file bar to directory foo with device on first serial port:
+
+B<obexftp -t /dev/ttyS0 -c foo -p bar>
+
+=back
 
 =head1 SEE ALSO
 
@@ -91,7 +124,7 @@ Bugs ? Features !
 
 =head1 NOTES
 
-The software is tailored for Siemens mobiles like the S45/ME45. Ericsson phones are tested and supported too. Tell me if something goes / goes wrong
+The software is tailored for Siemens mobiles like the S45/ME45. Ericsson phones are tested and supported, too. Tell me if something goes / goes wrong
 using different mobiles.
 
 =head1 AUTHOR

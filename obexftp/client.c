@@ -28,24 +28,24 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <sys/stat.h>
-
+#include <errno.h>
 #include <sys/types.h>
-#include <dirent.h>
 
 #ifdef HAVE_SYS_TIME_H
 #include <sys/time.h>
 #endif
 #include <time.h>
 
-/* htons */
+#ifdef _WIN32
+#define _POSIX_PATH_MAX MAX_PATH
+#endif /* _WIN32 */
+
 #ifdef _WIN32
 #include <winsock.h>
 #else
+#include <sys/socket.h>
+#include <arpa/inet.h>
 #include <netinet/in.h>
-#endif
-
-#ifdef _WIN32
-#define _POSIX_PATH_MAX MAX_PATH
 #endif /* _WIN32 */
 
 #ifdef HAVE_BLUETOOTH
@@ -65,23 +65,9 @@
 #include "object.h"
 #include "obexftp_io.h"
 #include "uuid.h"
+#include "cache.h"
 
-#include "dirtraverse.h"
 #include <common.h>
-
-#ifdef DEBUG_TCP
-#include <unistd.h>
-
-#ifdef _WIN32
-#include <winsock.h>
-#else
-
-#include <sys/socket.h>
-#include <arpa/inet.h>
-#include <netdb.h>
-#include <netinet/in.h>
-#endif
-#endif
 
 
 typedef struct { /* fixed to 6 bytes for now */
@@ -91,36 +77,125 @@ typedef struct { /* fixed to 6 bytes for now */
 } apparam_t;
 
 
-/* recursive SetPath; omit the last component (probably filename) */
-/* return number of setpaths done */
-static int setpath(obexftp_client_t *cli, const char *name)
+static void dummy_info_cb(int event, const char *msg, int len, void *data)
 {
-	int depth = 0;
-	char *p;
-	char *tail;
-	char *copy;
-
-	return_val_if_fail(cli != NULL, -1);
-	return_val_if_fail(name != NULL, -1);
-
-	while (*name == '/') name++;
-	tail = copy = strdup(name);
-
-	for (p = strchr(tail, '/'); p != NULL; p = strchr(p, '/')) {
-		*p = '\0';
-		p++;
-		(void) obexftp_setpath(cli, tail, 0);
-		tail = p;
-		depth++;
-	}
-	free(copy);
-
-	return depth;
+	/* dummy */
 }
 
 
-/* Add more data to stream. */
-static int cli_fillstream(obexftp_client_t *cli, obex_object_t *object)
+/*
+ * Normalize the path argument
+ * wont turn relative paths into (most likely wrong) absolute ones
+ * wont expand "../" or "./"
+ */
+static char *normalize_file_path(const char *name)
+{
+	char *p, *copy;
+
+	return_val_if_fail(name != NULL, NULL);
+
+	p = copy = malloc(strlen(name) + 1); /* cant be longer, can it? */
+/*
+	if (OBEXFTP_USE_LEADING_SLASH(quirks))
+		*p++ = '/';
+	while (*name == '/') name++;
+*/
+	while (*name) {
+		if (*name == '/') {
+			*p++ = *name++;
+			while (*name == '/') name++;
+		} else {
+			*p++ = *name++;
+		}
+	}
+
+	*p = '\0';
+
+	return copy;
+}
+
+
+/*
+ * Normalize the path argument and split into pathname and basename
+ * wont turn relative paths into (most likely wrong) absolute ones
+ * wont expand "../" or "./"
+ * Do not use this function if there is no slash in the argument!
+ */
+static void split_file_path(const char *name, /*@only@*/ char **basepath, /*@only@*/ char **basename)
+{
+	char *p;
+	const char *tail;
+
+	return_if_fail(name != NULL);
+
+	tail = strrchr(name, '/');
+	if (tail)
+		tail++;
+	else
+		tail = name;
+
+	if (basename)
+		*basename = strdup(tail);
+
+	if (!basepath)
+		return;
+
+	p = *basepath = malloc(strlen(name) + 1); /* cant be longer, can it? */
+/*
+	if (OBEXFTP_USE_LEADING_SLASH(quirks))
+		*p++ = '/';
+	while (*name == '/') name++;
+*/
+	while (*name && name < tail) {
+		if (*name == '/') {
+			*p++ = *name++;
+			while (*name == '/') name++;
+		} else {
+			*p++ = *name++;
+		}
+	}
+/*
+	if (p > *basepath && *(p-1) == '/')
+		p--;
+	if (OBEXFTP_USE_TRAILING_SLASH(quirks))
+		*p++ = '/';
+*/
+	*p = '\0';
+}
+
+
+/* Add more data from memory to stream. */
+static int cli_fillstream_from_memory(obexftp_client_t *cli, obex_object_t *object)
+{
+	int actual = cli->buf_size - cli->buf_pos;
+	if (actual > STREAM_CHUNK)
+		actual = STREAM_CHUNK;
+	DEBUG(3, "%s() Read %d bytes\n", __func__, actual);
+	
+	if(actual > 0) {
+		/* Read was ok! */
+		(void) OBEX_ObjectAddHeader(cli->obexhandle, object, OBEX_HDR_BODY,
+				(obex_headerdata_t) (const uint8_t *) &cli->buf_data[cli->buf_pos], actual, OBEX_FL_STREAM_DATA);
+		cli->buf_pos += actual;
+	}
+	else if(actual == 0) {
+		/* EOF */
+		cli->buf_data = NULL; /* dont free, isnt ours */
+		(void) OBEX_ObjectAddHeader(cli->obexhandle, object, OBEX_HDR_BODY,
+				(obex_headerdata_t) (const uint8_t *) &cli->buf_data[cli->buf_pos], 0, OBEX_FL_STREAM_DATAEND);
+	}
+	else {
+		/* Error */
+		cli->buf_data = NULL; /* dont free, isnt ours */
+		(void) OBEX_ObjectAddHeader(cli->obexhandle, object, OBEX_HDR_BODY,
+				(obex_headerdata_t) (const uint8_t *) NULL, 0, OBEX_FL_STREAM_DATA);
+	}
+
+	return actual;
+}
+
+/* Add more data from file to stream. */
+static int cli_fillstream_from_file(obexftp_client_t *cli, obex_object_t *object)
 {
 	int actual;
 		
@@ -158,40 +233,42 @@ static int cli_fillstream(obexftp_client_t *cli, obex_object_t *object)
 /* Save body from object or return application parameters */
 static void client_done(obex_t *handle, obex_object_t *object, /*@unused@*/ int obex_cmd, /*@unused@*/ int obex_rsp)
 {
-        obex_headerdata_t hv;
-        uint8_t hi;
-        uint32_t hlen;
-
-        const uint8_t *body = NULL;
-        int body_len = 0;
-
+	obex_headerdata_t hv;
+	uint8_t hi;
+	uint32_t hlen;
 	apparam_t *app = NULL;
-	uint32_t info;
+	uint8_t *p;
 
 	/*@temp@*/ obexftp_client_t *cli;
 
 	cli = OBEX_GetUserData(handle);
 
-        DEBUG(3, "%s()\n", __func__);
+	DEBUG(3, "%s()\n", __func__);
 
 	if (cli->fd > 0)
 		(void) close(cli->fd);
+	if (cli->buf_data) {
+		DEBUG(1, "%s: Warning: buffer still active?\n", __func__);
+	}
 
-        while(OBEX_ObjectGetNextHeader(handle, object, &hi, &hv, &hlen)) {
-                if(hi == OBEX_HDR_BODY) {
+	while(OBEX_ObjectGetNextHeader(handle, object, &hi, &hv, &hlen)) {
+		if(hi == OBEX_HDR_BODY) {
 			DEBUG(3, "%s() Found body (length: %d)\n", __func__, hlen);
-                        body = hv.bs;
-                        body_len = hlen;
 			if (cli->target_fn == NULL) {
-				if (cli->body_content)
-					free(cli->body_content);
-				cli->body_content = malloc(hlen);
-				if (cli->body_content) {
-					memcpy(cli->body_content, hv.bs, hlen);
-					cli->body_content[hlen - 1] = '\0';
+				if (cli->buf_data) {
+					DEBUG(1, "%s: Warning: purging non-empty buffer.\n", __func__);
+					/* ok to free since we must have malloc' it right here */
+					free(cli->buf_data);
+				}
+				p = malloc(hlen + 1);
+				if (p) {
+					memcpy(p, hv.bs, hlen);
+					p[hlen] = '\0';
+					cli->buf_size = hlen;
+					cli->buf_data = p;
 				}
 			}
-			cli->infocb(OBEXFTP_EV_BODY, body, body_len, cli->infocb_data);
+			cli->infocb(OBEXFTP_EV_BODY, hv.bs, hlen, cli->infocb_data);
 			DEBUG(3, "%s() Done body\n", __func__);
                         /* break; */
                 }
@@ -210,9 +287,9 @@ static void client_done(obex_t *handle, obex_object_t *object, /*@unused@*/ int 
                         if(hlen == sizeof(apparam_t)) {
 				app = (apparam_t *)hv.bs;
 				 /* needed for alignment */
-				memcpy(&info, &(app->info), sizeof(info));
-				info = ntohl(info);
-				cli->infocb(OBEXFTP_EV_INFO, (void *)info, 0, cli->infocb_data);
+				memcpy(&cli->apparam_info, &app->info, sizeof(cli->apparam_info));
+				cli->apparam_info = ntohl(cli->apparam_info);
+				cli->infocb(OBEXFTP_EV_INFO, (void *)cli->apparam_info, 0, cli->infocb_data);
 			}
 			else
 				DEBUG(3, "%s() Application parameters don't fit %d vs. %d.\n", __func__, hlen, sizeof(apparam_t));
@@ -223,8 +300,8 @@ static void client_done(obex_t *handle, obex_object_t *object, /*@unused@*/ int 
                 }
         }
 
-        if(body) {
-		if (body_len > 0) {
+        if(cli->buf_data) {
+		if (cli->buf_size > 0) {
 			if (cli->target_fn != NULL) {
 				/* simple body writer */
 				int fd;
@@ -232,7 +309,7 @@ static void client_done(obex_t *handle, obex_object_t *object, /*@unused@*/ int 
 				fd = creat(cli-> target_fn,
 					   S_IRUSR|S_IWUSR|S_IRGRP|S_IROTH);
 				if(fd > 0) {
-					(void) write(fd, body, body_len);
+					(void) write(fd, cli->buf_data, cli->buf_size);
 					(void) close(fd);
 				} else {
 					DEBUG(3, "%s() Error writing body\n", __func__);
@@ -248,7 +325,7 @@ static void client_done(obex_t *handle, obex_object_t *object, /*@unused@*/ int 
         }
         if(app) {
 		DEBUG(3, "%s() Appcode %d, data (%d) %d\n", __func__,
-			app->code, app->info_len, info);
+			app->code, app->info_len, cli->apparam_info);
 
         }
 }
@@ -278,12 +355,15 @@ static void cli_obex_event(obex_t *handle, obex_object_t *object, /*@unused@*/ i
 		break;
 	
 	case OBEX_EV_LINKERR:
-		cli->finished = 1;
+		cli->finished = TRUE;
 		cli->success = FALSE;
 		break;
 	
 	case OBEX_EV_STREAMEMPTY:
-		(void) cli_fillstream(cli, object);
+		if (cli->buf_data)
+			(void) cli_fillstream_from_memory(cli, object);
+		else
+			(void) cli_fillstream_from_file(cli, object);
 		break;
 	
 	default:
@@ -321,6 +401,8 @@ static int cli_sync_request(obexftp_client_t *cli, obex_object_t *object)
 {
 	DEBUG(3, "%s()\n", __func__);
 
+	if (cli->finished == FALSE)
+		return -EBUSY;
 	cli->finished = FALSE;
 	(void) OBEX_Request(cli->obexhandle, object);
 
@@ -332,36 +414,36 @@ static int cli_sync_request(obexftp_client_t *cli, obex_object_t *object)
 obexftp_client_t *obexftp_cli_open(int transport, /*const*/ obex_ctrans_t *ctrans, obexftp_info_cb_t infocb, void *infocb_data)
 {
 	obexftp_client_t *cli;
-	return_val_if_fail(infocb != NULL, NULL);
 
 	DEBUG(3, "%s()\n", __func__);
 	cli = calloc (1, sizeof(obexftp_client_t));
 	if(cli == NULL)
 		return NULL;
 
-	cli->infocb = infocb;
+	cli->finished = TRUE;
+
+	if (infocb)
+		cli->infocb = infocb;
+	else
+		cli->infocb = dummy_info_cb;
 	cli->infocb_data = infocb_data;
+		
+	cli->quirks = DEFAULT_OBEXFTP_QUIRKS;
+	cli->cache_timeout = DEFAULT_CACHE_TIMEOUT;
+	cli->cache_maxsize = DEFAULT_CACHE_MAXSIZE;
+
 	cli->fd = -1;
 
-#ifdef DEBUG_TCP
-	cli->obexhandle = OBEX_Init(OBEX_TRANS_INET, cli_obex_event, 0);
-#else
 	if ( ctrans ) {
                 DEBUG(2, "Do the cable-OBEX!\n");
-		cli->obexhandle = OBEX_Init(OBEX_TRANS_CUSTOM, cli_obex_event, 0);
         }
-	else
-#ifdef HAVE_BLUETOOTH
-		cli->obexhandle = OBEX_Init(OBEX_TRANS_BLUETOOTH, cli_obex_event, 0);
-#else
-		cli->obexhandle = OBEX_Init(OBEX_TRANS_IRDA, cli_obex_event, 0);
-#endif		
-#endif
+       	cli->obexhandle = OBEX_Init(transport, cli_obex_event, 0);
 
 	if(cli->obexhandle == NULL) {
 		free(cli);
 		return NULL;
 	}
+	cli->transport = transport;
 
 	if ( ctrans ) {
 		/* OBEX_RegisterCTransport is const to ctrans ... */
@@ -381,7 +463,7 @@ obexftp_client_t *obexftp_cli_open(int transport, /*const*/ obex_ctrans_t *ctran
 	return cli;
 }
 	
-/* Close an obexftp client */
+/* Close an obexftp client and free the resources */
 void obexftp_cli_close(obexftp_client_t *cli)
 {
 	DEBUG(3, "%s()\n", __func__);
@@ -395,54 +477,85 @@ void obexftp_cli_close(obexftp_client_t *cli)
 /* Do connect as client */
 int obexftp_cli_connect_uuid(obexftp_client_t *cli, const char *device, int port, const uint8_t uuid[])
 {
+	struct sockaddr_in peer;
+#ifdef HAVE_BLUETOOTH
+	bdaddr_t bdaddr;
+#endif
+#ifdef HAVE_USB
+	struct usb_obex_intf *usb_intf;
+#endif
 	obex_object_t *object;
 	int ret = -1; /* no connection yet */
 
 	DEBUG(3, "%s()\n", __func__);
-	return_val_if_fail(cli != NULL, -1);
+	return_val_if_fail(cli != NULL, -EINVAL);
 
 	cli->infocb(OBEXFTP_EV_CONNECTING, "", 0, cli->infocb_data);
-#ifdef DEBUG_TCP
-	{
-		struct sockaddr_in peer;
-		u_long inaddr;
-		if ((inaddr = inet_addr("127.0.0.1")) != INADDR_NONE) {
-			memcpy((char *) &peer.sin_addr, (char *) &inaddr,
-			      sizeof(inaddr));  
-		}
 
-		ret = OBEX_TransportConnect(cli->obexhandle, (struct sockaddr *) &peer,
-					  sizeof(struct sockaddr_in));
-		DEBUG(3, "%s() TCP %d\n", __func__, ret);
-	}
+	switch (cli->transport) {
+
+	case OBEX_TRANS_IRDA:
+		ret = IrOBEX_TransportConnect(cli->obexhandle, "OBEX");
+		DEBUG(3, "%s() IR %d\n", __func__, ret);
+		break;
 		
-#else
+	case OBEX_TRANS_INET:
+		if (!device) {
+			ret = -EINVAL;
+			break;
+		}
+		if (inet_aton(device, &peer.sin_addr)) {
+			peer.sin_port = htons(port); /* overridden with OBEX_PORT 650 anyhow */
+			ret = OBEX_TransportConnect(cli->obexhandle, (struct sockaddr *) &peer,
+						  sizeof(struct sockaddr_in));
+			DEBUG(3, "%s() TCP %d\n", __func__, ret);
+		} else
+			ret = -EINVAL; /* is there a better errno? */
+		break;
+
+	case OBEX_TRANS_CUSTOM:
+		ret = OBEX_TransportConnect(cli->obexhandle, NULL, 0);
+		DEBUG(3, "%s() TC %d\n", __func__, ret);
+		break;
 
 #ifdef HAVE_BLUETOOTH
-	if (device != NULL)
-	{
-		bdaddr_t bdaddr;
-		uint8_t channel = port;
-
-		str2ba(device, &bdaddr);
-		ret = BtOBEX_TransportConnect(cli->obexhandle, BDADDR_ANY, &bdaddr, channel);
+	case OBEX_TRANS_BLUETOOTH:
+		if (!device) {
+			ret = -EINVAL;
+			break;
+		}
+		(void) str2ba(device, &bdaddr); /* what is the meaning of the return code? */
+		ret = BtOBEX_TransportConnect(cli->obexhandle, BDADDR_ANY, &bdaddr, (uint8_t)port);
 		DEBUG(3, "%s() BT %d\n", __func__, ret);
+		break;
+#endif /* HAVE_BLUETOOTH */
 
-		fprintf(stderr,"bt: %d\n",ret);
+#ifdef HAVE_USB
+	case OBEX_TRANS_USB:
+		usb_intf = UsbOBEX_GetInterfaces(cli->obexhandle);
+		DEBUG(3, "%s() \n", __func__);
+		while (usb_intf && port > 0) {
+			DEBUG(2, "%s() Skipping intf %s\n", __func__, usb_intf->device);
+			usb_intf = usb_intf->next;
+			port--;
+		}
+		if (!usb_intf) {
+			DEBUG(1, "%s() %d is an invalid USB interface number\n", __func__, port);
+			ret = -EINVAL; /* is there a better errno? */
+		} else
+			ret = UsbOBEX_TransportConnect(cli->obexhandle, usb_intf);
+		break;
+#endif /* HAVE_USB */
 
+	default:
+		ret = -ESOCKTNOSUPPORT;
+		break;
 	}
-#endif
-	if (ret == -1 /* -ESOCKTNOSUPPORT */)
-		ret = IrOBEX_TransportConnect(cli->obexhandle, "OBEX");
-	DEBUG(3, "%s() IR %d\n", __func__, ret);
-	if (ret == -1 /* -ESOCKTNOSUPPORT */)
-		ret = OBEX_TransportConnect(cli->obexhandle, NULL, 0);
-	DEBUG(3, "%s() TC %d\n", __func__, ret);
-#endif
+
 	if (ret < 0) {
 		/* could be -EBUSY or -ESOCKTNOSUPPORT */
 		cli->infocb(OBEXFTP_EV_ERR, "connect", 0, cli->infocb_data);
-		return -1;
+		return ret;
 	}
 
 #ifdef COMPAT_S45
@@ -462,14 +575,16 @@ int obexftp_cli_connect_uuid(obexftp_client_t *cli, const char *device, int port
 		cli->infocb(OBEXFTP_EV_ERR, "S45 UUID", 0, cli->infocb_data);
 #endif
 		object = OBEX_ObjectNew(cli->obexhandle, OBEX_CMD_CONNECT);
-		if(OBEX_ObjectAddHeader(cli->obexhandle, object, OBEX_HDR_TARGET,
-                	                (obex_headerdata_t) uuid,
-        	                        sizeof(UUID_FBS),
-	                                OBEX_FL_FIT_ONE_PACKET) < 0)    {
-        	        DEBUG(1, "Error adding header\n");
-	                OBEX_ObjectDelete(cli->obexhandle, object);
-                	return -1;
-        	}
+		if (uuid) {
+			if(OBEX_ObjectAddHeader(cli->obexhandle, object, OBEX_HDR_TARGET,
+        	        	                (obex_headerdata_t) uuid,
+        		                        sizeof(UUID_FBS),
+	                	                OBEX_FL_FIT_ONE_PACKET) < 0)    {
+	        	        DEBUG(1, "Error adding header\n");
+		                OBEX_ObjectDelete(cli->obexhandle, object);
+                		return -1;
+	        	}
+		}
 		ret = cli_sync_request(cli, object);
 #ifdef COMPAT_S45
 	}
@@ -490,7 +605,7 @@ int obexftp_cli_disconnect(obexftp_client_t *cli)
 	int ret;
 
 	DEBUG(3, "%s()\n", __func__);
-	return_val_if_fail(cli != NULL, -1);
+	return_val_if_fail(cli != NULL, -EINVAL);
 
 	cli->infocb(OBEXFTP_EV_DISCONNECTING, "", 0, cli->infocb_data);
 
@@ -513,7 +628,7 @@ int obexftp_info(obexftp_client_t *cli, uint8_t opcode)
 	obex_object_t *object = NULL;
 	int ret;
 
-	return_val_if_fail(cli != NULL, -1);
+	return_val_if_fail(cli != NULL, -EINVAL);
 
 	cli->infocb(OBEXFTP_EV_RECEIVING, "info", 0, cli->infocb_data);
 
@@ -525,85 +640,59 @@ int obexftp_info(obexftp_client_t *cli, uint8_t opcode)
  
 	ret = cli_sync_request(cli, object);
 		
-	if(ret < 0) 
+	if(ret < 0) {
 		cli->infocb(OBEXFTP_EV_ERR, "info", 0, cli->infocb_data);
-	else
+	} else
 		cli->infocb(OBEXFTP_EV_OK, "info", 0, cli->infocb_data);
-
+	
 	return ret;
 }
 
-/* Do an OBEX GET with TYPE. localname and remotename may be null. */
-int obexftp_list(obexftp_client_t *cli, const char *localname, const char *remotename)
+/* Do an OBEX GET with optional TYPE. localname and remotename may be null. */
+/* Directories will be changed into first if split path quirk is set. */
+int obexftp_get_type(obexftp_client_t *cli, const char *type, const char *localname, const char *remotename)
 {
 	obex_object_t *object = NULL;
 	int ret;
 
-	return_val_if_fail(cli != NULL, -1);
+	return_val_if_fail(cli != NULL, -EINVAL);
+	return_val_if_fail(remotename != NULL || type != NULL, -EINVAL);
+
+	if (cli->buf_data) {
+		DEBUG(1, "%s: Warning: buffer still active?\n", __func__);
+	}
 
 	cli->infocb(OBEXFTP_EV_RECEIVING, remotename, 0, cli->infocb_data);
-
-	DEBUG(2, "%s() Listing %s -> %s\n", __func__, remotename, localname);
 
 	if (localname && *localname)
 		cli->target_fn = strdup(localname);
 	else
 		cli->target_fn = NULL;
 
-	while (remotename && *remotename == '/') remotename++;
-	object = obexftp_build_get_type (cli->obexhandle, remotename, XOBEX_LISTING);
-        if(object == NULL)
-                return -1;
+	if (OBEXFTP_USE_SPLIT_SETPATH(cli->quirks) && remotename && strchr(remotename, '/')) {
+		char *basepath, *basename;
+		split_file_path(remotename, &basepath, &basename);
+		ret = obexftp_setpath(cli, basepath, 0);
+		if(ret < 0) {
+			cli->infocb(OBEXFTP_EV_ERR, basepath, 0, cli->infocb_data);
+			return ret;
+		}
+
+		DEBUG(2, "%s() Getting %s -> %s (%s)\n", __func__, basename, localname, type);
+		object = obexftp_build_get (cli->obexhandle, basename, type);
+		free(basepath);
+		free(basename);
+	} else {
+		DEBUG(2, "%s() Getting %s -> %s (%s)\n", __func__, remotename, localname, type);
+		object = obexftp_build_get (cli->obexhandle, remotename, type);
+	}
+
+	if(object == NULL)
+		return -1;
 
 	ret = cli_sync_request(cli, object);
 		
 	if(ret < 0) 
-		cli->infocb(OBEXFTP_EV_ERR, remotename, 0, cli->infocb_data);
-	else
-		cli->infocb(OBEXFTP_EV_OK, remotename, 0, cli->infocb_data);
-
-	return ret;
-}
-
-
-/* Do an OBEX GET. Directories will be changed into first. */
-int obexftp_get(obexftp_client_t *cli, const char *localname, const char *remotename)
-{
-	obex_object_t *object = NULL;
-	int ret;
-
-	return_val_if_fail(cli != NULL, -1);
-	return_val_if_fail(remotename != NULL, -1);
-
-	cli->infocb(OBEXFTP_EV_RECEIVING, remotename, 0, cli->infocb_data);
-
-// this was a bad idea from the start
-if(0) {
-	int depth;
-	const char *p;
-	depth = setpath(cli, remotename);
-	if ((p = strrchr(remotename, '/')))
-		p++;
-	else
-		p = remotename;
-}
-	DEBUG(2, "%s() Getting %s -> %s\n", __func__, remotename, localname);
-
-	if (localname && *localname)
-		cli->target_fn = strdup(localname);
-	else
-		cli->target_fn = NULL;
-
-        object = obexftp_build_get (cli->obexhandle, remotename);
-        if(object == NULL)
-                return -1;
-	
-	ret = cli_sync_request(cli, object);
-/*
-	while (depth-- > 0)
-		(void) obexftp_setpath(cli, NULL);
-*/
-	if(ret < 0)
 		cli->infocb(OBEXFTP_EV_ERR, remotename, 0, cli->infocb_data);
 	else
 		cli->infocb(OBEXFTP_EV_OK, remotename, 0, cli->infocb_data);
@@ -618,7 +707,7 @@ int obexftp_rename(obexftp_client_t *cli, const char *sourcename, const char *ta
 	obex_object_t *object = NULL;
 	int ret;
 
-	return_val_if_fail(cli != NULL, -1);
+	return_val_if_fail(cli != NULL, -EINVAL);
 
 	cli->infocb(OBEXFTP_EV_SENDING, sourcename, 0, cli->infocb_data);
 
@@ -628,6 +717,7 @@ int obexftp_rename(obexftp_client_t *cli, const char *sourcename, const char *ta
         if(object == NULL)
                 return -1;
 	
+	cache_purge(&cli->cache, NULL);
 	ret = cli_sync_request(cli, object);
 		
 	if(ret < 0)
@@ -645,16 +735,33 @@ int obexftp_del(obexftp_client_t *cli, const char *name)
 	obex_object_t *object;
 	int ret;
 
-	return_val_if_fail(cli != NULL, -1);
+	return_val_if_fail(cli != NULL, -EINVAL);
 
 	cli->infocb(OBEXFTP_EV_SENDING, name, 0, cli->infocb_data);
 
-	DEBUG(2, "%s() Deleting %s\n", __func__, name);
+	/* split path and go there first */
+	if (OBEXFTP_USE_SPLIT_SETPATH(cli->quirks) && name && strchr(name, '/')) {
+		char *basepath, *basename;
+		split_file_path(name, &basepath, &basename);
+		ret = obexftp_setpath(cli, basepath, 0);
+		if(ret < 0) {
+			cli->infocb(OBEXFTP_EV_ERR, basepath, 0, cli->infocb_data);
+			return ret;
+		}
 
-        object = obexftp_build_del (cli->obexhandle, name);
-        if(object == NULL)
-                return -1;
+		DEBUG(2, "%s() Deleting %s\n", __func__, basename);
+		object = obexftp_build_del (cli->obexhandle, basename);
+		free(basepath);
+		free(basename);
+	} else {
+		DEBUG(2, "%s() Deleting %s\n", __func__, name);
+		object = obexftp_build_del (cli->obexhandle, name);
+	}
+
+	if(object == NULL)
+		return -1;
 	
+	cache_purge(&cli->cache, NULL);
 	ret = cli_sync_request(cli, object);
 	
 	if(ret < 0)
@@ -666,21 +773,18 @@ int obexftp_del(obexftp_client_t *cli, const char *name)
 }
 
 
-/* Do OBEX SetPath -- change up if name is NULL */
+/* Do OBEX SetPath -- handles NULL, "", "/" and everything else correctly */
 int obexftp_setpath(obexftp_client_t *cli, const char *name, int create)
 {
 	obex_object_t *object;
 	int ret = 0;
 	char *copy, *tail, *p;
 
-	return_val_if_fail(cli != NULL, -1);
-
-	cli->infocb(OBEXFTP_EV_SENDING, name, 0, cli->infocb_data); /* FIXME */
+	return_val_if_fail(cli != NULL, -EINVAL);
 
 	DEBUG(2, "%s() Changing to %s\n", __func__, name);
 
-	if (name && *name) {
-		while (*name == '/') name++;
+	if (OBEXFTP_USE_SPLIT_SETPATH(cli->quirks) && name && *name && strchr(name, '/')) {
 		tail = copy = strdup(name);
 
 		for (p = strchr(tail, '/'); tail; ) {
@@ -690,18 +794,27 @@ int obexftp_setpath(obexftp_client_t *cli, const char *name, int create)
 			}
 	
 			cli->infocb(OBEXFTP_EV_SENDING, tail, 0, cli->infocb_data);
+			DEBUG(2, "%s() Setpath \"%s\"\n", __func__, tail);
 			object = obexftp_build_setpath (cli->obexhandle, tail, create);
 			ret = cli_sync_request(cli, object);
-			if(ret < 0) break;
+			if (ret < 0) break;
 
 			tail = p;
-			if(p) p = strchr(p, '/');
+			if (p)
+				p = strchr(p, '/');
+			/* prevent a trailing slash from messing all up with a cd top */
+			if (*tail == '\0')
+				break;
 		}
-		free(copy);
+		free (copy);
 	} else {
+		cli->infocb(OBEXFTP_EV_SENDING, name, 0, cli->infocb_data);
+		DEBUG(2, "%s() Setpath \"%s\"\n", __func__, name);
 		object = obexftp_build_setpath (cli->obexhandle, name, create);
 		ret = cli_sync_request(cli, object);
 	}
+	if (create)
+		cache_purge(&cli->cache, NULL); /* no way to know where we started */
 
 	if(ret < 0)
 		cli->infocb(OBEXFTP_EV_ERR, name, 0, cli->infocb_data);
@@ -711,17 +824,19 @@ int obexftp_setpath(obexftp_client_t *cli, const char *name, int create)
 	return ret;
 }
 
-/* Do an OBEX PUT. */
+/* Do an OBEX PUT, optionally with (some) setpath. */
+/* put to localname's basename if remotename is NULL or ends with a slash*/
 int obexftp_put_file(obexftp_client_t *cli, const char *localname, const char *remotename)
 {
 	obex_object_t *object;
 	int ret;
-/*	int depth = 0;	*/
-/*	const char *p;	*/
 
-	return_val_if_fail(cli != NULL, -1);
-	return_val_if_fail(localname != NULL, -1);
+	return_val_if_fail(cli != NULL, -EINVAL);
+	return_val_if_fail(localname != NULL, -EINVAL);
 
+	if (cli->buf_data) {
+		DEBUG(1, "%s: Warning: buffer still active?\n", __func__);
+	}
 	cli->infocb(OBEXFTP_EV_SENDING, localname, 0, cli->infocb_data);
 /*
 	if (!remotename) {
@@ -729,30 +844,36 @@ int obexftp_put_file(obexftp_client_t *cli, const char *localname, const char *r
 		if (remotename)
 			remotename++;
 	}
-
-	depth = setpath(cli, remotename);
-	if ((p = strrchr(remotename, '/')))
-		p++;
-	else
-		p = remotename;
-
-	while (*remotename == '/') remotename++;
 */
-	DEBUG(2, "%s() Sending %s -> %s\n", __func__, localname, remotename);
 
-	object = build_object_from_file (cli->obexhandle, localname, remotename);
+	if (OBEXFTP_USE_SPLIT_SETPATH(cli->quirks) && remotename && strchr(remotename, '/')) {
+		char *basepath, *basename;
+		split_file_path(remotename, &basepath, &basename);
+		ret = obexftp_setpath(cli, basepath, 0);
+		if(ret < 0) {
+			cli->infocb(OBEXFTP_EV_ERR, basepath, 0, cli->infocb_data);
+			return ret;
+		}
+
+		DEBUG(2, "%s() Sending %s -> %s\n", __func__, localname, basename);
+		object = build_object_from_file (cli->obexhandle, localname, basename);
+		free(basepath);
+		free(basename);
+	} else {
+		DEBUG(2, "%s() Sending %s -> %s\n", __func__, localname, remotename);
+		object = build_object_from_file (cli->obexhandle, localname, remotename);
+	}
 	
 	cli->fd = open(localname, O_RDONLY, 0);
 	if(cli->fd < 0)
 		ret = -1;
-	else
+	else {
+		cache_purge(&cli->cache, NULL);
 		ret = cli_sync_request(cli, object);
+	}
 	
 	/* close(cli->fd); */
-/*
-	while (depth-- > 0)
-		(void) obexftp_setpath(cli, NULL);
-*/
+
 	if(ret < 0)
 		cli->infocb(OBEXFTP_EV_ERR, localname, 0, cli->infocb_data);
 	else
@@ -761,269 +882,66 @@ int obexftp_put_file(obexftp_client_t *cli, const char *localname, const char *r
 	return ret;
 }
 
-/* Callback from dirtraverse. */
-static int obexftp_visit(int action, const char *name, /*@unused@*/ const char *path, void *userdata)
+/* Put memory data - a remotename must be given always! */
+int obexftp_put_data(obexftp_client_t *cli, const char *data, int size,
+		     const char *remotename)
 {
-	const char *remotename;
-	int ret = -1;
+	obex_object_t *object;
+	int ret;
 
-	DEBUG(3, "%s()\n", __func__);
-	switch(action) {
-	case VISIT_FILE:
-		/* Strip /'s before sending file */
-		remotename = strrchr(name, '/');
-		if(remotename == NULL)
-			remotename = name;
-		else
-			remotename++;
-		ret = obexftp_put_file(userdata, name, remotename);
-		break;
+	return_val_if_fail(cli != NULL, -EINVAL);
+	return_val_if_fail(remotename != NULL, -EINVAL);
 
-	case VISIT_GOING_DEEPER:
-		ret = obexftp_setpath(userdata, name, 0);
-		break;
-
-	case VISIT_GOING_UP:
-		ret = obexftp_setpath(userdata, NULL, 0);
-		break;
+	if (cli->buf_data) {
+		DEBUG(1, "%s: Warning: buffer still active?\n", __func__);
 	}
-	DEBUG(3, "%s() returning %d\n", __func__, ret);
+
+	cli->infocb(OBEXFTP_EV_SENDING, remotename, 0, cli->infocb_data);
+
+	if (OBEXFTP_USE_SPLIT_SETPATH(cli->quirks) && remotename && strchr(remotename, '/')) {
+		char *basepath, *basename;
+		split_file_path(remotename, &basepath, &basename);
+		ret = obexftp_setpath(cli, basepath, 0);
+		if(ret < 0) {
+			cli->infocb(OBEXFTP_EV_ERR, basepath, 0, cli->infocb_data);
+			return ret;
+		}
+
+		DEBUG(2, "%s() Sending memdata -> %s\n", __func__, basename);
+		object = obexftp_build_put (cli->obexhandle, basename, size);
+		free(basepath);
+		free(basename);
+	} else {
+		DEBUG(2, "%s() Sending memdata -> %s\n", __func__, remotename);
+		object = obexftp_build_put (cli->obexhandle, remotename, size);
+	}
+
+	cli->buf_data = data; /* memcpy would be safer */
+	cli->buf_size = size;
+	cli->buf_pos = 0;
+	cli->fd = -1;
+	
+	cache_purge(&cli->cache, NULL);
+	ret = cli_sync_request(cli, object);
+
+	if(ret < 0)
+		cli->infocb(OBEXFTP_EV_ERR, remotename, 0, cli->infocb_data);
+	else
+		cli->infocb(OBEXFTP_EV_OK, remotename, 0, cli->infocb_data);
+
 	return ret;
 }
 
-/* Put file or directory */
+
+/* Put file to its basename */
 int obexftp_put(obexftp_client_t *cli, const char *name)
 {
-	struct stat statbuf;
-	char *origdir;
-	int ret;
-	
-	/* Remember cwd */
-	if((origdir = malloc(_POSIX_PATH_MAX)) == NULL)
-		return -1;
-	if(getcwd(origdir, _POSIX_PATH_MAX) == NULL) {
-		free(origdir);
-		return -1;
-	}
-
-	if(stat(name, &statbuf) == -1) {
-		return -1;
-	}
-	
-	/* This is a directory. CD into it */
-	if(S_ISDIR(statbuf.st_mode)) {
-		char *newdir;
-		char *dirname;
-		
-		chdir(name);
-		name = ".";
-		
-		/* Get real name of new wd, extract last part of and do setpath to it */
-		if((newdir = malloc(_POSIX_PATH_MAX)) == NULL)
-			return -1;
-		newdir = getcwd(newdir, _POSIX_PATH_MAX);
-		dirname = strrchr(newdir, '/') + 1;
-		if(strlen(dirname) != 0)
-			obexftp_setpath(cli, dirname, 0);
-
-		free(newdir);
-	}
-	
-	ret = visit_all_files(name, obexftp_visit, cli);
-
-	(void) chdir(origdir);
-	free(origdir);
-	return ret;
-}
-
-
-/* cache wrapper */
-
-/* Do an OBEX GET with TYPE. Directories will be changed into first. */
-char *obexftp_fast_list(obexftp_client_t *cli, const char *name)
-{
-	obex_object_t *object = NULL;
-	int ret;
-
-	return_val_if_fail(cli != NULL, NULL);
-	return_val_if_fail(name != NULL, NULL);
-
-	cli->infocb(OBEXFTP_EV_RECEIVING, name, 0, cli->infocb_data);
-
-	DEBUG(2, "%s() Listing %s\n", __func__, name);
-
-	if (cli->target_fn)
-		free (cli->target_fn);
-       	cli->target_fn = NULL;
-
-	while (*name == '/') name++;
-        object = obexftp_build_get_type (cli->obexhandle, name, XOBEX_LISTING);
-        if(object == NULL)
-                return NULL;
-
-	ret = cli_sync_request(cli, object);
-		
-	if(ret < 0) 
-		cli->infocb(OBEXFTP_EV_ERR, name, 0, cli->infocb_data);
+	const char *basename;
+	basename = strrchr(name, '/');
+	if (basename)
+		basename++;
 	else
-		cli->infocb(OBEXFTP_EV_OK, name, 0, cli->infocb_data);
+		basename = name;
 
-	return cli->body_content;
+	return obexftp_put_file(cli, name, basename);
 }
-
-/* directory handling */
-
-struct dirstream {
-	char *dir;
-	char *ptr;
-};
-
-typedef struct statentry STATENTRY;
-
-struct statentry {
-	char name[256];
-	int type;
-	int size;
-	time_t mtime;
-	STATENTRY *next;
-};
-
-char *statdir = NULL;
-STATENTRY *statbuf = NULL;
-
-static time_t atotime (const char *date)
-{
-	struct tm tm;
-
-	if (6 == sscanf(date, "%4d%2d%2dT%2d%2d%2d",
-			&tm.tm_year, &tm.tm_mday, &tm.tm_mon,
-			&tm.tm_hour, &tm.tm_min, &tm.tm_sec)) {
-		tm.tm_year -= 1900;
-		tm.tm_mon--;
-	}
-	tm.tm_isdst = 0;
-
-	return mktime(&tm);
-}
-
-DIR *obexftp_opendir(obexftp_client_t *cli, const char *name)
-{
-	/* purge stat buffer */
-	while (statbuf != NULL) {
-		STATENTRY *p = statbuf->next;
-		free(statbuf);
-		statbuf = p;
-	}
-	statbuf = NULL;
-
-	/* read dir */
-	struct dirstream *stream = malloc(sizeof(struct dirstream));
-	int res = 0;
-
-	/* List folder */
-	res = obexftp_list(cli, NULL, name);
-	if(res <= 0)
-		return NULL; /* errno */
-
-	stream->dir = cli->body_content;
-	stream->ptr = cli->body_content;
-
-	return (DIR *)stream;
-}
-
-int obexftp_closedir(DIR *dir)
-{
-	struct dirstream *d;
-	if (!dir)
-		return -1;
-	d = (struct dirstream *)dir;
-	free(d->dir);
-	free(d);
-	return 0;
-}
-
-struct dirent *obexftp_readdir(DIR *dir)
-{
-	struct dirstream *d;
-	struct dirent *ent;
-
-	char *line;
-	char name[200]; // bad coder
-	char mod[200]; // - no biscuits!
-	char size[200]; // int would be ok too.
-	int i;
-
-	if (!dir)
-		return NULL;
-
-	d = (struct dirstream *)dir;
-	ent = malloc(sizeof(struct dirent));
-
-	while (d->ptr) {
-		d->ptr = strchr(d->ptr, '<');
-		if (!(d->ptr))
-			return NULL;
-		line = d->ptr;
-		d->ptr = strchr(line, '>');
-		if (!(d->ptr))
-			return NULL;
-
-		*(d->ptr) = '\0';
-		(d->ptr)++;
-
-		if (2 == sscanf (line, "<folder name=\"%[^\"]\" modified=\"%[^\"]\"", name, mod)) {
-			STATENTRY *statent = malloc(sizeof(STATENTRY));
-			ent->d_type = DT_DIR;
-			strcpy(ent->d_name, name);
-
-			statent->type = DT_DIR;
-			strcpy(statent->name, name);
-			statent->mtime = atotime(mod);
-			statent->size = 0;
-			statent->next = statbuf;
-			statbuf = statent;
-			return ent;
-		}
-		if (3 == sscanf (line, "<file name=\"%[^\"]\" size=\"%[^\"]\" modified=\"%[^\"]\"", name, size, mod)) {
-			STATENTRY *statent = malloc(sizeof(STATENTRY));
-			ent->d_type = DT_REG;
-			strcpy(ent->d_name, name);
-			
-			statent->type = DT_REG;
-			strcpy(statent->name, name);
-			statent->mtime = atotime(mod);
-			statent->size = 0;
-			sscanf(size, "%i", &i);
-			statent->size = i; /* int to off_t */
-			statent->next = statbuf;
-			statbuf = statent;
-			return ent;
-		}
-		// handle hidden folder!
-	}
-	return NULL;
-}
-
-int obexftp_stat(obexftp_client_t *cli, const char *name, struct stat *buf)
-{
-	STATENTRY *p;
-	/* see if statbuf is recent */
-//	if (not recent) {
-//		DIR *dir = obexftp_opendir(cli, parent);
-//		while (obexftp_readdir(dir) != NULL);
-//		obexftp_closedir(dir);
-//	}
-
-	/* search */
-	for (p = statbuf; p; p = p->next) {
-		if (!strcmp(p->name, name)) {
-			buf->st_mode = p->type;
-			buf->st_mtime = p->mtime;
-			buf->st_size = p->size;
-		
-			return 0;
-		}
-	}
-	return -1;
-}
-

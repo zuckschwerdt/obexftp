@@ -1,3 +1,47 @@
+2005-08-06  Christian W. Zuckschwerdt  <zany@triq.net>
+
+	* Nokia hack (suppressing FBS)
+	* Capabilty retrieving by Marco Canini <marco.canini@fastwebnet.it>
+
+2005-06-27  Christian W. Zuckschwerdt  <zany@triq.net>
+
+	* USB support, mainly by Daniel Burr <joaniemrc@dodo.com.au>
+
+2005-06-19  Christian W. Zuckschwerdt  <zany@triq.net>
+
+	* Added implicit setpath support in every function.
+
+2005-06-11  Christian W. Zuckschwerdt  <zany@triq.net>
+
+	* Fixed quoting problem. Lets hope this wont break libtool.
+
+2005-06-10  Christian W. Zuckschwerdt  <zany@triq.net>
+
+	* Added simple caching
+	* Removed recursive put. Apps should implement it themselves.
+
+2005-06-09  Christian W. Zuckschwerdt  <zany@triq.net>
+
+	* New configure flag to enable building docs (disabled by default now)
+
+2005-03-23  Christian W. Zuckschwerdt  <zany@triq.net>
+
+	* Security fix suggested by Kevin Finisterre <kf@digitalmunition.com>
+
+2005-03-21  Christian W. Zuckschwerdt  <zany@triq.net>
+
+	* GCC 2.96 compat fixes by Paul Boddie <paul@boddie.org.uk>
+
+2004-01-15  Christian W. Zuckschwerdt  <zany@triq.net>
+
+	* Documentation updated by Hendrik Sattler <debian@hendrik-sattler.de>
+
+2004-01-10  Christian W. Zuckschwerdt  <zany@triq.net>
+
+	* Typo fix to setpath by Olivier Berger <oberger@ouvaton.org>
+	* Removed some BT ifdefs by Hendrik Sattler
+	* Use VERSION macro suggested by Andrej Kacian
+
 2004-12-17  Christian W. Zuckschwerdt  <zany@triq.net>
 
 	* Added sdp lib checks, reported by George Styles and Johan Debal

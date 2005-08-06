@@ -4,25 +4,24 @@
 man_MANS =		obexftp.1
 
 EXTRA_DIST =		$(man_MANS) $(noinst_DATA) \
-			obexftp.pod obexftp.1.txt obexftp.1.html \
 			article.css menu.xml doc.xsl \
 			ObexFS.png
 
 # transform [A-Z][A-Z]* Change*
-noinst_DATA =	$(patsubst ../%,%.html,$(wildcard ../[A-Z][A-Z]*[A-Za-z0-9] ../Change*[A-Za-z0-9]))
+noinst_DATA =	$(patsubst ../%,%.html,$(wildcard ../[A-Z][A-Z]*[A-Za-z0-9] ../Change*[A-Za-z0-9])) obexftp.pod obexftp.1.txt obexftp.1.html
+
+if BUILD_DOCS
 
 %.1: %.pod
-	pod2man --center "ObexFTP" --release `date -I` --section 1 $< $@
-	pod2html --title "ObexFTP" --infile=$< --outfile=$@.html
-	pod2text $< $@.txt
+	pod2man --center "ObexFTP" --release `stat --format=%y $< | cut -f 1 -d " "` --section 1 $< $@
 #	txt2man -v "ObexFTP" -t "obexftp" -s 1 -r `date -I` \
 #	-I ObexFTP -I gObexFtp -I vfs-obexftp $< > $@
 
 %.1.html: %.pod
-	pod2html --title "ObexFTP" --infile=$< --outfile=$@.html
+	pod2html --title "ObexFTP" --infile=$< --outfile=$@
 
 %.1.txt: %.pod
-	pod2text $< $@.txt
+	pod2text $< $@
 
 #%.1.html: %.1
 #	cat $< | gnome-man2html2 > $@
@@ -33,3 +32,4 @@ noinst_DATA =	$(patsubst ../%,%.html,$(wildcard ../[A-Z][A-Z]*[A-Za-z0-9] ../Cha
 #clean-local:
 #	rm -f *.1
 
+endif

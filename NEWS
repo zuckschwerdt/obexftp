@@ -1,6 +1,11 @@
 ObexFTP recent NEWS
 ===================
 
+* be sure to give ObexFS a spin!
+
+* object caching and directory parsing (for things like ObexFS)
+
+
 * Nokia support via IrDA and Bluetooth
 
 * Siemens S65 support

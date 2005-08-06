@@ -1,11 +1,16 @@
 ObexFTP to do list
 ==================
 
-for 0.10.7
+for 0.10.?
+
+* transport select patch by Hendrik Sattler
+
+* OBEX-Push-only mode (no UUID) suggested by Antti Hayrynen
 
 * UUID issue (FBS or S45 first?), autodetect phone and re-connect?
 
 * put to specified file (-p file.vcf -f telecom/pb.vcf)
+
 
 for 0.11
 

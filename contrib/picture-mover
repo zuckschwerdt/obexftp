@@ -1,0 +1,11 @@
+#!/bin/sh
+
+# append your mobiles address to '-b' for slight speedup
+# optionally choose a channel with '-B'
+# change the '-c path' into something useful for your device
+# use '-G' instead of '-g' to move the pictures (copy & delete)
+
+pics=$(obexftp -b -c MMCard -c Pictures -l |grep 'file.*jpg' |cut -d '"' -f 2)
+echo Getting $pics
+sleep 3
+obexftp -b -c MMCard -c Pictures -g $pics
