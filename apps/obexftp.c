@@ -101,8 +101,14 @@ static void info_cb(int event, const char *msg, /*@unused@*/ int len, /*@unused@
 		break;
 
 	case OBEXFTP_EV_BODY:
-		if (c == 'l' || c=='X')
-			write(STDOUT_FILENO, msg, len);
+		if (c == 'l' || c == 'X' || c == 'P') {
+			if (msg == NULL)
+				fprintf(stderr, "No body.\n");
+			else if (len == 0)
+				fprintf(stderr, "Empty body.\n");
+			else
+				write(STDOUT_FILENO, msg, len);
+		}
 		break;
 
 	case OBEXFTP_EV_PROGRESS:
@@ -124,11 +130,11 @@ static int usbinterface = -1;
 /*@only@*/ /*@null@*/ static char *inethost = NULL;
 static int use_fbs=1;
 
-static int cli_connect()
+
+static int cli_connect_uuid(const char* uuid)
 {
 /*@only@*/ /*@null@*/ static obex_ctrans_t *ctrans = NULL;
 	int retry;
-	const char *fbs;
 
 	if (cli != NULL)
 		return TRUE;
@@ -149,33 +155,40 @@ static int cli_connect()
 		exit(1);
 		//return FALSE;
 	}
-
-        if (use_fbs)
-		fbs = UUID_FBS;
-	else {
-		fbs = NULL;
-		fprintf(stderr, "Suppressing FBS.\n");
-	}
 	
 	for (retry = 0; retry < 3; retry++) {
 
 		/* Connect */
                 if (transport == OBEX_TRANS_INET) {
-			if (obexftp_cli_connect_uuid (cli, inethost, 0, fbs) >= 0)
+			if (obexftp_cli_connect_uuid (cli, inethost, 0, uuid) >= 0)
 				return TRUE;
 		} else if (transport == OBEX_TRANS_USB) {
-			if (obexftp_cli_connect_uuid (cli, NULL, usbinterface, fbs) >= 0)
+			if (obexftp_cli_connect_uuid (cli, NULL, usbinterface, uuid) >= 0)
 				return TRUE;
 		} else {
-			if (obexftp_cli_connect_uuid (cli, btaddr, btchannel, fbs) >= 0)
+			if (obexftp_cli_connect_uuid (cli, btaddr, btchannel, uuid) >= 0)
 				return TRUE;
 		}
 		fprintf(stderr, "Still trying to connect\n");
 	}
 
 	cli = NULL;
-	exit(1);
-	//return FALSE;
+	return FALSE;
+}
+
+static int cli_connect()
+{
+	const char *fbs;
+	
+        if (use_fbs)
+		fbs = UUID_FBS;
+	else {
+		fbs = NULL;
+		fprintf(stderr, "Suppressing FBS.\n");
+	}
+	if (!cli_connect_uuid(fbs))
+		exit(1);
+	return TRUE;
 }
 
 static void cli_disconnect()
@@ -185,7 +198,85 @@ static void cli_disconnect()
 		(void) obexftp_cli_disconnect (cli);
 		/* Close */
 		obexftp_cli_close (cli);
+		cli = NULL;
 	}
+}
+
+static int probe_device_uuid(const char *uuid)
+{
+	if (!cli_connect_uuid(uuid)) {
+		printf("couldn't connect.\n");
+		return;
+	}
+	
+	printf("getting null object without type\n");
+       	(void) obexftp_get_type(cli, NULL, NULL, NULL);
+	printf("response code %02x\n", cli->obex_rsp);
+
+	printf("getting empty object without type\n");
+       	(void) obexftp_get_type(cli, NULL, NULL, "");
+	printf("response code %02x\n", cli->obex_rsp);
+
+	
+	printf("getting null object with x-obex/folder-listing type\n");
+       	(void) obexftp_get_type(cli, XOBEX_LISTING, NULL, NULL);
+	printf("response code %02x\n", cli->obex_rsp);
+
+	printf("getting empty object with x-obex/folder-listing type\n");
+       	(void) obexftp_get_type(cli, XOBEX_LISTING, NULL, "");
+	printf("response code %02x\n", cli->obex_rsp);
+
+
+	printf("getting null object with x-obex/capability type\n");
+       	(void) obexftp_get_type(cli, XOBEX_CAPABILITY, NULL, NULL);
+	printf("response code %02x\n", cli->obex_rsp);
+
+	printf("getting empty object with x-obex/capability type\n");
+       	(void) obexftp_get_type(cli, XOBEX_CAPABILITY, NULL, "");
+	printf("response code %02x\n", cli->obex_rsp);
+
+	
+	printf("getting null object with x-obex/object-profile type\n");
+       	(void) obexftp_get_type(cli, XOBEX_PROFILE, NULL, NULL);
+	printf("response code %02x\n", cli->obex_rsp);
+
+	printf("getting empty object with x-obex/object-profile type\n");
+       	(void) obexftp_get_type(cli, XOBEX_PROFILE, NULL, "");
+	printf("response code %02x\n", cli->obex_rsp);
+
+		
+	printf("getting telecom/devinfo.txt object\n");
+	cli->quirks = 0;
+       	(void) obexftp_get_type(cli, NULL, NULL, "telecom/devinfo.txt");
+	printf("response code %02x\n", cli->obex_rsp);
+
+	printf("getting telecom/devinfo.txt object with setpath\n");
+	cli->quirks = (OBEXFTP_LEADING_SLASH | OBEXFTP_TRAILING_SLASH | OBEXFTP_SPLIT_SETPATH);
+       	(void) obexftp_get_type(cli, NULL, NULL, "telecom/devinfo.txt");
+	printf("response code %02x\n", cli->obex_rsp);
+
+	cli_disconnect();
+		
+}
+
+/* try the whole probing with different uuids */
+static int probe_device()
+{
+	printf("\nProbing with FBS uuid.\n");
+	probe_device_uuid(UUID_FBS);
+	printf("Allowing 7 seconds for recovery.\n");
+	sleep(7);
+	
+	printf("\nProbing with S45 uuid.\n");
+	probe_device_uuid(UUID_S45);
+	printf("Allowing 7 seconds for recovery.\n");
+	sleep(7);
+	
+	printf("\nProbing without uuid.\n");
+	probe_device_uuid(NULL);
+	
+	printf("\nEnd of probe.\n");
+	exit (0);
 }
 
 int main(int argc, char *argv[])
@@ -241,6 +332,7 @@ int main(int argc, char *argv[])
 			{"put",		required_argument, NULL, 'p'},
 			{"delete",	required_argument, NULL, 'k'},
 			{"capability",	no_argument, NULL, 'X'},
+			{"probe",	no_argument, NULL, 'P'},
 			{"info",	no_argument, NULL, 'x'},
 			{"move",	required_argument, NULL, 'm'},
 			{"verbose",	no_argument, NULL, 'v'},
@@ -250,7 +342,7 @@ int main(int argc, char *argv[])
 			{0, 0, 0, 0}
 		};
 		
-		c = getopt_long (argc, argv, "-ib::B:U:t:N:FL::l::c:C:f:g:G:p:k:Xxm:Vvh",
+		c = getopt_long (argc, argv, "-ib::B:U:t:N:FL::l::c:C:f:g:G:p:k:XPxm:Vvh",
 				 long_options, &option_index);
 		if (c == -1)
 			break;
@@ -429,6 +521,12 @@ int main(int argc, char *argv[])
 			most_recent_cmd = 'h'; // not really
 			break;
 
+		case 'P':
+			if (cli == NULL)
+				probe_device();
+			fprintf(stderr, "No other transfer options allowed with --probe\n");
+			break;
+
 		case 'x':
 			if(cli_connect ()) {
 				/* for S65 */
@@ -482,7 +580,8 @@ int main(int argc, char *argv[])
 				" -U, --usb <intf>            connect to this usb interface\n"
 #endif
 				" -t, --tty <device>          connect to this tty using a custom transport\n"
-				" -N, --network <host>        connect to this host\n\n"
+				" -N, --network <host>        connect to this host\n"
+				" -F, --nofbs                 suppress fbs (for nokia)\n\n"
 				" -c, --chdir <DIR>           chdir\n"
 				" -C, --mkdir <DIR>           mkdir and chdir\n"
 				" -l, --list [<FOLDER>]       list current/given folder\n"
@@ -492,6 +591,8 @@ int main(int argc, char *argv[])
 				" -G, --getdelete <SOURCE>    fetch and delete (move) files \n"
 				" -p, --put <SOURCE>          send files\n"
 				" -k, --delete <SOURCE>       delete files\n\n"
+				" -X, --capability            retrieve capability object\n"
+				" -P, --probe                 probe and report device characteristics\n"
 				" -x, --info                  retrieve infos (Siemens)\n"
 				" -m, --move <SRC> <DEST>     move files (Siemens)\n\n"
 				" -v, --verbose               verbose messages\n"

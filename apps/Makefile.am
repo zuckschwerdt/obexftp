@@ -18,13 +18,11 @@ obexftp_SOURCES =		obexftp.c \
 
 obexftpd_SOURCES =		obexftpd.c
 
-stress_SOURCES =		stress.c
-
 discovery_SOURCES =		discovery.c
 
 bin_PROGRAMS =			obexftp obexftpd
 
-noinst_PROGRAMS =		stress discovery
+noinst_PROGRAMS =		discovery
 
 # splint -type -predboolint -nullassign -unrecog -nullpass -I.. obexftp_cli.c
 
