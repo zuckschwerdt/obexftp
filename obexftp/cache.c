@@ -160,7 +160,7 @@ int put_cache_object(obexftp_client_t *cli, const char *name, const char *object
 }
 
 /* List a directory from cache, optionally loading it first. */
-char *obexftp_cache_list(obexftp_client_t *cli, const char *name)
+static char *obexftp_cache_list(obexftp_client_t *cli, const char *name)
 {
 	char *path, *listing;
 

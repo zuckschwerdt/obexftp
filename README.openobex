@@ -1,2 +1,0 @@
-There is a Header Type not implemented in OpenOBEX.
-It's 0xC3 - and seems to be a hint to the body_len.

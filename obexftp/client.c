@@ -288,7 +288,7 @@ static void client_done(obex_t *handle, obex_object_t *object, /*@unused@*/ int 
 				app = (apparam_t *)hv.bs;
 				 /* needed for alignment */
 				memcpy(&cli->apparam_info, &app->info, sizeof(cli->apparam_info));
-				cli->apparam_info = ntohl(cli->apparam_info);
+				cli->apparam_info = ntohl(cli->apparam_info); // 64 bit problems?
 				cli->infocb(OBEXFTP_EV_INFO, (void *)cli->apparam_info, 0, cli->infocb_data);
 			}
 			else

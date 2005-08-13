@@ -97,7 +97,7 @@ static void info_cb(int event, const char *msg, /*@unused@*/ int len, /*@unused@
 		break;
 
 	case OBEXFTP_EV_INFO:
-		printf("Got info %d: \n", (int)msg);
+		printf("Got info %d: \n", (int)msg); // 64 bit problems ?
 		break;
 
 	case OBEXFTP_EV_BODY:
@@ -136,26 +136,25 @@ static int cli_connect_uuid(const char* uuid)
 /*@only@*/ /*@null@*/ static obex_ctrans_t *ctrans = NULL;
 	int retry;
 
-	if (cli != NULL)
-		return TRUE;
+	if (cli == NULL) {
 
-	if (tty != NULL) {
-       		ctrans = cobex_ctrans (tty);
-       		fprintf(stderr, "Custom transport set to 'Siemens/Ericsson'\n");
-	}
-	else {
-		ctrans = NULL;
-		fprintf(stderr, "No custom transport\n");
-	}
+		if (tty != NULL) {
+       			ctrans = cobex_ctrans (tty);
+       			fprintf(stderr, "Custom transport set to 'Siemens/Ericsson'\n");
+		}
+		else {
+			ctrans = NULL;
+			fprintf(stderr, "No custom transport\n");
+		}
 
-	/* Open */
-	cli = obexftp_cli_open (transport, ctrans, info_cb, NULL);
-	if(cli == NULL) {
-		fprintf(stderr, "Error opening obexftp-client\n");
-		exit(1);
-		//return FALSE;
-	}
-	
+		/* Open */
+		cli = obexftp_cli_open (transport, ctrans, info_cb, NULL);
+		if(cli == NULL) {
+			fprintf(stderr, "Error opening obexftp-client\n");
+			exit(1);
+			//return FALSE;
+		}
+	}	
 	for (retry = 0; retry < 3; retry++) {
 
 		/* Connect */
@@ -165,9 +164,12 @@ static int cli_connect_uuid(const char* uuid)
 		} else if (transport == OBEX_TRANS_USB) {
 			if (obexftp_cli_connect_uuid (cli, NULL, usbinterface, uuid) >= 0)
 				return TRUE;
-		} else {
+		} else if (transport == OBEX_TRANS_BLUETOOTH) {
 			if (obexftp_cli_connect_uuid (cli, btaddr, btchannel, uuid) >= 0)
 				return TRUE;
+		} else {
+			fprintf(stderr, "Transport type unknown\n");
+			return FALSE;
 		}
 		fprintf(stderr, "Still trying to connect\n");
 	}
@@ -202,8 +204,10 @@ static void cli_disconnect()
 	}
 }
 
-static int probe_device_uuid(const char *uuid)
+static void probe_device_uuid(const char *uuid)
 {
+	int rsp[10];
+	
 	if (!cli_connect_uuid(uuid)) {
 		printf("couldn't connect.\n");
 		return;
@@ -211,68 +215,80 @@ static int probe_device_uuid(const char *uuid)
 	
 	printf("getting null object without type\n");
        	(void) obexftp_get_type(cli, NULL, NULL, NULL);
+	rsp[0] = cli->obex_rsp;
 	printf("response code %02x\n", cli->obex_rsp);
 
 	printf("getting empty object without type\n");
        	(void) obexftp_get_type(cli, NULL, NULL, "");
+	rsp[1] = cli->obex_rsp;
 	printf("response code %02x\n", cli->obex_rsp);
 
 	
 	printf("getting null object with x-obex/folder-listing type\n");
        	(void) obexftp_get_type(cli, XOBEX_LISTING, NULL, NULL);
+	rsp[2] = cli->obex_rsp;
 	printf("response code %02x\n", cli->obex_rsp);
 
 	printf("getting empty object with x-obex/folder-listing type\n");
        	(void) obexftp_get_type(cli, XOBEX_LISTING, NULL, "");
+	rsp[3] = cli->obex_rsp;
 	printf("response code %02x\n", cli->obex_rsp);
 
 
 	printf("getting null object with x-obex/capability type\n");
        	(void) obexftp_get_type(cli, XOBEX_CAPABILITY, NULL, NULL);
+	rsp[4] = cli->obex_rsp;
 	printf("response code %02x\n", cli->obex_rsp);
 
 	printf("getting empty object with x-obex/capability type\n");
        	(void) obexftp_get_type(cli, XOBEX_CAPABILITY, NULL, "");
+	rsp[5] = cli->obex_rsp;
 	printf("response code %02x\n", cli->obex_rsp);
 
 	
 	printf("getting null object with x-obex/object-profile type\n");
        	(void) obexftp_get_type(cli, XOBEX_PROFILE, NULL, NULL);
+	rsp[6] = cli->obex_rsp;
 	printf("response code %02x\n", cli->obex_rsp);
 
 	printf("getting empty object with x-obex/object-profile type\n");
        	(void) obexftp_get_type(cli, XOBEX_PROFILE, NULL, "");
+	rsp[7] = cli->obex_rsp;
 	printf("response code %02x\n", cli->obex_rsp);
 
 		
 	printf("getting telecom/devinfo.txt object\n");
 	cli->quirks = 0;
        	(void) obexftp_get_type(cli, NULL, NULL, "telecom/devinfo.txt");
+	rsp[8] = cli->obex_rsp;
 	printf("response code %02x\n", cli->obex_rsp);
 
 	printf("getting telecom/devinfo.txt object with setpath\n");
 	cli->quirks = (OBEXFTP_LEADING_SLASH | OBEXFTP_TRAILING_SLASH | OBEXFTP_SPLIT_SETPATH);
        	(void) obexftp_get_type(cli, NULL, NULL, "telecom/devinfo.txt");
+	rsp[9] = cli->obex_rsp;
 	printf("response code %02x\n", cli->obex_rsp);
+	
+	printf("=== response codes === %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x\n",
+		rsp[0], rsp[1], rsp[2], rsp[3], rsp[4], rsp[5], rsp[6], rsp[7], rsp[8], rsp[9]);
 
-	cli_disconnect();
+	//cli_disconnect();
+	if (cli != NULL) {
+		(void) obexftp_cli_disconnect (cli);
+	}
 		
 }
 
 /* try the whole probing with different uuids */
-static int probe_device()
+static void probe_device()
 {
-	printf("\nProbing with FBS uuid.\n");
+	printf("\n=== Probing with FBS uuid.\n");
 	probe_device_uuid(UUID_FBS);
-	printf("Allowing 7 seconds for recovery.\n");
-	sleep(7);
 	
-	printf("\nProbing with S45 uuid.\n");
+	printf("\n=== Probing with S45 uuid.\n");
 	probe_device_uuid(UUID_S45);
-	printf("Allowing 7 seconds for recovery.\n");
-	sleep(7);
 	
-	printf("\nProbing without uuid.\n");
+	printf("\n=== Probing without uuid.\n");
 	probe_device_uuid(NULL);
 	
 	printf("\nEnd of probe.\n");

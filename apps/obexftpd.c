@@ -138,6 +138,7 @@ int main(int argc, char *argv[])
 			{"irda",	no_argument, NULL, 'i'},
 			{"bluetooth",	no_argument, NULL, 'b'},
 			{"tty",		required_argument, NULL, 't'},
+			{"network",	required_argument, NULL, 'N'},
 			{"chdir",	required_argument, NULL, 'c'},
 			{"verbose",	no_argument, NULL, 'v'},
 			{"version",	no_argument, NULL, 'V'},
@@ -167,6 +168,20 @@ int main(int argc, char *argv[])
 		case 't':
 			printf("accepting on tty not implemented yet.");
 			/* start_server(OBEX_TRANS_CUSTOM); optarg */
+			break;
+
+		case 'N':
+			//transport = OBEX_TRANS_INET;
+			//if (inethost != NULL)
+			//	free (inethost); /* ok to to free an optarg? */
+       			//inethost = optarg; /* strdup? */
+
+			{
+				int n;
+				if (sscanf(optarg, "%d.%d.%d.%d", &n, &n, &n, &n) != 4)
+					fprintf(stderr, "Please use dotted quad notation.\n");
+			}
+			start_server(OBEX_TRANS_INET);
 			break;
 
 		case 'c':
