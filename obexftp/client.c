@@ -239,6 +239,9 @@ static void client_done(obex_t *handle, obex_object_t *object, /*@unused@*/ int 
 	apparam_t *app = NULL;
 	uint8_t *p;
 
+        const uint8_t *body_data = NULL;
+	uint32_t body_len;
+
 	/*@temp@*/ obexftp_client_t *cli;
 
 	cli = OBEX_GetUserData(handle);
@@ -268,6 +271,8 @@ static void client_done(obex_t *handle, obex_object_t *object, /*@unused@*/ int 
 					cli->buf_data = p;
 				}
 			}
+			body_len = hlen;
+			body_data = hv.bs;
 			cli->infocb(OBEXFTP_EV_BODY, hv.bs, hlen, cli->infocb_data);
 			DEBUG(3, "%s() Done body\n", __func__);
                         /* break; */
@@ -300,8 +305,8 @@ static void client_done(obex_t *handle, obex_object_t *object, /*@unused@*/ int 
                 }
         }
 
-        if(cli->buf_data) {
-		if (cli->buf_size > 0) {
+        if(body_data) {
+		if (body_len > 0) {
 			if (cli->target_fn != NULL) {
 				/* simple body writer */
 				int fd;
@@ -309,7 +314,7 @@ static void client_done(obex_t *handle, obex_object_t *object, /*@unused@*/ int 
 				fd = creat(cli-> target_fn,
 					   S_IRUSR|S_IWUSR|S_IRGRP|S_IROTH);
 				if(fd > 0) {
-					(void) write(fd, cli->buf_data, cli->buf_size);
+					(void) write(fd, body_data, body_len);
 					(void) close(fd);
 				} else {
 					DEBUG(3, "%s() Error writing body\n", __func__);
@@ -803,7 +808,7 @@ int obexftp_setpath(obexftp_client_t *cli, const char *name, int create)
 			if (p)
 				p = strchr(p, '/');
 			/* prevent a trailing slash from messing all up with a cd top */
-			if (*tail == '\0')
+			if (tail && *tail == '\0')
 				break;
 		}
 		free (copy);

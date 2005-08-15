@@ -150,18 +150,6 @@ int obexftp_setpath(obexftp_client_t *cli, /*@null@*/ const char *name, int crea
 #define	obexftp_cdtop(cli) \
 	obexftp_setpath(cli, "", 0)
 
-int obexftp_put(obexftp_client_t *cli, const char *filename);
-
-int obexftp_put_file(obexftp_client_t *cli, const char *localname,
-		     const char *remotename);
-
-int obexftp_put_data(obexftp_client_t *cli, const char *data, int size,
-		     const char *remotename);
-
-int obexftp_del(obexftp_client_t *cli, const char *name);
-
-int obexftp_info(obexftp_client_t *cli, uint8_t opcode);
-
 int obexftp_get_type(obexftp_client_t *cli,
 		 const char *type,
 		 /*@null@*/ const char *localname,
@@ -175,6 +163,21 @@ int obexftp_get_type(obexftp_client_t *cli,
 
 #define	obexftp_get_capability(cli, localname, remotename) \
 	obexftp_get_type(cli, XOBEX_CAPABILITY, localname, remotename)
+
+int obexftp_put(obexftp_client_t *cli, const char *filename);
+
+int obexftp_put_file(obexftp_client_t *cli, const char *localname,
+		     const char *remotename);
+
+int obexftp_put_data(obexftp_client_t *cli, const char *data, int size,
+		     const char *remotename);
+
+int obexftp_del(obexftp_client_t *cli, const char *name);
+
+
+/* Siemens only */
+
+int obexftp_info(obexftp_client_t *cli, uint8_t opcode);
 
 int obexftp_rename(obexftp_client_t *cli,
 		   const char *sourcename,

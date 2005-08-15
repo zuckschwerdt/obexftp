@@ -131,6 +131,7 @@ static int usbinterface = -1;
 static int use_fbs=1;
 
 
+/* connect with given uuid. re-connect every time */
 static int cli_connect_uuid(const char* uuid)
 {
 /*@only@*/ /*@null@*/ static obex_ctrans_t *ctrans = NULL;
@@ -178,10 +179,15 @@ static int cli_connect_uuid(const char* uuid)
 	return FALSE;
 }
 
+/* connect, possibly without fbs uuid. won't re-connect */
 static int cli_connect()
 {
 	const char *fbs;
 	
+	if (cli != NULL) {
+		return TRUE;
+	}
+
         if (use_fbs)
 		fbs = UUID_FBS;
 	else {
