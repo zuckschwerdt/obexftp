@@ -279,6 +279,7 @@ static void client_done(obex_t *handle, obex_object_t *object, /*@unused@*/ int 
                 }
                 else if(hi == OBEX_HDR_CONNECTION) {
 			DEBUG(3, "%s() Found connection number: %d\n", __func__, hv.bq4);
+			cli->connection_id = hv.bq4;
 		}
                 else if(hi == OBEX_HDR_WHO) {
 			DEBUG(3, "%s() Sender identified\n", __func__);
@@ -574,6 +575,7 @@ int obexftp_cli_connect_uuid(obexftp_client_t *cli, const char *device, int port
                 OBEX_ObjectDelete(cli->obexhandle, object);
                 return -1;
         }
+	cli->connection_id = 0xffffffff;
 	ret = cli_sync_request(cli, object);
 
 	if(ret < 0) {
@@ -590,7 +592,10 @@ int obexftp_cli_connect_uuid(obexftp_client_t *cli, const char *device, int port
                 		return -1;
 	        	}
 		}
+		cli->connection_id = 0xffffffff;
 		ret = cli_sync_request(cli, object);
+		if (!OBEXFTP_USE_CONN_HEADER(cli->quirks))
+			cli->connection_id = 0xffffffff;
 #ifdef COMPAT_S45
 	}
 #endif
@@ -615,6 +620,7 @@ int obexftp_cli_disconnect(obexftp_client_t *cli)
 	cli->infocb(OBEXFTP_EV_DISCONNECTING, "", 0, cli->infocb_data);
 
 	object = OBEX_ObjectNew(cli->obexhandle, OBEX_CMD_DISCONNECT);
+	(void) OBEX_ObjectAddHeader(cli->obexhandle, object, OBEX_HDR_CONNECTION, (obex_headerdata_t) cli->connection_id, sizeof(uint32_t), OBEX_FL_FIT_ONE_PACKET);
 	ret = cli_sync_request(cli, object);
 
 	if(ret < 0)
@@ -639,7 +645,7 @@ int obexftp_info(obexftp_client_t *cli, uint8_t opcode)
 
 	DEBUG(2, "%s() Retrieving info %d\n", __func__, opcode);
 
-        object = obexftp_build_info (cli->obexhandle, opcode);
+        object = obexftp_build_info (cli->obexhandle, cli->connection_id, opcode);
         if(object == NULL)
                 return -1;
  
@@ -684,12 +690,12 @@ int obexftp_get_type(obexftp_client_t *cli, const char *type, const char *localn
 		}
 
 		DEBUG(2, "%s() Getting %s -> %s (%s)\n", __func__, basename, localname, type);
-		object = obexftp_build_get (cli->obexhandle, basename, type);
+		object = obexftp_build_get (cli->obexhandle, cli->connection_id, basename, type);
 		free(basepath);
 		free(basename);
 	} else {
 		DEBUG(2, "%s() Getting %s -> %s (%s)\n", __func__, remotename, localname, type);
-		object = obexftp_build_get (cli->obexhandle, remotename, type);
+		object = obexftp_build_get (cli->obexhandle, cli->connection_id, remotename, type);
 	}
 
 	if(object == NULL)
@@ -718,7 +724,7 @@ int obexftp_rename(obexftp_client_t *cli, const char *sourcename, const char *ta
 
 	DEBUG(2, "%s() Moving %s -> %s\n", __func__, sourcename, targetname);
 
-        object = obexftp_build_rename (cli->obexhandle, sourcename, targetname);
+        object = obexftp_build_rename (cli->obexhandle, cli->connection_id, sourcename, targetname);
         if(object == NULL)
                 return -1;
 	
@@ -755,12 +761,12 @@ int obexftp_del(obexftp_client_t *cli, const char *name)
 		}
 
 		DEBUG(2, "%s() Deleting %s\n", __func__, basename);
-		object = obexftp_build_del (cli->obexhandle, basename);
+		object = obexftp_build_del (cli->obexhandle, cli->connection_id, basename);
 		free(basepath);
 		free(basename);
 	} else {
 		DEBUG(2, "%s() Deleting %s\n", __func__, name);
-		object = obexftp_build_del (cli->obexhandle, name);
+		object = obexftp_build_del (cli->obexhandle, cli->connection_id, name);
 	}
 
 	if(object == NULL)
@@ -800,7 +806,7 @@ int obexftp_setpath(obexftp_client_t *cli, const char *name, int create)
 	
 			cli->infocb(OBEXFTP_EV_SENDING, tail, 0, cli->infocb_data);
 			DEBUG(2, "%s() Setpath \"%s\"\n", __func__, tail);
-			object = obexftp_build_setpath (cli->obexhandle, tail, create);
+			object = obexftp_build_setpath (cli->obexhandle, cli->connection_id, tail, create);
 			ret = cli_sync_request(cli, object);
 			if (ret < 0) break;
 
@@ -815,7 +821,7 @@ int obexftp_setpath(obexftp_client_t *cli, const char *name, int create)
 	} else {
 		cli->infocb(OBEXFTP_EV_SENDING, name, 0, cli->infocb_data);
 		DEBUG(2, "%s() Setpath \"%s\"\n", __func__, name);
-		object = obexftp_build_setpath (cli->obexhandle, name, create);
+		object = obexftp_build_setpath (cli->obexhandle, cli->connection_id, name, create);
 		ret = cli_sync_request(cli, object);
 	}
 	if (create)
@@ -861,12 +867,12 @@ int obexftp_put_file(obexftp_client_t *cli, const char *localname, const char *r
 		}
 
 		DEBUG(2, "%s() Sending %s -> %s\n", __func__, localname, basename);
-		object = build_object_from_file (cli->obexhandle, localname, basename);
+		object = build_object_from_file (cli->obexhandle, cli->connection_id, localname, basename);
 		free(basepath);
 		free(basename);
 	} else {
 		DEBUG(2, "%s() Sending %s -> %s\n", __func__, localname, remotename);
-		object = build_object_from_file (cli->obexhandle, localname, remotename);
+		object = build_object_from_file (cli->obexhandle, cli->connection_id, localname, remotename);
 	}
 	
 	cli->fd = open(localname, O_RDONLY, 0);
@@ -913,12 +919,12 @@ int obexftp_put_data(obexftp_client_t *cli, const char *data, int size,
 		}
 
 		DEBUG(2, "%s() Sending memdata -> %s\n", __func__, basename);
-		object = obexftp_build_put (cli->obexhandle, basename, size);
+		object = obexftp_build_put (cli->obexhandle, cli->connection_id, basename, size);
 		free(basepath);
 		free(basename);
 	} else {
 		DEBUG(2, "%s() Sending memdata -> %s\n", __func__, remotename);
-		object = obexftp_build_put (cli->obexhandle, remotename, size);
+		object = obexftp_build_put (cli->obexhandle, cli->connection_id, remotename, size);
 	}
 
 	cli->buf_data = data; /* memcpy would be safer */

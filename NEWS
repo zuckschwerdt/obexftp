@@ -1,6 +1,8 @@
 ObexFTP recent NEWS
 ===================
 
+* Motorola support, tested with models v710/e815
+
 * be sure to give ObexFS a spin!
 
 * object caching and directory parsing (for things like ObexFS)

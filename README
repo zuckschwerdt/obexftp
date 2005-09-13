@@ -10,17 +10,18 @@ The standard is defined in more detail in section K12.5 (Profiles: OBEX FTP)
 in Bluetooth V1.1 Profile Specifications.
 
 ObexFTP works out-of-the-box with all protocols supported by OpenOBEX.
-Currently IrDA and there is an upcoming BlueTooth support.
+Currently IrDA, Bluetooth and there is an upcoming USB support.
 ObexFTP comes with ready to use custom transport support for some mobile
 phones serial cables.
 
-It's well tested with Siemens (S/ME45 and SL45) as well as
-Ericsson (T68i) mobile phones.
+It's well tested with Siemens and Sony/Ericsson mobile phones. Support for
+Motorola phones has been added recently (connection ids are needed there).
+Samsung phones might work too, please get back to me on that.
 
 This ObexFTP distribution contains libraries as well as some applications.
 
-Applications to access e.g. Flex. Memory and Multimedia Card memory on Siemens
-mobile equipment, i.e. S45, ME45 and SL42/SL45/SL45i (IrDA only, for now):
+Applications to access e.g. Flex. Memory and Multimedia- /Secure Digital Card
+memory on mobile equipment:
 
  - obexls - list the mobiles contents
  - obexcp - copy to/from mobile
@@ -61,13 +62,12 @@ Consider using pedantic error checking:
 Further Development
 -------------------
 
-If you find this tool useful or actually like it let me know.
-Development will focus on your needs. Currently I know of very few
-people using this tool.
+If this tool lacks support for your phone or just won't work quite right
+please let me know. Development will focus on your needs.
 
-This package lacks a full featured GUI. There is some proof of concept
-code for GTK and GNOME-VFS. There is ongoing work on KDE kio slave and
-general FS support.
+This package lacks a full featured GUI. There are some 3rd party GUIs and
+other projects like a obex file system though. Please see the OpenOBEX /
+ObexFTP web site for details.
 
 If you are a developer and want to use obexftp library or even
 cobex/bfb library do so. But please keep me informed - I'll send

@@ -24,7 +24,7 @@
 
 #include "object.h"
 
-obex_object_t *obexftp_build_info (obex_t obex, uint8_t opcode)
+obex_object_t *obexftp_build_info (obex_t obex, uint32_t conn, uint8_t opcode)
 {
 	obex_object_t *object = NULL;
 	uint8_t cmdstr[] = {APPARAM_INFO_CODE, 0x01, 0x00};
@@ -32,6 +32,9 @@ obex_object_t *obexftp_build_info (obex_t obex, uint8_t opcode)
         object = OBEX_ObjectNew(obex, OBEX_CMD_GET);
         if(object == NULL)
                 return NULL;
+
+        if(conn != 0xffffffff)
+		(void) OBEX_ObjectAddHeader(obex, object, OBEX_HDR_CONNECTION, (obex_headerdata_t) conn, sizeof(uint32_t), OBEX_FL_FIT_ONE_PACKET);
  
         cmdstr[2] = opcode;
 	(void) OBEX_ObjectAddHeader(obex, object, OBEX_HDR_APPARAM, (obex_headerdata_t) (const uint8_t *) cmdstr, sizeof(cmdstr), OBEX_FL_FIT_ONE_PACKET);
@@ -41,7 +44,7 @@ obex_object_t *obexftp_build_info (obex_t obex, uint8_t opcode)
 
 
 /* name and type musn't both be null */
-obex_object_t *obexftp_build_get (obex_t obex, const char *name, const char *type)
+obex_object_t *obexftp_build_get (obex_t obex, uint32_t conn, const char *name, const char *type)
 {
 	obex_object_t *object = NULL;
         uint8_t *ucname;
@@ -50,6 +53,9 @@ obex_object_t *obexftp_build_get (obex_t obex, const char *name, const char *typ
         object = OBEX_ObjectNew(obex, OBEX_CMD_GET);
         if(object == NULL)
                 return NULL;
+
+        if(conn != 0xffffffff)
+		(void) OBEX_ObjectAddHeader(obex, object, OBEX_HDR_CONNECTION, (obex_headerdata_t) conn, sizeof(uint32_t), OBEX_FL_FIT_ONE_PACKET);
  
         if(type != NULL) {
 		// type header is a null terminated ascii string
@@ -60,8 +66,7 @@ obex_object_t *obexftp_build_get (obex_t obex, const char *name, const char *typ
 		ucname_len = strlen(name)*2 + 2;
 		ucname = malloc(ucname_len);
 		if(ucname == NULL) {
-        		if(object != NULL)
-		                (void) OBEX_ObjectDelete(obex, object);
+	                (void) OBEX_ObjectDelete(obex, object);
 		        return NULL;
 		}
 
@@ -76,7 +81,7 @@ obex_object_t *obexftp_build_get (obex_t obex, const char *name, const char *typ
 
 
 /* neither filename may be null */
-obex_object_t *obexftp_build_rename (obex_t obex, const char *from, const char *to)
+obex_object_t *obexftp_build_rename (obex_t obex, uint32_t conn, const char *from, const char *to)
 {
 	obex_object_t *object = NULL;
         uint8_t *appstr;
@@ -92,13 +97,15 @@ obex_object_t *obexftp_build_rename (obex_t obex, const char *from, const char *
         if(object == NULL)
                 return NULL;
 
+        if(conn != 0xffffffff)
+		(void) OBEX_ObjectAddHeader(obex, object, OBEX_HDR_CONNECTION, (obex_headerdata_t) conn, sizeof(uint32_t), OBEX_FL_FIT_ONE_PACKET);
+
         appstr_len = 1 + 1 + sizeof(opname) +
 		strlen(from)*2 + 2 +
 		strlen(to)*2 + 2 + 2;
         appstr = malloc(appstr_len);
         if(appstr == NULL) {
-        	if(object != NULL)
-                	(void) OBEX_ObjectDelete(obex, object);
+               	(void) OBEX_ObjectDelete(obex, object);
 	        return NULL;
 	}
 
@@ -125,7 +132,7 @@ obex_object_t *obexftp_build_rename (obex_t obex, const char *from, const char *
 
 
 /* name may not be null */
-obex_object_t *obexftp_build_del (obex_t obex, const char *name)
+obex_object_t *obexftp_build_del (obex_t obex, uint32_t conn, const char *name)
 {
 	obex_object_t *object;
         uint8_t *ucname;
@@ -138,11 +145,13 @@ obex_object_t *obexftp_build_del (obex_t obex, const char *name)
         if(object == NULL)
                 return NULL;
 
+        if(conn != 0xffffffff)
+		(void) OBEX_ObjectAddHeader(obex, object, OBEX_HDR_CONNECTION, (obex_headerdata_t) conn, sizeof(uint32_t), OBEX_FL_FIT_ONE_PACKET);
+
         ucname_len = strlen(name)*2 + 2;
         ucname = malloc(ucname_len);
         if(ucname == NULL) {
-        	if(object != NULL)
-                	(void) OBEX_ObjectDelete(obex, object);
+               	(void) OBEX_ObjectDelete(obex, object);
 	        return NULL;
 	}
 
@@ -157,7 +166,7 @@ obex_object_t *obexftp_build_del (obex_t obex, const char *name)
 
 /* if name is null ascend one directory */
 /* if name is empty change to top/default directory */
-obex_object_t *obexftp_build_setpath (obex_t obex, const char *name, int create)
+obex_object_t *obexftp_build_setpath (obex_t obex, uint32_t conn, const char *name, int create)
 {
 	obex_object_t *object;
 	// "Backup Level" and "Don't Create" flag in first byte
@@ -167,6 +176,11 @@ obex_object_t *obexftp_build_setpath (obex_t obex, const char *name, int create)
 	int ucname_len;
 
 	object = OBEX_ObjectNew(obex, OBEX_CMD_SETPATH);
+	if(object == NULL)
+		return NULL;
+
+        if(conn != 0xffffffff)
+		(void) OBEX_ObjectAddHeader(obex, object, OBEX_HDR_CONNECTION, (obex_headerdata_t) conn, sizeof(uint32_t), OBEX_FL_FIT_ONE_PACKET);
 
 	if (create == 0) {
 		// set the 'Don't Create' bit
@@ -199,7 +213,7 @@ obex_object_t *obexftp_build_setpath (obex_t obex, const char *name, int create)
 
 
 /* use build_object_from_file() instead */
-obex_object_t *obexftp_build_put (obex_t obex, const char *name, const int size)
+obex_object_t *obexftp_build_put (obex_t obex, uint32_t conn, const char *name, const int size)
 {
 	obex_object_t *object = NULL;
 	uint8_t *ucname;
@@ -209,11 +223,13 @@ obex_object_t *obexftp_build_put (obex_t obex, const char *name, const int size)
 	if(object == NULL)
 		return NULL;
 
+        if(conn != 0xffffffff)
+		(void) OBEX_ObjectAddHeader(obex, object, OBEX_HDR_CONNECTION, (obex_headerdata_t) conn, sizeof(uint32_t), OBEX_FL_FIT_ONE_PACKET);
+
 	ucname_len = strlen(name)*2 + 2;
 	ucname = malloc(ucname_len);
 	if(ucname == NULL) {
-		if(object != NULL)
-			(void) OBEX_ObjectDelete(obex, object);
+       		(void) OBEX_ObjectDelete(obex, object);
 		return NULL;
 	}
 

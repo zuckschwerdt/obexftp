@@ -62,7 +62,7 @@ static int get_fileinfo(const char *name, char *lastmod)
 
 
 /* Create an object from a file. Attach some info-headers to it */
-obex_object_t *build_object_from_file(obex_t *handle, const char *localname, const char *remotename)
+obex_object_t *build_object_from_file(obex_t *obex, uint32_t conn, const char *localname, const char *remotename)
 {
 	obex_object_t *object = NULL;
 	uint8_t *ucname;
@@ -72,32 +72,34 @@ obex_object_t *build_object_from_file(obex_t *handle, const char *localname, con
 	/* Get filesize and modification-time */
 	size = get_fileinfo(localname, lastmod);
 
-	object = OBEX_ObjectNew(handle, OBEX_CMD_PUT);
+	object = OBEX_ObjectNew(obex, OBEX_CMD_PUT);
 	if(object == NULL)
 		return NULL;
+
+        if(conn != 0xffffffff)
+		(void) OBEX_ObjectAddHeader(obex, object, OBEX_HDR_CONNECTION, (obex_headerdata_t) conn, sizeof(uint32_t), OBEX_FL_FIT_ONE_PACKET);
 
 	ucname_len = strlen(remotename)*2 + 2;
 	ucname = malloc(ucname_len);
 	if(ucname == NULL) {
-		if(object != NULL)
-			(void) OBEX_ObjectDelete(handle, object);
+		(void) OBEX_ObjectDelete(obex, object);
 		return NULL;
 	}
 
 	ucname_len = OBEX_CharToUnicode(ucname, remotename, ucname_len);
 
-	(void ) OBEX_ObjectAddHeader(handle, object, OBEX_HDR_NAME, (obex_headerdata_t) (const uint8_t *) ucname, ucname_len, 0);
+	(void ) OBEX_ObjectAddHeader(obex, object, OBEX_HDR_NAME, (obex_headerdata_t) (const uint8_t *) ucname, ucname_len, 0);
 	free(ucname);
 
-	(void) OBEX_ObjectAddHeader(handle, object, OBEX_HDR_LENGTH, (obex_headerdata_t) (const uint32_t)size, sizeof(uint32_t), 0);
+	(void) OBEX_ObjectAddHeader(obex, object, OBEX_HDR_LENGTH, (obex_headerdata_t) (const uint32_t)size, sizeof(uint32_t), 0);
 
 #if 0
 	/* Win2k excpects this header to be in unicode. I suspect this in
 	   incorrect so this will have to wait until that's investigated */
-	OBEX_ObjectAddHeader(handle, object, OBEX_HDR_TIME, (obex_headerdata_t) (const uint8_t *) lastmod, strlen(lastmod)+1, 0);
+	OBEX_ObjectAddHeader(obex, object, OBEX_HDR_TIME, (obex_headerdata_t) (const uint8_t *) lastmod, strlen(lastmod)+1, 0);
 #endif
 		
-	(void) OBEX_ObjectAddHeader(handle, object, OBEX_HDR_BODY,
+	(void) OBEX_ObjectAddHeader(obex, object, OBEX_HDR_BODY,
 				(obex_headerdata_t) (const uint8_t *) NULL,
 				0, OBEX_FL_STREAM_START);
 

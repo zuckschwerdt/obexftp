@@ -52,14 +52,16 @@ extern "C" {
 #define OBEXFTP_LEADING_SLASH	0x01	/* used in get (and alike) */
 #define OBEXFTP_TRAILING_SLASH	0x02	/* used in list */
 #define OBEXFTP_SPLIT_SETPATH	0x04	/* some phones dont have a cwd */
+#define OBEXFTP_CONN_HEADER	0x08	/* do we even need this? */
 
 #define OBEXFTP_USE_LEADING_SLASH(x)	((x & OBEXFTP_LEADING_SLASH) != 0)
 #define OBEXFTP_USE_TRAILING_SLASH(x)	((x & OBEXFTP_TRAILING_SLASH) != 0)
 #define OBEXFTP_USE_SPLIT_SETPATH(x)	((x & OBEXFTP_SPLIT_SETPATH) != 0)
+#define OBEXFTP_USE_CONN_HEADER(x)	((x & OBEXFTP_CONN_HEADER) != 0)
 
 /* dont disable leading slashes unless you disable split setpath */
 #define DEFAULT_OBEXFTP_QUIRKS	\
-	(OBEXFTP_LEADING_SLASH | OBEXFTP_TRAILING_SLASH | OBEXFTP_SPLIT_SETPATH)
+	(OBEXFTP_LEADING_SLASH | OBEXFTP_TRAILING_SLASH | OBEXFTP_SPLIT_SETPATH | OBEXFTP_CONN_HEADER)
 #define DEFAULT_CACHE_TIMEOUT 180	/* 3 minutes */
 #define DEFAULT_CACHE_MAXSIZE 10240	/* 10k */
 
@@ -90,6 +92,7 @@ typedef struct obexftp_client
 {
 	/* state */
 	obex_t *obexhandle;
+	uint32_t connection_id; /* set to 0xffffffff if unused */
 	int transport; /* the transport for obexhandle */
 	int finished;
 	int success;
