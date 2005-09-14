@@ -42,7 +42,7 @@ static /*@only@*/ char *normalize_dir_path(int quirks, const char *name)
 {
 	char *copy, *p;
 
-	return_val_if_fail(name != NULL, NULL);
+	return_val_if_fail(name != NULL, strdup(""));
 
 	p = copy = malloc(strlen(name) + 2); /* at most add two slashes */
 
@@ -174,11 +174,12 @@ static char *obexftp_cache_list(obexftp_client_t *cli, const char *name)
 	/* search the cache */
 	if (!get_cache_object(cli, path, &listing, NULL)) {
 		DEBUG(2, "%s() Listing %s from cache\n", __func__, path);
-		free(path);
+		if (path)
+			free(path);
 		return listing;
 	}
 
-	if (!strcmp(path, "/telecom/")) {
+	if (path && !strcmp(path, "/telecom/")) {
 		listing = strdup("<file name=\"devinfo.txt\">");
 		put_cache_object(cli, path, listing, strlen(listing));
 	}
@@ -214,7 +215,8 @@ static time_t atotime (const char *date)
 static stat_entry_t *parse_directory(const char *xml)
 {
         const char *line;
-        const char *p;
+        const char *p, *h;
+        char tagname[201];
         char name[201]; // bad coder
         char mod[201]; // - no biscuits!
         char size[201]; // int would be ok too.
@@ -238,21 +240,35 @@ static stat_entry_t *parse_directory(const char *xml)
 		if (!line)
 			break;
 		line++;
-		/* can sscanf skip leading whitespace? */
 		while (*p != '<') p++;
+		
+		tagname[0] = '\0';
+                sscanf (p, "<%200[^> \t\n\r] ", tagname);
 
-                if (2 == sscanf (p, "<folder name=\"%200[^\"]\" modified=\"%200[^\"]\"", name, mod)) {
+                name[0] = '\0';
+		h = strstr(p, "name=");
+		if (h) sscanf (h, "name=\"%200[^\"]\"", name);
+                
+		mod[0] = '\0';
+                h = strstr(p, "modified=");
+		if (h) sscanf (h, "modified=\"%200[^\"]\"", mod);
+                
+		size[0] = '\0';
+                h = strstr(p, "size=");
+		if (h) sscanf (h, "size=\"%200[^\"]\"", size);
+	
+		if (!strcmp("folder", tagname)) {
                         dir->mode = S_IFDIR | 0755;
                         strcpy(dir->name, name);
 			dir->mtime = atotime(mod);
                         dir->size = 0;
 			dir++;
                 }
-                if (3 == sscanf (p, "<file name=\"%200[^\"]\" size=\"%200[^\"]\" modified=\"%200[^\"]\"", name, size, mod)) {
+		if (!strcmp("file", tagname)) {
                         dir->mode = S_IFREG | 0644;
                         strcpy(dir->name, name);
 			dir->mtime = atotime(mod);
-			dir->size = 0;
+			i = 0;
 			sscanf(size, "%i", &i);
 			dir->size = i; /* int to off_t */
 			dir++;

@@ -116,7 +116,7 @@ static void start_server(int transport)
 	BtOBEX_ServerRegister(handle, bt_src, bt_channel);
 	printf("Waiting for connection...\n");
 
-	(void) OBEX_ServerAccept(handle, obex_event, NULL);
+	// this causes trouble: (void) OBEX_ServerAccept(handle, obex_event, NULL);
 
 	while (!finished) {
 		printf("Handling connection...\n");

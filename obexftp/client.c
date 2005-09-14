@@ -240,7 +240,7 @@ static void client_done(obex_t *handle, obex_object_t *object, /*@unused@*/ int 
 	uint8_t *p;
 
         const uint8_t *body_data = NULL;
-	uint32_t body_len;
+	uint32_t body_len = -1;
 
 	/*@temp@*/ obexftp_client_t *cli;
 
@@ -488,7 +488,8 @@ int obexftp_cli_connect_uuid(obexftp_client_t *cli, const char *device, int port
 	bdaddr_t bdaddr;
 #endif
 #ifdef HAVE_USB
-	struct usb_obex_intf *usb_intf;
+	int obex_intf_cnt;
+	obex_intf_info_t *obex_intf;
 #endif
 	obex_object_t *object;
 	int ret = -1; /* no connection yet */
@@ -538,18 +539,17 @@ int obexftp_cli_connect_uuid(obexftp_client_t *cli, const char *device, int port
 
 #ifdef HAVE_USB
 	case OBEX_TRANS_USB:
-		usb_intf = UsbOBEX_GetInterfaces(cli->obexhandle);
+		obex_intf_cnt = OBEX_FindInterfaces(cli->obexhandle, &obex_intf);
 		DEBUG(3, "%s() \n", __func__);
-		while (usb_intf && port > 0) {
-			DEBUG(2, "%s() Skipping intf %s\n", __func__, usb_intf->device);
-			usb_intf = usb_intf->next;
-			port--;
+		if (obex_intf_cnt <= 0) {
+			DEBUG(1, "%s() there are no valid USB interfaces\n", __func__);
+			ret = -EINVAL; /* is there a better errno? */
 		}
-		if (!usb_intf) {
+		else if (port >= obex_intf_cnt) {
 			DEBUG(1, "%s() %d is an invalid USB interface number\n", __func__, port);
 			ret = -EINVAL; /* is there a better errno? */
 		} else
-			ret = UsbOBEX_TransportConnect(cli->obexhandle, usb_intf);
+			ret = OBEX_InterfaceConnect(cli->obexhandle, &obex_intf[port]);
 		break;
 #endif /* HAVE_USB */
 
