@@ -22,6 +22,7 @@ AC_CHECK_HEADERS([arpa/inet.h errno.h fcntl.h netdb.h netinet/in.h stdlib.h stri
 # Checks for libraries.
 AM_PATH_OPENOBEX(1.0.0)
 
+AM_ICONV
 dnl IRDA_CHECK
 BLUETOOTH_CHECK
 SDPLIB_CHECK

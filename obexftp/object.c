@@ -23,6 +23,7 @@
 #include <stdlib.h>
 
 #include "object.h"
+#include <common.h>
 
 obex_object_t *obexftp_build_info (obex_t obex, uint32_t conn, uint8_t opcode)
 {
@@ -194,6 +195,8 @@ obex_object_t *obexftp_build_setpath (obex_t obex, uint32_t conn, const char *na
 			return NULL;
 		}
 		ucname_len = OBEX_CharToUnicode(ucname, name, ucname_len);
+		DEBUG(4, "OBEX_CharToUnicode '%s' %x: ", name, ucname[3]);
+		DEBUGBUFFER(ucname, strlen(name)*2 + 2);
 
 		/* apparently the empty name header is meant to be really empty... */
 		if (ucname_len == 2)

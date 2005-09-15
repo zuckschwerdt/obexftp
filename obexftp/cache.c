@@ -19,9 +19,17 @@
  *     
  */
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
 #include <string.h>
 #include <stdlib.h>
 #include <unistd.h>
+
+#ifdef HAVE_ICONV
+#include <iconv.h>
+#endif
 
 #include <openobex/obex.h>
 
@@ -223,10 +231,28 @@ static stat_entry_t *parse_directory(const char *xml)
 
 	stat_entry_t *dir_start, *dir;
 	int i;
-
+#ifdef HAVE_ICONV
+	iconv_t utf8;
+	char *xml_latin1, *xml_end;
+	size_t ni, no, nrc;
+	int ret;
+#endif
+		
 	if (!xml)
 		return NULL;
-
+#ifdef HAVE_ICONV
+	utf8 = iconv_open ("LATIN1", "UTF-8");
+	ni = strlen(xml);
+	no = ni;
+	xml_latin1 = xml_end = malloc(no);
+	if (xml_latin1) {
+		nrc = iconv (utf8, (char* *)&xml, &ni, (char* *)&xml_end, &no);
+		ret = iconv_close (utf8);
+		if (nrc >= 0)
+			xml = xml_latin1;
+	}
+#endif
+	
 	/* prepare a cache to hold this dir */
 	p = xml;
 	for (i = 0; p && *p; p = strchr(++p, '>')) i++;
@@ -279,6 +305,10 @@ static stat_entry_t *parse_directory(const char *xml)
 
 	dir->name[0] = '\0';
 
+#ifdef HAVE_ICONV
+	if (xml_latin1)
+		free (xml_latin1);
+#endif
         return dir_start;
 }
 
