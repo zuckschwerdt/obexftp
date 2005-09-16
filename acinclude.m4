@@ -101,11 +101,9 @@ AC_DEFUN([USB_CHECK],[
 	AC_MSG_CHECKING(for USB support)
 
 	AC_TRY_COMPILE( [
-				#include <usb.h>
 				#include <openobex/obex.h>
 				#include <openobex/obex_const.h>
 			],[
-				struct usb_bus bus;
 				usb_obex_intf_info_t usb_intf;
 			],
 				am_cv_usb_found=yes,
@@ -114,13 +112,8 @@ AC_DEFUN([USB_CHECK],[
 
 	if test $am_cv_usb_found = yes; then
 		AC_DEFINE(HAVE_USB,1,[Define if system supports USB])
-
-		USB_CFLAGS=""
-		USB_LIBS="-lusb"
 	fi
 
-	AC_SUBST(USB_CFLAGS)
-	AC_SUBST(USB_LIBS)
 	AC_MSG_RESULT($am_cv_usb_found)
 ])
 

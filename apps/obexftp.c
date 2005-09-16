@@ -301,6 +301,35 @@ static void probe_device()
 	exit (0);
 }
 
+
+#ifdef HAVE_USB
+static void discover_cb(obex_t *handle, obex_object_t *object, /*@unused@*/ int mode, int event, int obex_cmd, int obex_rsp)
+{
+}
+
+static void discover_usb()
+{
+	obex_t *handle;
+	obex_intf_info_t* obex_intf;
+	int i, interfaces_number;
+
+	if(! (handle = OBEX_Init(OBEX_TRANS_USB, discover_cb, 0))) {
+		printf( "OBEX_Init failed\n");
+		return;
+	}
+	interfaces_number = OBEX_FindInterfaces(handle, &obex_intf);
+	printf("Found %d USB OBEX interfaces\n", interfaces_number);
+	for (i=0; i < interfaces_number; i++)
+		printf("Interface %d:\n\tManufacturer: %s\n\tProduct: %s\n\tInterface description: %s\n", i,
+			obex_intf[i].usb.manufacturer,
+			obex_intf[i].usb.product,
+		       	obex_intf[i].usb.control_interface);
+	printf("Use '-U interface_number' to connect\n");
+	OBEX_Cleanup(handle);
+}
+#endif /* HAVE_USB */
+
+
 int main(int argc, char *argv[])
 {
 	int verbose=0;
@@ -340,7 +369,7 @@ int main(int argc, char *argv[])
 #endif
 			{"channel",	required_argument, NULL, 'B'},
 #ifdef HAVE_USB
-			{"usb",	required_argument, NULL, 'U'},
+			{"usb",		optional_argument, NULL, 'u'},
 #endif
 			{"tty",		required_argument, NULL, 't'},
 			{"network",	required_argument, NULL, 'N'},
@@ -360,11 +389,11 @@ int main(int argc, char *argv[])
 			{"verbose",	no_argument, NULL, 'v'},
 			{"version",	no_argument, NULL, 'V'},
 			{"help",	no_argument, NULL, 'h'},
-			{"usage",	no_argument, NULL, 'u'},
+			{"usage",	no_argument, NULL, 'h'},
 			{0, 0, 0, 0}
 		};
 		
-		c = getopt_long (argc, argv, "-ib::B:U:t:N:FL::l::c:C:f:g:G:p:k:XPxm:Vvh",
+		c = getopt_long (argc, argv, "-ib::B:u::t:N:FL::l::c:C:f:g:G:p:k:XPxm:Vvh",
 				 long_options, &option_index);
 		if (c == -1)
 			break;
@@ -403,9 +432,16 @@ int main(int argc, char *argv[])
 #endif /* HAVE_BLUETOOTH */
 
 #ifdef HAVE_USB
-		case 'U':
+		case 'u':
 			transport = OBEX_TRANS_USB;
-			usbinterface = atoi(optarg);
+			/* handle severed optional option argument */
+			if (!optarg && argc > optind && argv[optind][0] != '-') {
+				optarg = argv[optind];
+				optind++;
+				usbinterface = atoi(optarg);
+			} else {
+				discover_usb();
+			}
 			break;
 #endif /* HAVE_USB */
 		
@@ -585,7 +621,6 @@ int main(int argc, char *argv[])
 			break;
 
 		case 'h':
-		case 'u':
 			printf("ObexFTP %s\n", VERSION);
 			printf("Usage: %s [ -i | -b <dev> [-B <chan>] | -U <intf> | -t <dev> | -N <host> ]\n"
 				"[-c <dir> ...] [-C <dir> ] [-l [<dir>]]\n"
@@ -599,7 +634,7 @@ int main(int argc, char *argv[])
 				" [ -B, --channel <number> ]  use this bluetooth channel when connecting\n"
 #endif
 #ifdef HAVE_USB
-				" -U, --usb <intf>            connect to this usb interface\n"
+				" -u, --usb [<intf>]          connect to a usb interface or list interfaces\n"
 #endif
 				" -t, --tty <device>          connect to this tty using a custom transport\n"
 				" -N, --network <host>        connect to this host\n"

@@ -1,0 +1,140 @@
+=head1 NAME
+
+obexftp - Mobile Equipment file transfer tool
+
+=head1 SYNOPSIS
+
+B<obexftp> [I<OPTION>] [I<COMMANDS>]
+
+=head1 DESCRIPTION
+
+B<obexftp> is used to access files on mobile equipment,
+i.e. cell phones.
+
+This tool lets you access the B<ObexFTP> library by the means of
+a command line interface.
+You might consider using the other means available.
+E.g. GTK Client B<gObexFtp>, Gnome-VFS-Module B<vfs-obexftp> and some
+others.
+
+=head1 OPTIONS
+
+The ordering of options is important. Every command will use the most
+recent device set. Every file without command switch will apply to the
+command given most recent. See B<EXAMPLES>
+
+=over 8
+
+=item B<-i>, B<--irda>
+
+Connect using the IrDA protocol. This is the default.
+
+=item B<-b> I<device>, B<--bluetooth> I<device>
+
+Connect to this bluetooth device. If the device is not given the first device found will be used.
+
+=item B<-B> I<number>, B<--channel> I<number>
+
+Use this bluetooth channel when connecting.
+The channel will be discoverd automatically if this option is not used.
+
+=item B<-u> I<intf no>, B<--usb> I<intf no>
+
+Connect to this usb interface or list all available usb interfaces.
+
+=item B<-t> I<device>, B<--tty> I<device>
+
+Connect to this tty device.
+
+=item B<-N> I<host>, B<--network> I<host>
+
+Connect to this network host.
+
+=item B<-c> I<folder>, B<--chdir> I<folder>
+
+Set the mobiles current working directory.
+
+=item B<-C> I<folder>, B<--mkdir> I<folder>
+
+Set the mobiles current working directory.
+The folder will be created if it doesn't exist.
+
+=item B<-l> I<folder>, B<--list> I<folder>
+
+List a folder.
+
+=item B<-g> I<source>, B<--get> I<source>
+
+Retrieve files from mobile.
+
+=item B<-G> I<source>, B<--getdelete> I<source>
+
+Retrieve files from mobile and delete them on the mobile
+
+=item B<-p> I<source>, B<--put> I<source>
+
+Send files to the mobile.
+
+=item B<-k> I<source>, B<--delete> I<source>
+
+Delete files from the mobile.
+
+=item B<-x>, B<--info>
+
+Retrieve misc infos from mobile. I.e. memory size and free memory. Siemens specific for now.
+
+=item B<-m> I<src> I<dest>, B<--move> I<src> I<dest>
+
+Move (rename) files on the mobile. Siemens specific for now.
+
+=item B<-v>, B<--verbose>
+
+Be verbose and give some additional infos.
+
+=item B<-V>, B<--version>
+
+Print version string and exit.
+
+=item B<-h>, B<--help>, B<--usage>
+
+Print short usage instructions.
+
+=back
+
+=head1 EXAMPLES
+
+=over 8
+
+=item To get the directory listing from the first irda device:
+
+B<obexftp -i -l>
+or just
+B<obexftp -l>
+as IrDA is the default.
+
+=item To get the file bar from directory foo from the first bluetooth device:
+
+B<obexftp -b -c foo -g bar>
+
+=item To send the file bar to directory foo with device on first serial port:
+
+B<obexftp -t /dev/ttyS0 -c foo -p bar>
+
+=back
+
+=head1 SEE ALSO
+
+L<openobex>, L<obexftp>, L<cobex>, L<libbfb>.
+
+=head1 BUGS
+
+Bugs ? Features !
+
+=head1 NOTES
+
+The software has been tested and reported working on at least Siemens, Ericsson, and Nokia phones.
+
+=head1 AUTHOR
+
+Christian W. Zuckschwerdt E<lt>zany@triq.netE<gt>
+

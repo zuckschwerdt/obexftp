@@ -76,6 +76,7 @@ AC_SUBST(BFB_VERSION)
 AC_OUTPUT([
 Makefile 
 contrib/Makefile
+doc/Makefile
 apps/Makefile
 bfb/Makefile
 cobexbfb/Makefile
