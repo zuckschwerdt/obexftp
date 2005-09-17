@@ -10,9 +10,10 @@ dnl AM_MAINTAINER_MODE
 AC_ISC_POSIX
 AC_PROG_CC
 AC_PROG_INSTALL
+AC_PROG_LN_S
 
 # Initialize libtool
-AM_PROG_LIBTOOL
+AC_PROG_LIBTOOL
 
 # Checks for header files.
 AC_HEADER_STDC
@@ -45,10 +46,9 @@ AC_TRY_COMPILE([
     [printf(__func__)],,
     [AC_DEFINE(__func__, "", [non-C99 fake support for __func__])])
 
-dnl Turn on debugging and all warnings when using gcc
+dnl Turn on all warnings but no debugging when using gcc
 if test "$ac_cv_prog_gcc" = "yes"; then
-	CFLAGS="$CFLAGS -g -Wall -Wmissing-declarations -Wmissing-prototypes"
-	LDFLAGS="$LDFLAGS -g -Wall"
+	CFLAGS="$CFLAGS -W -Wundef -Wmissing-declarations -Wmissing-prototypes"
 fi
        
 AC_SUBST(CFLAGS)

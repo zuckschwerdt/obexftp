@@ -4,7 +4,11 @@ INCLUDES =			@OPENOBEX_CFLAGS@ \
 				-I$(top_srcdir) \
 				-I$(top_srcdir)/includes
 
-LDADD =				@OPENOBEX_LIBS@
+LDADD =                         @OPENOBEX_LIBS@ \
+				@BLUETOOTH_LIBS@ \
+				@USB_LIBS@ \
+				../cobexbfb/libcobexbfb.la \
+				../bfb/libbfb.la
 
 obexftpincludedir =		$(includedir)/obexftp
 
