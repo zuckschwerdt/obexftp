@@ -1,7 +1,7 @@
 /*
- * cobex_bfb.c - Talk OBEX over a serial port (Siemens specific)
+ * multi_cobex.c - Talk OBEX over a serial port (Siemens, Ericsson, New-Siemens)
  *
- *   Copyright (c) 2002 Christian W. Zuckschwerdt <zany@triq.net>
+ *   Copyright (c) 2002-2005 Christian W. Zuckschwerdt <zany@triq.net>
  *
  *   This program is free software; you can redistribute it and/or modify it
  *   under the terms of the GNU General Public License as published by the Free
@@ -50,8 +50,8 @@
 #endif
 
 #include <openobex/obex.h>
-#include "cobex_bfb.h"
-#include "cobex_bfb_private.h"
+#include "multi_cobex.h"
+#include "multi_cobex_private.h"
 #include <bfb/bfb.h>
 #include <bfb/bfb_io.h>
 #include <common.h>
@@ -86,10 +86,20 @@ int cobex_connect(obex_t *self, void *data)
 
 	c->fd = bfb_io_open(c->tty, &typeinfo);
 	DEBUG(3, "%s() bfb_io_open returned %d, %d\n", __func__, c->fd, typeinfo);
-	if(typeinfo == 2)
+	switch (typeinfo) {
+	case 1:
+		c->type = CT_BFB;
+		break;
+	case 2:
 		c->type = CT_ERICSSON;
-	else
+		break;
+	case 3:
 		c->type = CT_SIEMENS;
+		break;
+	default:
+		c->type = 0; /* invalid */
+		return -1;
+	}
 
 #ifdef _WIN32
 	if(c->fd == INVALID_HANDLE_VALUE)
@@ -126,7 +136,7 @@ int cobex_write(obex_t *self, void *data, uint8_t *buffer, int length)
 
 	DEBUG(3, "%s() Data %d bytes\n", __func__, length);
 
-	if (c->type == CT_ERICSSON) {
+	if (c->type == CT_ERICSSON || c->type == CT_SIEMENS) {
 		actual = write(c->fd, buffer, length);
 		if (actual < length)	{
 			DEBUG(1, "Error writing to port (%d expected %d)\n", actual, length);
@@ -192,7 +202,7 @@ int cobex_handleinput(obex_t *self, void *data, int timeout)
 	DEBUG(2, "%s() Read %d bytes (%d bytes already buffered)\n", __func__, actual, c->recv_len);
 #endif
 
-	if (c->type == CT_ERICSSON) {
+	if (c->type == CT_ERICSSON || c->type == CT_SIEMENS) {
 		if (actual > 0) {
 			OBEX_CustomDataFeed(self, c->recv, actual);
 			return 1;

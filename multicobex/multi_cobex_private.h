@@ -1,7 +1,7 @@
 /*
- * cobex_bfb_private.h
+ * multi_cobex_private.h
  *
- *   Copyright (c) 2002 Christian W. Zuckschwerdt <zany@triq.net>
+ *   Copyright (c) 2002-2005 Christian W. Zuckschwerdt <zany@triq.net>
  * 
  *   This program is free software; you can redistribute it and/or modify it
  *   under the terms of the GNU General Public License as published by the Free
@@ -19,19 +19,20 @@
  *     
  */
 
-#ifndef COBEXBFB_PRIVATE_H
-#define COBEXBFB_PRIVATE_H
+#ifndef MULTICOBEX_PRIVATE_H
+#define MULTICOBEX_PRIVATE_H
 
 #include <bfb/bfb.h>
 
 #define SERPORT "/dev/ttyS0"
 
-#define	RECVSIZE 500	/* Recieve up to this much from socket */
+#define	RECVSIZE 500		/* Recieve up to this much from socket */
 
 enum cobex_type
 {
-        CT_SIEMENS,
-        CT_ERICSSON
+        CT_BFB,			/* use a bfb transport */
+        CT_ERICSSON,		/* just custom init and teardown */
+        CT_SIEMENS		/* new siemens, like ericsson above */
 };
 
 typedef struct {
@@ -50,4 +51,4 @@ typedef struct {
 	int data_len;		/* filled buffer length */
 } cobex_t;
 
-#endif /* COBEXBFB_PRIVATE_H */
+#endif /* MULTICOBEX_PRIVATE_H */

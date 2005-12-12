@@ -1,6 +1,5 @@
-SUBDIRS =			bfb cobexbfb obexftp apps doc contrib
+SUBDIRS =			bfb multicobex obexftp apps doc contrib swig
 
 EXTRA_DIST =			obexftp.spec.in \
 				obexftp.spec \
-				README.obexftp \
 				includes/common.h

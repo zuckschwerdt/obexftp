@@ -1,68 +1,89 @@
 #!/bin/bash --norc
 
-# This is the Bluetooth channel used by Sony Ericsson T610 phones
-btchan=15
+#btchan="-B 15"
 retries=10
+
+[ "X$1" == "X-version" ] && {
+	echo "$0 version 2.0"
+	exit 0
+}
 
 overwrite=0
 [ "X$1" == "X-o" ] && {
-        overwrite=1
-        shift
+	overwrite=1
+	shift
 }
 
 [ $# -gt 1 ] && {
-        echo "usage: $0 [-o] [dir]"
-        exit 1
+	echo "usage: $0 [-o] [dir]"
+	echo "usage: $0 [-version]"
+	exit 1
 }
 
 topdir=$1
-[ -z "$1" ] && topdir=/home/ken/Documents/Obexftp-backups
+[ -z "$1" ] && topdir=~/Documents/Obexftp-backups
 
 [ ! -d $topdir ] && {
-        echo "${0}: ${topdir}: No such directory"
-        exit 1
+	echo "${0}: ${topdir}: No such directory"
+	exit 1
 }
 
 echo "Scanning for new phones"
 for btaddr in `hcitool scan | grep : | cut -f2`
 do
-        sleep 1
-        subdir=`hcitool scan | grep --fixed-strings $btaddr | cut -f3`
-        echo "Found phone $subdir"
-        mkdir "$topdir/$subdir" 2>/dev/null
-        echo $btaddr > "$topdir/$subdir/.Bluetooth-addr"
+	sleep 1
+	subdir=`hcitool scan | grep --fixed-strings $btaddr | cut -f3`
+	echo "Found phone $subdir"
+	mkdir "$topdir/$subdir" 2>/dev/null
+	echo $btaddr > "$topdir/$subdir/.Bluetooth-addr"
 done
 sleep 1
 
-for dir in $topdir/*
+obexftpdir() {
+	echo "Parsing \$1=\"$1\" \$2=\"$2\" \$3=\"$3\" \$4=\"$4\" \$5=\"$5\" \$6=\"$6\" \$7=\"$7\" \$8=\"$8\""
+	sleep 1
+        obexftp -b $btaddr $btchan ${1:+-c "$1"} ${2:+-c "$2"} ${3:+-c "$3"} ${4:+-c "$4"} ${5:+-c "$5"} ${6:+-c "$6"} ${7:+-c "$7"} ${8:+-c "$8"} -l 2>/dev/null | tr '<' '\012' | grep "file name" | cut -d\" -f2 | sed -e "s/\&apos\;/'/" | while read fil
+	do
+		sleep 1
+		echo "Checking file $fil"
+		[ ! -z "`echo $fil | grep '\.dm$'`" ] && {
+			echo "Cannot copy DRM protected files"
+			touch "$fil"
+		}
+		[ $overwrite == "1" ] || [ ! -f "$fil" ] && {
+			echo "reading $fil"
+			retry=0
+			success=0
+			while [ $success -eq 0 -a $retry -lt $retries ]
+			do
+				success=`obexftp -b $btaddr $btchan ${1:+-c "$1"} ${2:+-c "$2"} ${3:+-c "$3"} ${4:+-c "$4"} ${5:+-c "$5"} ${6:+-c "$6"} ${7:+-c "$7"} ${8:+-c "$8"} -g "$fil" 2>&1 | grep -c '^Receiving.*'"$fil"'.*done$'`
+				sleep 1
+				[ $success -eq 0 ] && echo "Retrying ..."
+				retry=`expr $retry + 1`
+			done
+			echo "read $fil success $success"
+		}
+	done
+	sleep 1
+        obexftp -b $btaddr $btchan ${1:+-c "$1"} ${2:+-c "$2"} ${3:+-c "$3"} ${4:+-c "$4"} ${5:+-c "$5"} ${6:+-c "$6"} ${7:+-c "$7"} -l 2>/dev/null | tr '<' '\012' | grep "folder name" | cut -d\" -f2 | while read sub
+	do
+		echo "Subdir is \"$sub\""
+		mkdir "$sub" 2>/dev/null
+		cd "$sub"
+		obexftpdir ${1:+"$1"} ${2:+"$2"} ${3:+"$3"} ${4:+"$4"} ${5:+"$5"} ${6:+"$6"} ${7:+"$7"} "$sub"
+		cd ..
+	done
+}
+
+cd $topdir
+ls | while read dir
 do
-        echo Getting files for phone `basename "$dir"`
-        btaddr=`cat "$dir/.Bluetooth-addr"`
-        obexftp -b $btaddr -B $btchan -l / 2>/dev/null | tr '<' '\012' | grep "folder name" | cut -d\" -f2 | while read sub
-        do
-                sleep 1
-                echo "directory $dir/$sub"
-                mkdir "$dir/$sub" 2>/dev/null
-                obexftp -b $btaddr -B $btchan -l $sub 2>/dev/null | tr '<' '\012' | grep "file name" | cut -d\" -f2 | while read fil
-                do
-                        sleep 1
-                        echo "checking $dir/$sub/$fil"
-                        [ $overwrite == "1" ] || [ ! -f "$dir/$sub/$fil" ] && {
-                                echo "reading $dir/$sub/$fil"
-                                cd "$dir/$sub"
-                                retry=0
-                                success=0
-                                while [ $success -eq 0 -a $retry -lt $retries ]
-                                do
-                                        success=`obexftp -b $btaddr -B $btchan -c "$sub" -g "$fil" 2>&1 | grep -c '^Receiving '"$fil"'.*done$'`
-                                        sleep 1
-                                        [ $success -eq 0 ] && echo "Retrying ... "
-                                        retry=`expr $retry + 1`
-                                done
-                                echo "read $dir/$sub/$fil success $success"
-                        }
-                done
-        done
+	echo Getting files for phone `basename "$dir"`
+	btaddr=`cat "$dir/.Bluetooth-addr"`
+	mkdir "$dir" 2>/dev/null
+	cd "$dir"
+        obexftpdir
+	cd ..
 done
 
 exit 0

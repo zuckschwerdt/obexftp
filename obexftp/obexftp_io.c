@@ -39,12 +39,12 @@
 #define S_IROTH 0
 #define S_IXGRP 0
 #define S_IXOTH 0
-#define _POSIX_PATH_MAX MAX_PATH
 #endif
 #define DEFFILEMOD (S_IRUSR|S_IWUSR|S_IRGRP|S_IROTH) /* 0644 */
 #define DEFXFILEMOD (DEFFILEMOD | S_IXGRP | S_IXUSR | S_IXOTH) /* 0755 */
 
 /* Get some file-info. (size and lastmod) */
+/* lastmod needs to have at least 21 bytes */
 static int get_fileinfo(const char *name, char *lastmod)
 {
 	struct stat stats;
@@ -132,24 +132,29 @@ static int nameok(const char *name)
 /* Concatenate two pathnames. */
 /* The first path may be NULL. */
 /* The second path is always treated relative. */
-/* dest must have at least _POSIX_PATH_MAX + 1 chars. */
-static int pathcat(/*@unique@*/ char *dest, const char *path, const char *name)
+static int pathncat(/*@unique@*/ char *dest, const char *path, const char *name, size_t n)
 {
+	size_t len;
 	if(name == NULL)
 		return 1;
 		
 	while(*name == '/')
 		name++;
 		
-	if((path == NULL) || (*path == '\0'))
-		strncpy(dest, name, _POSIX_PATH_MAX);
-	else {
-		strncpy(dest, path, _POSIX_PATH_MAX);
-		if (dest[strlen(dest)-1] != '/') {
-			dest[strlen(dest) + 1] = '\0';
-			dest[strlen(dest)] = '/';
+	if((path == NULL) || (*path == '\0')) {
+		strncpy(dest, name, n);
+		dest[n - 1] = '\0';
+	} else {
+		strncpy(dest, path, n);
+		dest[n - 1] = '\0';
+		len = strlen(dest);
+		if (len >= n - 1)
+			return 1;
+		if (dest[len - 1] != '/') {
+			dest[len] = '/';
+			dest[len + 1] = '\0';
 		}
-		strncat(dest, name, _POSIX_PATH_MAX-strlen(dest));
+		strncat(dest, name, n - strlen(len));
 	}
 
 	return 0;
@@ -158,7 +163,8 @@ static int pathcat(/*@unique@*/ char *dest, const char *path, const char *name)
 /* Open a file, but do some sanity-checking first. */
 int open_safe(const char *path, const char *name)
 {
-	char diskname[_POSIX_PATH_MAX + 1] = {0,};
+	char *diskname;
+	size_t maxlen;
 	int fd;
 
 	DEBUG(3, "%s() \n", __func__);
@@ -169,18 +175,26 @@ int open_safe(const char *path, const char *name)
 
 	/* TODO! Rename file if already exist. */
 
-	(void) pathcat(diskname, path, name);
+        maxlen = strlen(name) + 1;
+	if (path)
+        	maxlen += strlen(path);
+	diskname = malloc(maxlen);
+	if(!diskname)
+		return -1;
+	(void) pathncat(diskname, path, name, maxlen);
 
 	DEBUG(3, "%s() Creating file %s\n", __func__, diskname);
 
 	fd = open(diskname, O_RDWR | O_CREAT | O_TRUNC, DEFFILEMOD);
+	free(diskname);
 	return fd;
 }
 
 /* Go to a directory. Create if not exists and create is true. */
 int checkdir(const char *path, const char *dir, int create, int allowabs)
 {
-	char newpath[_POSIX_PATH_MAX + 1] = {0,};
+	char *newpath;
+	size_t maxlen;
 	struct stat statbuf;
 	int ret = -1;
 
@@ -189,18 +203,28 @@ int checkdir(const char *path, const char *dir, int create, int allowabs)
 			return -1;
 	}
 
-	(void) pathcat(newpath, path, dir);
+	if(!dir)
+		return 1;
+        maxlen = strlen(dir) + 1;
+	if (path)
+        	maxlen += strlen(path);
+	newpath = malloc(maxlen);
+	if(!newpath)
+		return -1;
+	(void) pathncat(newpath, path, dir, maxlen);
 
 	DEBUG(3, "%s() path = %s dir = %s, create = %d, allowabs = %d\n", __func__, path, dir, create, allowabs);
 	if(stat(newpath, &statbuf) == 0) {
 		/* If this directory aleady exist we are done */
 		if(S_ISDIR(statbuf.st_mode)) {
 			DEBUG(3, "%s() Using existing dir\n", __func__);
+			free(newpath);
 			return 1;
 		}
 		else  {
 			/* A non-directory with this name already exist. */
 			DEBUG(3, "%s() A non-dir called %s already exist\n", __func__, newpath);
+			free(newpath);
 			return -1;
 		}
 	}
@@ -216,6 +240,7 @@ int checkdir(const char *path, const char *dir, int create, int allowabs)
 		ret = -1;
 	}
 
+	free(newpath);
 	return ret;
 }
 	

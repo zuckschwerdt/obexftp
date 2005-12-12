@@ -34,7 +34,6 @@
 #include <obexftp/obexftp.h>
 #include <obexftp/client.h>
 #include <obexftp/uuid.h>
-#include <cobexbfb/cobex_bfb.h>
 
 #ifdef _WIN32_FIXME
 /* OpenOBEX won't define a handler on win32 */
@@ -48,8 +47,17 @@ void DUMPBUFFER(unsigned int n, char *label, char *msg) { }
 #include "bt_discovery.h"
 #endif
 
-#define OBEXFTP_PORT "OBEXFTP_PORT"
-#define OBEXFTP_ADDR "OBEXFTP_ADDR"
+// perhaps this scheme would be better?
+// IRDA		irda://[nick?]
+// CABLE	tty://path
+// BLUETOOTH	bt://[device[:channel]]
+// USB		usb://[enum]
+// INET		host://host[:port]
+#define OBEXFTP_CABLE "OBEXFTP_CABLE"
+#define OBEXFTP_BLUETOOTH "OBEXFTP_BLUETOOTH"
+#define OBEXFTP_USB "OBEXFTP_USB"
+#define OBEXFTP_INET "OBEXFTP_INET"
+#define OBEXFTP_CHANNEL "OBEXFTP_CHANNEL"
 
 /* current command, set by main, read from info_cb */
 int c;
@@ -134,22 +142,12 @@ static int use_fbs=1;
 /* connect with given uuid. re-connect every time */
 static int cli_connect_uuid(const char* uuid)
 {
-/*@only@*/ /*@null@*/ static obex_ctrans_t *ctrans = NULL;
 	int retry;
 
 	if (cli == NULL) {
 
-		if (tty != NULL) {
-       			ctrans = cobex_ctrans (tty);
-       			fprintf(stderr, "Custom transport set to 'Siemens/Ericsson'\n");
-		}
-		else {
-			ctrans = NULL;
-			fprintf(stderr, "No custom transport\n");
-		}
-
 		/* Open */
-		cli = obexftp_cli_open (transport, ctrans, info_cb, NULL);
+		cli = obexftp_open (transport, NULL, info_cb, NULL);
 		if(cli == NULL) {
 			fprintf(stderr, "Error opening obexftp-client\n");
 			exit(1);
@@ -159,16 +157,28 @@ static int cli_connect_uuid(const char* uuid)
 	for (retry = 0; retry < 3; retry++) {
 
 		/* Connect */
-                if (transport == OBEX_TRANS_INET) {
-			if (obexftp_cli_connect_uuid (cli, inethost, 0, uuid) >= 0)
+                switch (transport) {
+		case OBEX_TRANS_INET:
+			if (obexftp_connect_uuid (cli, inethost, 0, uuid) >= 0)
 				return TRUE;
-		} else if (transport == OBEX_TRANS_USB) {
-			if (obexftp_cli_connect_uuid (cli, NULL, usbinterface, uuid) >= 0)
+			break;
+		case OBEX_TRANS_IRDA:
+			if (obexftp_connect_uuid (cli, NULL, 0, uuid) >= 0)
 				return TRUE;
-		} else if (transport == OBEX_TRANS_BLUETOOTH) {
-			if (obexftp_cli_connect_uuid (cli, btaddr, btchannel, uuid) >= 0)
+			break;
+		case OBEX_TRANS_USB:
+			if (obexftp_connect_uuid (cli, NULL, usbinterface, uuid) >= 0)
 				return TRUE;
-		} else {
+			break;
+		case OBEX_TRANS_CUSTOM:
+			if (obexftp_connect_uuid (cli, tty, 0, uuid) >= 0)
+				return TRUE;
+			break;
+		case OBEX_TRANS_BLUETOOTH:
+			if (obexftp_connect_uuid (cli, btaddr, btchannel, uuid) >= 0)
+				return TRUE;
+			break;
+		default:
 			fprintf(stderr, "Transport type unknown\n");
 			return FALSE;
 		}
@@ -203,9 +213,9 @@ static void cli_disconnect()
 {
 	if (cli != NULL) {
 		/* Disconnect */
-		(void) obexftp_cli_disconnect (cli);
+		(void) obexftp_disconnect (cli);
 		/* Close */
-		obexftp_cli_close (cli);
+		obexftp_close (cli);
 		cli = NULL;
 	}
 }
@@ -280,7 +290,7 @@ static void probe_device_uuid(const char *uuid)
 
 	//cli_disconnect();
 	if (cli != NULL) {
-		(void) obexftp_cli_disconnect (cli);
+		(void) obexftp_disconnect (cli);
 	}
 		
 }
@@ -342,24 +352,32 @@ int main(int argc, char *argv[])
 	if (strstr(argv[0], "ls") != NULL)	most_recent_cmd = 'l';
 	if (strstr(argv[0], "get") != NULL)	most_recent_cmd = 'g';
 	if (strstr(argv[0], "put") != NULL)	most_recent_cmd = 'p';
-	if (strstr(argv[0], "mv") != NULL)	most_recent_cmd = 'm';
 	if (strstr(argv[0], "rm") != NULL)	most_recent_cmd = 'k';
 
-	/* preset the port for environment */
-	tty = getenv(OBEXFTP_PORT);
-	if (tty != NULL)
+	/* preset the port from environment */
+	tty = getenv(OBEXFTP_CABLE);
+	if (tty != NULL) {
 		tty = strdup(tty);
-	btaddr = getenv(OBEXFTP_ADDR);
-	if (btaddr != NULL)
-		btaddr = strdup(btaddr);
+		transport = OBEX_TRANS_CUSTOM;
+	}
+	if (getenv(OBEXFTP_CHANNEL) != NULL) {
+		btchannel = atoi(getenv(OBEXFTP_CHANNEL));
+		usbinterface = atoi(getenv(OBEXFTP_CHANNEL));
+	}
+	if (getenv(OBEXFTP_BLUETOOTH) != NULL) {
+		discover_bt(getenv(OBEXFTP_BLUETOOTH), &btaddr, &btchannel);
+		transport = OBEX_TRANS_BLUETOOTH;
+	}
+	if (usbinterface >= 0) {
+		transport = OBEX_TRANS_USB;
+	}
+	inethost = getenv(OBEXFTP_INET);
+	if (inethost != NULL) {
+		inethost = strdup(inethost);
+		transport = OBEX_TRANS_INET;
+	}
 	       
 
-	/* by default don't debug anything */
-	/*
-	log_handler = g_log_set_handler (NULL,
-					 G_LOG_LEVEL_DEBUG | G_LOG_LEVEL_INFO,
-					 g_log_null_handler, NULL);
-	*/
 	while (1) {
 		int option_index = 0;
 		static struct option long_options[] = {
@@ -405,15 +423,11 @@ int main(int argc, char *argv[])
 		
 		case 'i':
 			transport = OBEX_TRANS_IRDA;
-			if (tty != NULL)
-				free (tty);
 			break;
 		
 #ifdef HAVE_BLUETOOTH
 		case 'b':
 			transport = OBEX_TRANS_BLUETOOTH;
-			if (tty != NULL)
-				free (tty);
 			if (btaddr != NULL)
 				free (btaddr);
        			//btaddr = optarg;
@@ -588,8 +602,8 @@ int main(int argc, char *argv[])
 		case 'x':
 			if(cli_connect ()) {
 				/* for S65 */
-				(void) obexftp_cli_disconnect (cli);
-				(void) obexftp_cli_connect_uuid (cli, btaddr, btchannel, UUID_S45);
+				(void) obexftp_disconnect (cli);
+				(void) obexftp_connect_uuid (cli, btaddr, btchannel, UUID_S45);
 				/* Retrieve Infos */
 				(void) obexftp_info(cli, 0x01);
 				(void) obexftp_info(cli, 0x02);

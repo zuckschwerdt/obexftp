@@ -420,6 +420,17 @@ fd_t bfb_io_open(const char *ttyname, int *typeinfo)
 		}
 	}
 
+	/* prefer connection without BFB */
+	if(do_at_cmd(ttyfd, "AT^SBFB=?\r\n", rspbuf, sizeof(rspbuf)) < 0)	{
+		DEBUG(1, "Comm-error\n");
+		goto err;
+	}
+	if(!strncasecmp("^SBFB: (0-3", rspbuf, 11) != 0)	{
+		DEBUG(1, "New plain Siemens protocol. (%s)\n", rspbuf);
+		goto newsiemens;
+	}
+       	DEBUG(1, "Old BFB Siemens protocol. (%s)\n", rspbuf);
+	
 	if(do_at_cmd(ttyfd, "AT^SBFB=1\r\n", rspbuf, sizeof(rspbuf)) < 0)	{
 		DEBUG(1, "Comm-error\n");
 		goto err;
@@ -446,7 +457,7 @@ fd_t bfb_io_open(const char *ttyname, int *typeinfo)
 		}
 	}
 
-	*typeinfo = 1; // SIEMENS
+	*typeinfo = 1; // BFB
 	return ttyfd;
 
  ericsson:
@@ -469,6 +480,20 @@ fd_t bfb_io_open(const char *ttyname, int *typeinfo)
 	}
 	
 	*typeinfo = 2; // ERICSSON
+	return ttyfd;
+
+ newsiemens:
+        /* ^SBFB=3 wont work */
+	if(do_at_cmd(ttyfd, "AT^SQWE=3\r\n", rspbuf, sizeof(rspbuf)) < 0) {
+		DEBUG(1, "Comm-error\n");
+		goto err;
+	}
+	if(strcasecmp("OK", rspbuf) != 0)	{
+		DEBUG(1, "Error doing AT^SBFB=3 (%s)\n", rspbuf);
+	       	goto err;
+	}
+	
+	*typeinfo = 3; // SIEMENS
 	return ttyfd;
 
  err:

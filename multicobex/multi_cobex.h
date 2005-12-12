@@ -1,7 +1,7 @@
 /*
- * cobex_bfb.h
+ * multi_cobex.h
  *
- *   Copyright (c) 2002 Christian W. Zuckschwerdt <zany@triq.net>
+ *   Copyright (c) 2002-2005 Christian W. Zuckschwerdt <zany@triq.net>
  * 
  *   This program is free software; you can redistribute it and/or modify it
  *   under the terms of the GNU General Public License as published by the Free
@@ -19,16 +19,14 @@
  *     
  */
 
-#ifndef COBEXBFB_H
-#define COBEXBFB_H
+#ifndef MULTICOBEX_H
+#define MULTICOBEX_H
 
 #include <inttypes.h>
 
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-#define	COBEX_BFB_LOG_DOMAIN	"cobex-bfb"
 
 /* session handling */
 
@@ -47,4 +45,4 @@ int	cobex_handleinput (obex_t *self, void *data, int timeout);
 }
 #endif
 
-#endif /* COBEXBFB_H */
+#endif /* MULTICOBEX_H */

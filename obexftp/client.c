@@ -37,10 +37,6 @@
 #include <time.h>
 
 #ifdef _WIN32
-#define _POSIX_PATH_MAX MAX_PATH
-#endif /* _WIN32 */
-
-#ifdef _WIN32
 #include <winsock.h>
 #else
 #include <sys/socket.h>
@@ -417,7 +413,7 @@ static int cli_sync_request(obexftp_client_t *cli, obex_object_t *object)
 	
 
 /* Create an obexftp client */
-obexftp_client_t *obexftp_cli_open(int transport, /*const*/ obex_ctrans_t *ctrans, obexftp_info_cb_t infocb, void *infocb_data)
+obexftp_client_t *obexftp_open(int transport, /*const*/ obex_ctrans_t *ctrans, obexftp_info_cb_t infocb, void *infocb_data)
 {
 	obexftp_client_t *cli;
 
@@ -440,9 +436,6 @@ obexftp_client_t *obexftp_cli_open(int transport, /*const*/ obex_ctrans_t *ctran
 
 	cli->fd = -1;
 
-	if ( ctrans ) {
-                DEBUG(2, "Do the cable-OBEX!\n");
-        }
        	cli->obexhandle = OBEX_Init(transport, cli_obex_event, 0);
 
 	if(cli->obexhandle == NULL) {
@@ -452,10 +445,12 @@ obexftp_client_t *obexftp_cli_open(int transport, /*const*/ obex_ctrans_t *ctran
 	cli->transport = transport;
 
 	if ( ctrans ) {
+                DEBUG(2, "Custom  OBEX transport requested!\n");
 		/* OBEX_RegisterCTransport is const to ctrans ... */
                 if(OBEX_RegisterCTransport(cli->obexhandle, ctrans) < 0) {
                         DEBUG(1, "Custom transport callback-registration failed\n");
                 }
+		cli->ctrans = ctrans;
         }
 
 	OBEX_SetUserData(cli->obexhandle, cli);
@@ -470,7 +465,7 @@ obexftp_client_t *obexftp_cli_open(int transport, /*const*/ obex_ctrans_t *ctran
 }
 	
 /* Close an obexftp client and free the resources */
-void obexftp_cli_close(obexftp_client_t *cli)
+void obexftp_close(obexftp_client_t *cli)
 {
 	DEBUG(3, "%s()\n", __func__);
 	return_if_fail(cli != NULL);
@@ -481,7 +476,7 @@ void obexftp_cli_close(obexftp_client_t *cli)
 }
 
 /* Do connect as client */
-int obexftp_cli_connect_uuid(obexftp_client_t *cli, const char *device, int port, const uint8_t uuid[])
+int obexftp_connect_uuid(obexftp_client_t *cli, const char *device, int port, const uint8_t uuid[])
 {
 	struct sockaddr_in peer;
 #ifdef HAVE_BLUETOOTH
@@ -521,6 +516,13 @@ int obexftp_cli_connect_uuid(obexftp_client_t *cli, const char *device, int port
 		break;
 
 	case OBEX_TRANS_CUSTOM:
+		/* don't change the custom transport once it is in place */
+		if (cli->ctrans == NULL) {
+			cli->ctrans = cobex_ctrans (device);
+                	if(OBEX_RegisterCTransport(cli->obexhandle, cli->ctrans) < 0) {
+                        	DEBUG(1, "Custom transport callback-registration failed\n");
+	                }
+	        }
 		ret = OBEX_TransportConnect(cli->obexhandle, NULL, 0);
 		DEBUG(3, "%s() TC %d\n", __func__, ret);
 		break;
@@ -609,7 +611,7 @@ int obexftp_cli_connect_uuid(obexftp_client_t *cli, const char *device, int port
 }
 
 /* Do disconnect as client */
-int obexftp_cli_disconnect(obexftp_client_t *cli)
+int obexftp_disconnect(obexftp_client_t *cli)
 {
 	obex_object_t *object;
 	int ret;
@@ -628,7 +630,7 @@ int obexftp_cli_disconnect(obexftp_client_t *cli)
 	else
 		cli->infocb(OBEXFTP_EV_OK, "", 0, cli->infocb_data);
 
-	/* don't -- obexftp_cli_close will handle this with OBEX_Cleanup */
+	/* don't -- obexftp_close will handle this with OBEX_Cleanup */
 	/* OBEX_TransportDisconnect(cli->obexhandle); */
 	return ret;
 }

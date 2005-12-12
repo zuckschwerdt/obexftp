@@ -22,15 +22,6 @@
 #ifndef OBEXFTP_CLIENT_H
 #define OBEXFTP_CLIENT_H
 
-#ifdef SWIG
-%module obexftp
-%{
-#include "obexftp.h"
-#include "client.h"
-#include <inttypes.h>
-%}
-#endif
-     
 #include <inttypes.h>
 #include <sys/stat.h>
 #include <time.h>
@@ -93,6 +84,7 @@ typedef struct obexftp_client
 	/* state */
 	obex_t *obexhandle;
 	uint32_t connection_id; /* set to 0xffffffff if unused */
+	obex_ctrans_t *ctrans; /* only valid with OBEX_TRANS_CUSTOM */
 	int transport; /* the transport for obexhandle */
 	int finished;
 	int success;
@@ -119,22 +111,22 @@ typedef struct obexftp_client
 
 /* session */
 
-/*@null@*/ obexftp_client_t *obexftp_cli_open(int transport,
+/*@null@*/ obexftp_client_t *obexftp_open(int transport,
 				 /*@null@*/ /*const*/ obex_ctrans_t *ctrans,
 				 /*@null@*/ obexftp_info_cb_t infocb,
 				 /*@null@*/ void *infocb_data);
 
-void obexftp_cli_close(/*@only@*/ /*@out@*/ /*@null@*/ obexftp_client_t *cli);
+void obexftp_close(/*@only@*/ /*@out@*/ /*@null@*/ obexftp_client_t *cli);
 
-int obexftp_cli_connect_uuid(obexftp_client_t *cli,
+int obexftp_connect_uuid(obexftp_client_t *cli,
 				/*@null@*/ const char *device, /* for INET, BLUETOOTH */
 				int port, /* INET(?), BLUETOOTH, USB*/
 				/*@null@*/ const uint8_t uuid[]);
 
-#define	obexftp_cli_connect(cli, device, port) \
-	obexftp_cli_connect_uuid(cli, device, port, UUID_FBS)
+#define	obexftp_connect(cli, device, port) \
+	obexftp_connect_uuid(cli, device, port, UUID_FBS)
 
-int obexftp_cli_disconnect(obexftp_client_t *cli);
+int obexftp_disconnect(obexftp_client_t *cli);
 
 
 /* transfer */

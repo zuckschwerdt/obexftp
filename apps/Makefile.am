@@ -4,11 +4,11 @@ INCLUDES =			@OPENOBEX_CFLAGS@ \
 				-I$(top_srcdir) \
 				-I$(top_srcdir)/includes
 
-LDADD =				@OPENOBEX_LIBS@ \
-				@BLUETOOTH_LIBS@ \
-				../obexftp/libobexftp.la \
-				../cobexbfb/libcobexbfb.la \
-				../bfb/libbfb.la
+LDADD =				../obexftp/libobexftp.la \
+				../multicobex/libmulticobex.la \
+				../bfb/libbfb.la \
+				@OPENOBEX_LIBS@ \
+				@BLUETOOTH_LIBS@
 # need on win32:
 # getopt.o getopt1.o libopenobex.a libwsock32.a
 

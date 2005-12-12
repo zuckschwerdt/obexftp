@@ -1,3 +1,26 @@
+------------- obexftpbackup 2.0 -------------
+
+A while ago I wrote an obexftpbackup script which worked fine on the basic SE 
+T610 file structure. Since upgrading to obexftp 0.18 I've had to modify 
+the error checking, but more significantly I've had to completely re-write it 
+to handle the directory structure of the SE K750i.
+
+In its current form it will handle up to 8 levels of subdirectories and will 
+accept file and directory names with spaces in them. There's also a sed line 
+to handle filenames with apostrophes in them.
+
+To use it simply create a directory called ~/Documents/Obexftp-backups, switch 
+your phone's bluetooth to visible for the first run, then run obexftpbackup. 
+On subsequent runs the phone can be hidden.
+
+I've only found one bug so far, and that appears to be in obexftp itself when 
+trying read the directory contents for the Pictures directory. I suspect this 
+could be due to having over 100 jpegs in that folder.
+
+Enjoy!
+Ken.
+
+
 ------------- obexftpbackup 1.0 -------------
 
 The sleeps appear to be necessary to give my Sony Ericsson T610 a chance.
