@@ -1,3 +1,6 @@
+EXTRA_DIST = 			perl_example.pl \
+				python_example.py \
+				tcl_example.tcl
 
 INCLUDES =			@OPENOBEX_CFLAGS@ \
 				@BLUETOOTH_CFLAGS@ \

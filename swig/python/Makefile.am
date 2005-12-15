@@ -1,13 +1,16 @@
-#pkgpython_PYTHON =	pymfg.py
-pkgpyexec_LTLIBRARIES =	_pymfg.la
-_pymfg_la_SOURCES =	$(srcdir)/../client.i
-_pymfg_la_CPPFLAGS =	$(SWIG_PYTHON_CPPFLAGS) -I$(top_srcdir)/obexftp
-_pymfg_la_LDFLAGS =	-module
-_pymfg_la_LIBADD =     	$(top_srcdir)/obexftp/libobexftp.la \
-			$(top_srcdir)/multicobex/libmulticobex.la \
-			$(top_srcdir)/bfb/libbfb.la \
+BUILT_SOURCES =		python_wrap.c
+SWIG_SOURCES =		$(srcdir)/../client.i
+pkgpython_PYTHON =	__init__.py
+pkgpyexec_LTLIBRARIES =	_obexftp.la
+_obexftp_la_SOURCES =	$(BUILT_SOURCES) $(SWIG_SOURCES)
+_obexftp_la_CPPFLAGS =	$(SWIG_PYTHON_CPPFLAGS) -I$(top_srcdir)/obexftp
+_obexftp_la_LDFLAGS =	-module
+_obexftp_la_LIBADD =	$(top_builddir)/obexftp/libobexftp.la \
+			$(top_builddir)/multicobex/libmulticobex.la \
+			$(top_builddir)/bfb/libbfb.la \
 			@OPENOBEX_LIBS@ \
 			@BLUETOOTH_LIBS@
 
-$(srcdir)/swig_wrap.cpp : $(SWIG_SOURCES)
-	$(SWIG) $(SWIG_PYTHON_OPT) -I$(top_srcdir)/obexftp -o $@ $<
+python_wrap.c : $(SWIG_SOURCES)
+	$(SWIG) $(SWIG_PYTHON_OPT) -module obexftp -I$(top_srcdir)/obexftp -o $@ $<
+	mv obexftp.py __init__.py

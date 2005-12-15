@@ -1,8 +1,8 @@
 # $Id: Makefile.am,v 1.9 2005/10/13 09:20:57 d1mag Exp $
 
+EXTRA_DIST = 	OBEXFTP.pm
 noinst_PROGRAMS = OBEXFTP.pm
-OBEXFTP_pm_SOURCES = 
-OBEXFTP_pm_DEPENDENCIES = $(top_srcdir)/obexftp/libobexftp.la
+OBEXFTP_pm_SOURCES = perl_wrap.c
 
 AM_CFLAGS = -I../include \
          -fexceptions \
@@ -21,19 +21,20 @@ AM_CFLAGS = -I../include \
 
 AM_LDFLAGS = -lobexftp -lmulticobex -lbfb @OPENOBEX_LIBS@ @BLUETOOTH_LIBS@
 
-client_wrap.c: $(srcdir)/../client.i ${OBEXFTP_pm_DEPENDENCIES}
+perl_wrap.c: $(srcdir)/../client.i
 	$(SWIG) -perl -o $@ $(srcdir)/../client.i
 
 Makefile.perl: Makefile.PL
 	$(PERL) $< MAKEFILE=$@
 
-OBEXFTP.pm: client_wrap.c Makefile.perl
+OBEXFTP.pm: perl_wrap.c Makefile.perl
 	$(MAKE) -fMakefile.perl
 
 install-data-local:
 	$(MAKE) -fMakefile.perl PREFIX=$(prefix) install
 
-CLEANFILES = *~ *.o client_wrap.c OBEXFTP.pm *.PL
+#CLEANFILES = *~ *.o perl_wrap.c OBEXFTP.pm *.PL
+CLEANFILES = *~ *.o *.PL
 
 clean-local:
 	if test -f Makefile.perl; then $(MAKE) -fMakefile.perl realclean; fi

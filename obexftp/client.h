@@ -94,13 +94,16 @@ typedef struct obexftp_client
 	/* client */
 	obexftp_info_cb_t infocb;
 	void *infocb_data;
-	/* transfer */
+	/* transfer (put) */
 	int fd; /* used in put body */
-	char *target_fn; /* used in get body */
-	uint32_t buf_size;
-	uint32_t buf_pos;
-	const uint8_t *buf_data;
 	uint8_t *stream_chunk;
+	uint32_t out_size;
+	uint32_t out_pos;
+	const uint8_t *out_data;
+	/* transfer (get) */
+	char *target_fn; /* used in get body */
+	uint32_t buf_size; /* not size but len... */
+	const uint8_t *buf_data;
 	uint32_t apparam_info;
 	/* persistence */
 	cache_object_t *cache;
@@ -121,10 +124,10 @@ void obexftp_close(/*@only@*/ /*@out@*/ /*@null@*/ obexftp_client_t *cli);
 int obexftp_connect_uuid(obexftp_client_t *cli,
 				/*@null@*/ const char *device, /* for INET, BLUETOOTH */
 				int port, /* INET(?), BLUETOOTH, USB*/
-				/*@null@*/ const uint8_t uuid[]);
+				/*@null@*/ const uint8_t uuid[], uint32_t uuid_len);
 
 #define	obexftp_connect(cli, device, port) \
-	obexftp_connect_uuid(cli, device, port, UUID_FBS)
+	obexftp_connect_uuid(cli, device, port, UUID_FBS, sizeof(UUID_FBS))
 
 int obexftp_disconnect(obexftp_client_t *cli);
 
@@ -159,9 +162,7 @@ int obexftp_get_type(obexftp_client_t *cli,
 #define	obexftp_get_capability(cli, localname, remotename) \
 	obexftp_get_type(cli, XOBEX_CAPABILITY, localname, remotename)
 
-int obexftp_put(obexftp_client_t *cli, const char *filename);
-
-int obexftp_put_file(obexftp_client_t *cli, const char *localname,
+int obexftp_put_file(obexftp_client_t *cli, const char *filename,
 		     const char *remotename);
 
 int obexftp_put_data(obexftp_client_t *cli, const char *data, int size,

@@ -44,7 +44,7 @@ obexftp_client_t(int transport) {
 }
 
 int connect(char *device, int port) {
-	obexftp_connect_uuid(self, device, port, UUID_FBS);
+	obexftp_connect_uuid(self, device, port, UUID_FBS, sizeof(UUID_FBS));
 }
 int disconnect() {
 	obexftp_disconnect(self);
@@ -63,6 +63,7 @@ int cdtop() {
 	return obexftp_setpath(self, "", 0);
 }
 
+// newSVpvn(s, len)
 char *get(char *path) {
 	(void) obexftp_get_type(self, NULL, NULL, path);
 	return self->buf_data;
@@ -76,15 +77,25 @@ char *get_capability(char *path) {
 	return self->buf_data;
 }
 
-int put(char *filename) {
-	return obexftp_put(self, filename);
-}
-int put_to(char *filename, char *remotename) {
+int put_file(char *filename, char *remotename=NULL) {
 	return obexftp_put_file(self, filename, remotename);
 }
-int put_data(char *data, char *remotename) {
+
+%typemap(in) (char *data, size_t size) {
 	// Danger Wil Robinson
-	return obexftp_put_data(self, data, strlen(data), remotename);
+#ifdef SWIGPERL
+	$1 = SvPV($input,$2);
+#endif
+#ifdef SWIGPYTHON
+	$1 = PyString_AsString($input);
+	$2 = PyString_Size($input);
+#endif
+#ifdef SWIGTCL
+	$1 = Tcl_GetStringFromObj($input,&$2);
+#endif
+};
+int put_data(char *data, size_t size, char *remotename) {
+	return obexftp_put_data(self, data, size, remotename);
 }
 
 int delete(char *name) {

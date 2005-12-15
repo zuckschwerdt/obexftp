@@ -20,5 +20,12 @@
   0x00, 0x50, 0xDA, 0x3F, 0x47, 0x1F }
 
 #define UUID_S45 ((const uint8_t []) __UUID_S45_bytes)
+
+/* UUID for Telecom/IrMC Synchronization Service (see IrOBEX spec) */
+
+#define __UUID_IRMC_bytes \
+{ 'I', 'R', 'M', 'C', '-', 'S', 'Y', 'N', 'C' }
+
+#define UUID_IRMC ((const uint8_t []) __UUID_IRMC_bytes)
 	
 #endif /* OBEXFTP_UUID_H */
