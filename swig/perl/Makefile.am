@@ -21,8 +21,10 @@ AM_CFLAGS = -I../include \
 
 AM_LDFLAGS = -lobexftp -lmulticobex -lbfb @OPENOBEX_LIBS@ @BLUETOOTH_LIBS@
 
+if ENABLE_SWIG
 perl_wrap.c: $(srcdir)/../client.i
 	$(SWIG) -perl -o $@ $(srcdir)/../client.i
+endif
 
 Makefile.perl: Makefile.PL
 	$(PERL) $< MAKEFILE=$@

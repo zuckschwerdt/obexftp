@@ -146,6 +146,7 @@ int discover_bt(char *addr, char **res_bdaddr, int *res_channel)
 
     return 0;
 }
+
 #else
 int discover_bt(char *addr, char **res_bdaddr, int *res_channel)
 {
@@ -153,4 +154,11 @@ int discover_bt(char *addr, char **res_bdaddr, int *res_channel)
 }
 
 #endif /* HAVE_SDPLIB */
+
+#else
+int discover_bt(char *addr, char **res_bdaddr, int *res_channel)
+{
+    return -1;
+}
+
 #endif /* HAVE_BLUETOOTH */

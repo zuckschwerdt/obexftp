@@ -12,9 +12,5 @@ if ENABLE_TCL
   MAYBE_TCL = tcl
 endif
 
-if ENABLE_SWIG
-  MAYBE_TEST = junk
-endif
-
 SUBDIRS = $(MAYBE_PERL) $(MAYBE_PYTHON) $(MAYBE_TCL)
 
