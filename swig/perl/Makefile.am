@@ -1,8 +1,8 @@
 # $Id: Makefile.am,v 1.9 2005/10/13 09:20:57 d1mag Exp $
 
 EXTRA_DIST = 	OBEXFTP.pm
-noinst_PROGRAMS = OBEXFTP.pm
-OBEXFTP_pm_SOURCES = perl_wrap.c
+noinst_LTLIBRARIES =	OBEXFTP.so
+OBEXFTP_so_SOURCES = perl_wrap.c
 
 AM_CFLAGS = -I../include \
          -fexceptions \
@@ -29,13 +29,15 @@ endif
 Makefile.perl: Makefile.PL
 	$(PERL) $< MAKEFILE=$@
 
-OBEXFTP.pm: perl_wrap.c Makefile.perl
+OBEXFTP.so: perl_wrap.c Makefile.perl
 	$(MAKE) -fMakefile.perl
 
 install-data-local:
 	$(MAKE) -fMakefile.perl PREFIX=$(prefix) install
 
-#CLEANFILES = *~ *.o perl_wrap.c OBEXFTP.pm *.PL
+maintainer-clean-local:
+	rm -f OBEXFTP.pm perl_wrap.c
+
 CLEANFILES = *~ *.o *.PL
 
 clean-local:

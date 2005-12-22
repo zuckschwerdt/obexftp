@@ -19,11 +19,9 @@ obexftp_SOURCES =		obexftp.c \
 				bt_discovery.h \
 				bt_discovery.c
 
-obexftpd_SOURCES =		obexftpd.c
-
 discovery_SOURCES =		discovery.c
 
-bin_PROGRAMS =			obexftp obexftpd
+bin_PROGRAMS =			obexftp
 
 noinst_PROGRAMS =		discovery
 

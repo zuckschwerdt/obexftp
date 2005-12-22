@@ -1,8 +1,6 @@
 ObexFTP to do list
 ==================
 
-for 0.10.?
-
 * transport select patch by Hendrik Sattler
 
 * OBEX-Push-only mode (no UUID) suggested by Antti Hayrynen
@@ -11,20 +9,16 @@ for 0.10.?
 
 * put to specified file (-p file.vcf -f telecom/pb.vcf)
 
+* Discover port and protocol to use (i.e. Bt, IrDA, TTY)
 
-for 0.11
+
+later...
 
 * AT-Kommandos
-
-* Excluded doc directory from standard make file
-
-* obexftpd server with simple inbox (like IrCP)
 
 * "Something went wrong" -- help texts
 
 * Verify unified cable support.
-
-* Discover port and protocol to use (i.e. Bt, IrDA, TTY)
 
 * Tear down BFB connection cleanly - no more cable cycling.
 

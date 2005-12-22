@@ -174,7 +174,11 @@ static int parse_uuid(char *name, const char **uuid, int *uuid_len)
 }
 
 /*@only@*/ /*@null@*/ static obexftp_client_t *cli = NULL;
+#ifdef HAVE_BLUETOOTH
+static int transport = OBEX_TRANS_BLUETOOTH;
+#else
 static int transport = OBEX_TRANS_IRDA;
+#endif /* HAVE_BLUETOOTH */
 /*@only@*/ /*@null@*/ static char *tty = NULL;
 /*@only@*/ /*@null@*/ static char *btaddr = NULL;
 static int btchannel = -1;
