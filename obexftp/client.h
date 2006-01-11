@@ -103,7 +103,7 @@ typedef struct obexftp_client
 	/* transfer (get) */
 	char *target_fn; /* used in get body */
 	uint32_t buf_size; /* not size but len... */
-	const uint8_t *buf_data;
+	uint8_t *buf_data;
 	uint32_t apparam_info;
 	/* persistence */
 	cache_object_t *cache;

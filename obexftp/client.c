@@ -55,6 +55,7 @@
 #endif
 
 #include <openobex/obex.h>
+#include <multicobex/multi_cobex.h>
 
 #include "obexftp.h"
 #include "client.h"
@@ -73,7 +74,7 @@ typedef struct { /* fixed to 6 bytes for now */
 } apparam_t;
 
 
-static void dummy_info_cb(int event, const char *msg, int len, void *data)
+static void dummy_info_cb(UNUSED(int event), UNUSED(const char *msg), UNUSED(int len), UNUSED(void *data))
 {
 	/* dummy */
 }
@@ -84,18 +85,19 @@ static void dummy_info_cb(int event, const char *msg, int len, void *data)
  * wont turn relative paths into (most likely wrong) absolute ones
  * wont expand "../" or "./"
  */
+/*
 static char *normalize_file_path(const char *name)
 {
 	char *p, *copy;
 
 	return_val_if_fail(name != NULL, NULL);
 
-	p = copy = malloc(strlen(name) + 1); /* cant be longer, can it? */
-/*
+	p = copy = malloc(strlen(name) + 1); / * cant be longer, can it? * /
+/ *
 	if (OBEXFTP_USE_LEADING_SLASH(quirks))
 		*p++ = '/';
 	while (*name == '/') name++;
-*/
+* /
 	while (*name) {
 		if (*name == '/') {
 			*p++ = *name++;
@@ -109,7 +111,7 @@ static char *normalize_file_path(const char *name)
 
 	return copy;
 }
-
+*/
 
 /*
  * Normalize the path argument and split into pathname and basename
@@ -125,9 +127,9 @@ static void split_file_path(const char *name, /*@only@*/ char **basepath, /*@onl
 
 	return_if_fail(name != NULL);
 
-        for (p = name; *p == '/'; p++);
-	if (!strncmp(p, "telecom/", 8)) {
-		*basename = strdup(p); /* keep whole path */
+        for (tail = name; *tail == '/'; tail++);
+	if (!strncmp(tail, "telecom/", 8)) {
+		*basename = strdup(tail); /* keep whole path */
 		*basepath = strdup(""); /* cd top */
 		return;
 	}
@@ -235,12 +237,12 @@ static int cli_fillstream_from_file(obexftp_client_t *cli, obex_object_t *object
 
 
 /* Save body from object or return application parameters */
-static void client_done(obex_t *handle, obex_object_t *object, /*@unused@*/ int obex_cmd, /*@unused@*/ int obex_rsp)
+static void client_done(obex_t *handle, obex_object_t *object, /*@unused@*/ UNUSED(int obex_cmd), /*@unused@*/ UNUSED(int obex_rsp))
 {
 	obex_headerdata_t hv;
 	uint8_t hi;
 	uint32_t hlen;
-	apparam_t *app = NULL;
+	const apparam_t *app = NULL;
 	uint8_t *p;
 
         const uint8_t *body_data = NULL;
@@ -295,7 +297,7 @@ static void client_done(obex_t *handle, obex_object_t *object, /*@unused@*/ int 
                 else if(hi == OBEX_HDR_APPARAM) {
 			DEBUG(3, "%s() Found application parameters\n", __func__);
                         if(hlen == sizeof(apparam_t)) {
-				app = (apparam_t *)hv.bs;
+				app = (const apparam_t *)hv.bs;
 				 /* needed for alignment */
 				memcpy(&cli->apparam_info, &app->info, sizeof(cli->apparam_info));
 				cli->apparam_info = ntohl(cli->apparam_info); // 64 bit problems?
@@ -342,7 +344,7 @@ static void client_done(obex_t *handle, obex_object_t *object, /*@unused@*/ int 
 
 
 /* Incoming event from OpenOBEX. */
-static void cli_obex_event(obex_t *handle, obex_object_t *object, /*@unused@*/ int mode, int event, int obex_cmd, int obex_rsp)
+static void cli_obex_event(obex_t *handle, obex_object_t *object, /*@unused@*/ UNUSED(int mode), int event, int obex_cmd, int obex_rsp)
 {
 	/*@temp@*/ obexftp_client_t *cli;
 

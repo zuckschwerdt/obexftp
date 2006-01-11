@@ -2,6 +2,7 @@ dnl
 dnl Option to enable or disable IrDA support
 dnl
 dnl this is stupid and won't work at all.
+dnl Waring: the AC_TRY_COMPILE won't work with -Werror
 dnl
 
 AC_DEFUN([IRDA_CHECK],[
@@ -26,6 +27,7 @@ fi
 
 dnl
 dnl Option to enable or disable Bluetooth support
+dnl Waring: the AC_TRY_COMPILE won't work with -Werror
 dnl
 
 AC_DEFUN([BLUETOOTH_CHECK],[  
@@ -70,6 +72,7 @@ fi
 
 dnl
 dnl Check for Bluetooth SDP library
+dnl Waring: the AC_TRY_COMPILE won't work with -Werror
 dnl
 
 AC_DEFUN([SDPLIB_CHECK],[
@@ -95,6 +98,7 @@ AC_DEFUN([SDPLIB_CHECK],[
 
 dnl
 dnl Check for USB library
+dnl Waring: the AC_TRY_COMPILE won't work with -Werror
 dnl
 
 AC_DEFUN([USB_CHECK],[
@@ -259,3 +263,7 @@ AC_DEFUN([AC_PYTHON_DEVEL],[
         AC_MSG_RESULT($PYTHON_EXTRA_LIBS)`
         AC_SUBST(PYTHON_EXTRA_LIBS)
 ])
+
+### test test test
+builtin(include,tcl.m4)
+

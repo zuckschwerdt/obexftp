@@ -44,9 +44,9 @@ void DUMPBUFFER(unsigned int n, char *label, char *msg) { }
 
 #include <common.h>
 
-#ifdef HAVE_BLUETOOTH
+//#ifdef HAVE_BLUETOOTH
 #include "bt_discovery.h"
-#endif
+//#endif
 
 // perhaps this scheme would be better?
 // IRDA		irda://[nick?]
@@ -63,7 +63,7 @@ void DUMPBUFFER(unsigned int n, char *label, char *msg) { }
 /* current command, set by main, read from info_cb */
 int c;
 
-static void info_cb(int event, const char *msg, /*@unused@*/ int len, /*@unused@*/ void *data)
+static void info_cb(int event, const char *msg, /*@unused@*/ int len, /*@unused@*/ UNUSED(void *data))
 {
 	char progress[] = "\\|/-";
 	static unsigned int i = 0;

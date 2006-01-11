@@ -23,6 +23,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <stdio.h>	/* FIXME: libraries shouldn't do this */
+#include <errno.h>
 #include <sys/stat.h>
 
 #include <fcntl.h>
@@ -136,7 +137,7 @@ static int pathncat(/*@unique@*/ char *dest, const char *path, const char *name,
 {
 	size_t len;
 	if(name == NULL)
-		return 1;
+		return -EINVAL;
 		
 	while(*name == '/')
 		name++;
@@ -149,12 +150,12 @@ static int pathncat(/*@unique@*/ char *dest, const char *path, const char *name,
 		dest[n - 1] = '\0';
 		len = strlen(dest);
 		if (len >= n - 1)
-			return 1;
+			return -ENOMEM;
 		if (dest[len - 1] != '/') {
 			dest[len] = '/';
 			dest[len + 1] = '\0';
 		}
-		strncat(dest, name, n - strlen(len));
+		strncat(dest, name, n - strlen(dest) - 1);
 	}
 
 	return 0;

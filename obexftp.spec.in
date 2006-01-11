@@ -41,7 +41,6 @@ rm -rf $RPM_BUILD_ROOT
 ln -s obexftp $RPM_BUILD_ROOT%{_bindir}/obexls
 ln -s obexftp $RPM_BUILD_ROOT%{_bindir}/obexget
 ln -s obexftp $RPM_BUILD_ROOT%{_bindir}/obexput
-ln -s obexftp $RPM_BUILD_ROOT%{_bindir}/obexmv
 ln -s obexftp $RPM_BUILD_ROOT%{_bindir}/obexrm
 
 %clean

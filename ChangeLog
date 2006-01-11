@@ -1,3 +1,7 @@
+2006-01-11  Christian W. Zuckschwerdt  <zany@triq.net>
+
+	* Fixed a pointer typo and a free() typo.
+
 2005-12-12  Christian W. Zuckschwerdt  <zany@triq.net>
 
 	* Added perl, python and tcl binding with swig.

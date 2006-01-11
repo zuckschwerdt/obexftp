@@ -363,7 +363,7 @@ int main(int argc, char *argv[])
 {
 	struct mobile_info *info;
 
-	if  (mobile_param != NULL);
+	if  (mobile_param != NULL) { };
 
 	if (argc > 1)
 		info = probe_tty(argv[1]);

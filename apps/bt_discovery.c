@@ -148,7 +148,8 @@ int discover_bt(char *addr, char **res_bdaddr, int *res_channel)
 }
 
 #else
-int discover_bt(char *addr, char **res_bdaddr, int *res_channel)
+#include "bt_discovery.h"
+int discover_bt(UNUSED(char *addr), UNUSED(char **res_bdaddr), UNUSED(int *res_channel))
 {
     return -1;
 }
@@ -156,7 +157,8 @@ int discover_bt(char *addr, char **res_bdaddr, int *res_channel)
 #endif /* HAVE_SDPLIB */
 
 #else
-int discover_bt(char *addr, char **res_bdaddr, int *res_channel)
+#include "bt_discovery.h"
+int discover_bt(UNUSED(char *addr), UNUSED(char **res_bdaddr), UNUSED(int *res_channel))
 {
     return -1;
 }

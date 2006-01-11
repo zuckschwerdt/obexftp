@@ -92,20 +92,20 @@ void cache_purge(cache_object_t **root, const char *path)
 	char *name;
 	char *pathonly;
 
-#define free_node(node) { \
+#define FREE_NODE(node) do { \
                         if (node->name) \
 				free(node->name); \
-			if (node->content); \
+			if (node->content) \
 				free(node->content); \
 			free(node); \
-			}
+			} while(0)
 
         if (!path || *path == '\0' || *path != '/') {
 		/* purge all */
 		while (*root) {
 			cache = *root;
 			*root = cache->next;
-                        free_node(cache);
+                        FREE_NODE(cache);
 		}
 		return;
 	}
@@ -118,20 +118,20 @@ void cache_purge(cache_object_t **root, const char *path)
        	while (*root && !strncmp((*root)->name, pathonly, strlen(pathonly))) {
        		cache = *root;
        		*root = cache->next;
-		free_node(cache);
+		FREE_NODE(cache);
        	}
 	for (cache = *root; cache->next; cache = cache->next) {
 		if (!strncmp(cache->next->name, pathonly, strlen(pathonly))) {
 			tmp = cache->next;
 			cache->next = cache->next->next;
-			free_node(tmp);
+			FREE_NODE(tmp);
 		}
 	}
 
 	free(pathonly);
 }
 
-int get_cache_object(obexftp_client_t *cli, const char *name, char **object, int *size)
+int get_cache_object(const obexftp_client_t *cli, const char *name, char **object, int *size)
 {
 	cache_object_t *cache;
 	return_val_if_fail(cli != NULL, -1);
@@ -150,7 +150,7 @@ int get_cache_object(obexftp_client_t *cli, const char *name, char **object, int
 	return -1;
 }
 
-int put_cache_object(obexftp_client_t *cli, const char *name, const char *object, int size)
+int put_cache_object(obexftp_client_t *cli, /*@only@*/ char *name, /*@only@*/ char *object, int size)
 {
 	cache_object_t *cache;
 	return_val_if_fail(cli != NULL, -1);
@@ -220,7 +220,8 @@ static time_t atotime (const char *date)
 }
 
 /* very limited - not multi-byte character save */
-static stat_entry_t *parse_directory(const char *xml)
+/* it is actually "const char *xml" but can't be declared as such */
+static stat_entry_t *parse_directory(char *xml)
 {
         const char *line;
         const char *p, *h;
@@ -246,9 +247,9 @@ static stat_entry_t *parse_directory(const char *xml)
 	no = ni;
 	xml_latin1 = xml_end = malloc(no);
 	if (xml_latin1) {
-		nrc = iconv (utf8, (char* *)&xml, &ni, (char* *)&xml_end, &no);
+		nrc = iconv (utf8, (char* *)&xml, &ni, &xml_end, &no);
 		ret = iconv_close (utf8);
-		if (nrc >= 0)
+		if (nrc != (size_t)(-1))
 			xml = xml_latin1;
 	}
 #endif
@@ -373,15 +374,17 @@ stat_entry_t *obexftp_stat(obexftp_client_t *cli, const char *name)
 {
 	cache_object_t *cache;
 	stat_entry_t *entry;
-	char *path, *basename, *abs;
+	char *path, *abs, *p;
+	const char *basename;
 
 	return_val_if_fail(name != NULL, NULL);
 
 	path = strdup(name);
-	basename = strrchr(path, '/');
-	if (basename)
-		*basename++ = '\0';
-	else
+	p = strrchr(path, '/');
+	if (p) {
+		*p++ = '\0';
+		basename = p;
+	} else
 		basename = name;
 	DEBUG(2, "%s() stating '%s' / '%s'\n", __func__, path, basename);
 

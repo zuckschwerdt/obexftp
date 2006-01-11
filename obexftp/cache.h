@@ -30,9 +30,9 @@ void cache_purge(cache_object_t **root, const char *path);
 
 void xfer_purge(obexftp_client_t *cli);
 
-int put_cache_object(obexftp_client_t *cli, const char *name, const char *object, int size);
+int put_cache_object(obexftp_client_t *cli, /*@only@*/ char *name, /*@only@*/ char *object, int size);
 
-int get_cache_object(obexftp_client_t *cli, const char *name, char **object, int *size);
+int get_cache_object(const obexftp_client_t *cli, const char *name, char **object, int *size);
 	
 #ifdef __cplusplus
 }

@@ -23,11 +23,10 @@ This ObexFTP distribution contains libraries as well as some applications.
 Applications to access e.g. Flex. Memory and Multimedia- /Secure Digital Card
 memory on mobile equipment:
 
- - obexls - list the mobiles contents
- - obexcp - copy to/from mobile
- - obexmd - create a directory on the mobile
- - obexrd - remove an empty directory on the mobile
- - obexrm - remove files on the mobile
+ - obexls  - list the mobiles contents
+ - obexget - copy files(s) to mobile
+ - obexput - copy files(s) from mobile
+ - obexrm  - remove files on the mobile
  - obexftp - all in one application (heavy on options)
 
 Applications to hack Siemens mobile equipment using datalink cable

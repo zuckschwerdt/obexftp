@@ -10,6 +10,8 @@
 #endif
 #include <stdio.h>
 
+#define UNUSED(x) x __attribute__((unused))
+
 #ifndef FALSE
 #define FALSE   (0)
 #endif
