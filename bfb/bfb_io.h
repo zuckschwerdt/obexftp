@@ -29,7 +29,7 @@ extern "C" {
 #endif
 
 /* Write out a BFB buffer */
-int	bfb_io_write(fd_t fd, uint8_t *buffer, int length);
+int	bfb_io_write(fd_t fd, const uint8_t *buffer, int length);
 
 /* Read in a BFB answer */
 int	bfb_io_read(fd_t fd, uint8_t *buffer, int length, int timeout);
@@ -38,7 +38,7 @@ int	bfb_io_read(fd_t fd, uint8_t *buffer, int length, int timeout);
 int	bfb_io_init(fd_t fd);
 
 /* Send an AT-command an expect 1 line back as answer */
-int	do_at_cmd(fd_t fd, char *cmd, char *rspbuf, int rspbuflen);
+int	do_at_cmd(fd_t fd, const char *cmd, char *rspbuf, int rspbuflen);
 
 /* close the connection */
 void	bfb_io_close(fd_t fd, int force);

@@ -44,8 +44,8 @@ typedef int fd_t;
 #include <common.h>
 
 struct mobile_param {
-	char *gmi;	/* Manufacturer Identification to match */
-	char *proto;	/* Serial Protocol to use */
+	const char *gmi;	/* Manufacturer Identification to match */
+	const char *proto;	/* Serial Protocol to use */
 };
 
 static struct mobile_param mobile_param[] = {
@@ -86,7 +86,7 @@ speed_t speeds[] = {B115200, B57600, B38400, B19200, B9600, B0};
 #endif
 
 /* Send an AT-command an expect 1 line back as answer */
-static int do_at_cmd(fd_t fd, char *cmd, char *rspbuf, int rspbuflen)
+static int do_at_cmd(fd_t fd, const char *cmd, char *rspbuf, int rspbuflen)
 {
 #ifdef _WIN32
 	DWORD actual;

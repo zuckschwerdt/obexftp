@@ -102,7 +102,7 @@ uint8_t bfb_checksum(uint8_t *data, int len)
 /* Type 0x02: first transmission in a row. */
 /* Type 0x03: continued transmission. */
 /* seq needs to be incremented afterwards. */
-int bfb_stuff_data(uint8_t *buffer, uint8_t type, uint8_t *data, int len, int seq)
+int bfb_stuff_data(uint8_t *buffer, uint8_t type, uint8_t *data, uint16_t len, uint8_t seq)
 {
         int i;
         union {
@@ -345,7 +345,7 @@ int bfb_write_packets(fd_t fd, uint8_t type, uint8_t *buffer, int length)
 	return i / MAX_PACKET_DATA;
 }
 
-int bfb_send_data(fd_t fd, uint8_t type, uint8_t *data, int length, int seq)
+int bfb_send_data(fd_t fd, uint8_t type, uint8_t *data, uint16_t length, uint8_t seq)
 {
 	uint8_t *buffer;
 	int actual;

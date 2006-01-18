@@ -52,7 +52,7 @@
 #include <common.h>
 
 /* Write out an IO buffer */
-int bfb_io_write(fd_t fd, uint8_t *buffer, int length)
+int bfb_io_write(fd_t fd, const uint8_t *buffer, int length)
 {
 #ifdef _WIN32
 	DWORD bytes;
@@ -186,7 +186,7 @@ int bfb_io_init(fd_t fd)
 
 /* Send an AT-command an expect 1 line back as answer */
 /* Ericsson may choose to answer one line, blank one line and then send OK */
-int do_at_cmd(fd_t fd, char *cmd, char *rspbuf, int rspbuflen)
+int do_at_cmd(fd_t fd, const char *cmd, char *rspbuf, int rspbuflen)
 {
 #ifdef _WIN32
 	DWORD actual;

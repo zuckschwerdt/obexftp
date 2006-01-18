@@ -149,7 +149,7 @@ int discover_bt(char *addr, char **res_bdaddr, int *res_channel)
 
 #else
 #include "bt_discovery.h"
-int discover_bt(UNUSED(char *addr), UNUSED(char **res_bdaddr), UNUSED(int *res_channel))
+int discover_bt(char *UNUSED(addr), char **UNUSED(res_bdaddr), int *UNUSED(res_channel))
 {
     return -1;
 }
@@ -158,7 +158,7 @@ int discover_bt(UNUSED(char *addr), UNUSED(char **res_bdaddr), UNUSED(int *res_c
 
 #else
 #include "bt_discovery.h"
-int discover_bt(UNUSED(char *addr), UNUSED(char **res_bdaddr), UNUSED(int *res_channel))
+int discover_bt(char *UNUSED(addr), char **UNUSED(res_bdaddr), int *UNUSED(res_channel))
 {
     return -1;
 }

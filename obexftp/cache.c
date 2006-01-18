@@ -26,6 +26,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <sys/stat.h> /* __S_IFDIR, __S_IFREG */
 
 #ifdef HAVE_ICONV
 #include <iconv.h>
@@ -285,14 +286,14 @@ static stat_entry_t *parse_directory(char *xml)
 		if (h) sscanf (h, "size=\"%200[^\"]\"", size);
 	
 		if (!strcmp("folder", tagname)) {
-                        dir->mode = S_IFDIR | 0755;
+                        dir->mode = __S_IFDIR | 0755;
                         strcpy(dir->name, name);
 			dir->mtime = atotime(mod);
                         dir->size = 0;
 			dir++;
                 }
 		if (!strcmp("file", tagname)) {
-                        dir->mode = S_IFREG | 0644;
+                        dir->mode = __S_IFREG | 0644;
                         strcpy(dir->name, name);
 			dir->mtime = atotime(mod);
 			i = 0;

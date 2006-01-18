@@ -74,7 +74,7 @@ typedef struct { /* fixed to 6 bytes for now */
 } apparam_t;
 
 
-static void dummy_info_cb(UNUSED(int event), UNUSED(const char *msg), UNUSED(int len), UNUSED(void *data))
+static void dummy_info_cb(int UNUSED(event), const char *UNUSED(msg), int UNUSED(len), void *UNUSED(data))
 {
 	/* dummy */
 }
@@ -237,7 +237,7 @@ static int cli_fillstream_from_file(obexftp_client_t *cli, obex_object_t *object
 
 
 /* Save body from object or return application parameters */
-static void client_done(obex_t *handle, obex_object_t *object, /*@unused@*/ UNUSED(int obex_cmd), /*@unused@*/ UNUSED(int obex_rsp))
+static void client_done(obex_t *handle, obex_object_t *object, int UNUSED(obex_cmd), int UNUSED(obex_rsp))
 {
 	obex_headerdata_t hv;
 	uint8_t hi;
@@ -344,7 +344,7 @@ static void client_done(obex_t *handle, obex_object_t *object, /*@unused@*/ UNUS
 
 
 /* Incoming event from OpenOBEX. */
-static void cli_obex_event(obex_t *handle, obex_object_t *object, /*@unused@*/ UNUSED(int mode), int event, int obex_cmd, int obex_rsp)
+static void cli_obex_event(obex_t *handle, obex_object_t *object, int UNUSED(mode), int event, int obex_cmd, int obex_rsp)
 {
 	/*@temp@*/ obexftp_client_t *cli;
 
@@ -490,6 +490,7 @@ int obexftp_connect_uuid(obexftp_client_t *cli, const char *device, int port, co
 {
 	struct sockaddr_in peer;
 #ifdef HAVE_BLUETOOTH
+	char *devicedup, *devicep;
 	bdaddr_t bdaddr;
 #endif
 #ifdef HAVE_USB
@@ -539,11 +540,20 @@ int obexftp_connect_uuid(obexftp_client_t *cli, const char *device, int port, co
 
 #ifdef HAVE_BLUETOOTH
 	case OBEX_TRANS_BLUETOOTH:
+DEBUG(3, "%s() DBG1\n", __func__);
 		if (!device) {
 			ret = -EINVAL;
 			break;
 		}
-		(void) str2ba(device, &bdaddr); /* what is the meaning of the return code? */
+		/* transform some chars to colons */
+		devicedup = devicep = strdup(device);
+		for (; *devicep; devicep++) {
+			if (*devicep == '-') *devicep = ':';
+			if (*devicep == '_') *devicep = ':';
+			if (*devicep == '/') *devicep = ':';
+		}
+		(void) str2ba(devicedup, &bdaddr); /* what is the meaning of the return code? */
+		free(devicedup);
 		ret = BtOBEX_TransportConnect(cli->obexhandle, BDADDR_ANY, &bdaddr, (uint8_t)port);
 		DEBUG(3, "%s() BT %d\n", __func__, ret);
 		break;

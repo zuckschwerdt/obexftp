@@ -63,7 +63,7 @@ void DUMPBUFFER(unsigned int n, char *label, char *msg) { }
 /* current command, set by main, read from info_cb */
 int c;
 
-static void info_cb(int event, const char *msg, /*@unused@*/ int len, /*@unused@*/ UNUSED(void *data))
+static void info_cb(int event, const char *msg, int len, void *UNUSED(data))
 {
 	char progress[] = "\\|/-";
 	static unsigned int i = 0;
@@ -363,8 +363,14 @@ static void probe_device()
 
 
 #ifdef HAVE_USB
-static void discover_cb(obex_t *handle, obex_object_t *object, /*@unused@*/ int mode, int event, int obex_cmd, int obex_rsp)
+static void discover_cb(obex_t *handle, obex_object_t *object, int mode, int event, int obex_cmd, int obex_rsp)
 {
+	(void) handle;
+	(void) object;
+	(void) mode;
+	(void) event;
+	(void) obex_cmd;
+	(void) obex_rsp;
 }
 
 static void discover_usb()
