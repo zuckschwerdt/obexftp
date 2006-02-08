@@ -1,4 +1,6 @@
-#!/usr/bin/tclsh
+#!/bin/sh
+# the next line restarts using tclsh \
+exec tclsh "$0" "$@"
 
 load obexftp.so
 client c $BLUETOOTH

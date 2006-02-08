@@ -1,3 +1,15 @@
+2006-02-08  Christian W. Zuckschwerdt  <zany@triq.net>
+
+	* Updated for OpenOBEX 1.1 (pkg-config)
+
+2006-01-26  Christian W. Zuckschwerdt  <zany@triq.net>
+
+	* Added --output switch by Daniel Burr/Andrzej Szombierski.
+
+2006-01-21  Christian W. Zuckschwerdt  <zany@triq.net>
+
+	* Simplified the swig/perl/Makefile.am.
+
 2006-01-11  Christian W. Zuckschwerdt  <zany@triq.net>
 
 	* Fixed a pointer typo and a free() typo.

@@ -108,7 +108,7 @@ AC_DEFUN([USB_CHECK],[
 				#include <openobex/obex.h>
 				#include <openobex/obex_const.h>
 			],[
-				usb_obex_intf_info_t usb_intf;
+				obex_usb_intf_t usb_intf;
 			],
 				am_cv_usb_found=yes,
 				am_cv_usb_found=no

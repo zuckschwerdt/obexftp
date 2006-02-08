@@ -5,12 +5,13 @@ if ENABLE_PERL
 endif
 
 if ENABLE_PYTHON
-  MAYBE_PYTHON = python
+  # automake chokes on "MAYBE_PYTHON"?
+  MAYBE_PYTHON_ = python
 endif
 
 if ENABLE_TCL
   MAYBE_TCL = tcl
 endif
 
-SUBDIRS = $(MAYBE_PERL) $(MAYBE_PYTHON) $(MAYBE_TCL)
+SUBDIRS = $(MAYBE_PERL) $(MAYBE_PYTHON_) $(MAYBE_TCL)
 

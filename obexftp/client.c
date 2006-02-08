@@ -495,7 +495,7 @@ int obexftp_connect_uuid(obexftp_client_t *cli, const char *device, int port, co
 #endif
 #ifdef HAVE_USB
 	int obex_intf_cnt;
-	obex_intf_info_t *obex_intf;
+	obex_usb_intf_t *obex_intf;
 #endif
 	obex_object_t *object;
 	int ret = -1; /* no connection yet */
@@ -540,7 +540,6 @@ int obexftp_connect_uuid(obexftp_client_t *cli, const char *device, int port, co
 
 #ifdef HAVE_BLUETOOTH
 	case OBEX_TRANS_BLUETOOTH:
-DEBUG(3, "%s() DBG1\n", __func__);
 		if (!device) {
 			ret = -EINVAL;
 			break;
@@ -572,6 +571,7 @@ DEBUG(3, "%s() DBG1\n", __func__);
 			ret = -EINVAL; /* is there a better errno? */
 		} else
 			ret = OBEX_InterfaceConnect(cli->obexhandle, &obex_intf[port]);
+		DEBUG(3, "%s() USB %d\n", __func__, ret);
 		break;
 #endif /* HAVE_USB */
 

@@ -376,7 +376,7 @@ static void discover_cb(obex_t *handle, obex_object_t *object, int mode, int eve
 static void discover_usb()
 {
 	obex_t *handle;
-	obex_intf_info_t* obex_intf;
+	obex_interface_t* obex_intf;
 	int i, interfaces_number;
 
 	if(! (handle = OBEX_Init(OBEX_TRANS_USB, discover_cb, 0))) {
@@ -390,7 +390,7 @@ static void discover_usb()
 			obex_intf[i].usb.manufacturer,
 			obex_intf[i].usb.product,
 		       	obex_intf[i].usb.control_interface);
-	printf("Use '-U interface_number' to connect\n");
+	printf("Use '-u interface_number' to connect\n");
 	OBEX_Cleanup(handle);
 }
 #endif /* HAVE_USB */
@@ -401,6 +401,7 @@ int main(int argc, char *argv[])
 	int verbose=0;
 	int most_recent_cmd = 0;
 	char *target_path = NULL;
+	char *output_file = NULL;
 	char *move_src = NULL;
 	/* char *inbox; */
 
@@ -462,12 +463,13 @@ int main(int argc, char *argv[])
 			{"chdir",	required_argument, NULL, 'c'},
 			{"mkdir",	required_argument, NULL, 'C'},
 			{"path",	required_argument, NULL, 'f'},
+			{"output",	required_argument, NULL, 'o'},
 			{"get",		required_argument, NULL, 'g'},
 			{"getdelete",	required_argument, NULL, 'G'},
 			{"put",		required_argument, NULL, 'p'},
 			{"delete",	required_argument, NULL, 'k'},
 			{"capability",	no_argument, NULL, 'X'},
-			{"probe",	no_argument, NULL, 'P'},
+			{"probe",	no_argument, NULL, 'Y'},
 			{"info",	no_argument, NULL, 'x'},
 			{"move",	required_argument, NULL, 'm'},
 			{"verbose",	no_argument, NULL, 'v'},
@@ -477,7 +479,7 @@ int main(int argc, char *argv[])
 			{0, 0, 0, 0}
 		};
 		
-		c = getopt_long (argc, argv, "-ib::B:u::t:n:U::HSL::l::c:C:f:g:G:p:k:XPxm:Vvh",
+		c = getopt_long (argc, argv, "-ib::B:u::t:n:U::HSL::l::c:C:f:o:g:G:p:k:XYxm:Vvh",
 				 long_options, &option_index);
 		if (c == -1)
 			break;
@@ -513,6 +515,8 @@ int main(int argc, char *argv[])
 
 #ifdef HAVE_USB
 		case 'u':
+			if (geteuid() != 0)
+				fprintf(stderr, "Superuser privileges are required to access USB.\n");
 			transport = OBEX_TRANS_USB;
 			/* handle severed optional option argument */
 			if (!optarg && argc > optind && argv[optind][0] != '-') {
@@ -620,39 +624,34 @@ int main(int argc, char *argv[])
 			target_path = optarg;
 			break;
 
-		case 'g':
-			if(cli_connect ()) {
-				char *p;
-				/* Get file */
-				if ((p = strrchr(optarg, '/')) != NULL) p++;
-				else p = optarg;
-				(void) obexftp_get(cli, p, optarg);
-			}
-			most_recent_cmd = c;
+		case 'o':
+			output_file = optarg;
 			break;
 
+		case 'g':
 		case 'G':
 			if(cli_connect ()) {
-				char *p;
-				/* Get file */
+				char *p; /* basename or output_file */
 				if ((p = strrchr(optarg, '/')) != NULL) p++;
 				else p = optarg;
+				if (output_file) p = output_file;
+				/* Get file */
 				if (obexftp_get(cli, p, optarg))
 					(void) obexftp_del(cli, optarg);
+				output_file = NULL;
 			}
 			most_recent_cmd = c;
 			break;
 
 		case 'p':
 			if(cli_connect ()) {
-				char *basename;
-                		basename = strrchr(optarg, '/');
-		                if (basename)
-                		        basename++;
-				else
-					basename = optarg;
+				char *p; /* basename or output_file */
+				if ((p = strrchr(optarg, '/')) != NULL) p++;
+				else p = optarg;
+				if (output_file) p = output_file;
 				/* Send file */
-				(void) obexftp_put_file(cli, optarg, basename);
+				(void) obexftp_put_file(cli, optarg, p);
+				output_file = NULL;
 			}
 			most_recent_cmd = c;
 			break;
@@ -673,7 +672,7 @@ int main(int argc, char *argv[])
 			most_recent_cmd = 'h'; // not really
 			break;
 
-		case 'P':
+		case 'Y':
 			if (cli == NULL)
 				probe_device();
 			fprintf(stderr, "No other transfer options allowed with --probe\n");

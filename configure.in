@@ -1,7 +1,8 @@
 ## Process this file with autoconf to produce a configure script.
 # try CFLAGS="$CFLAGS -g -Wall -Wmissing-declarations -Wmissing-prototypes -Werror"
-AC_INIT(obexftp, 0.18, zany@triq.net)
-AM_INIT_AUTOMAKE(obexftp, 0.18)
+AC_INIT(ObexFTP, 0.19, zany@triq.net)
+#AC_CONFIG_SRCDIR(src/foo.c)
+AM_INIT_AUTOMAKE
 AM_CONFIG_HEADER(config.h)
 
 dnl AM_MAINTAINER_MODE
@@ -21,7 +22,7 @@ AC_HEADER_DIRENT
 AC_CHECK_HEADERS([arpa/inet.h errno.h fcntl.h netdb.h netinet/in.h stdlib.h string.h sys/ioctl.h sys/socket.h sys/time.h termios.h unistd.h sys/select.h])
 
 # Checks for libraries.
-AM_PATH_OPENOBEX(1.0.0)
+PKG_CHECK_MODULES(OPENOBEX,openobex)
 
 AM_ICONV
 dnl IRDA_CHECK
@@ -119,7 +120,7 @@ AC_SUBST(BFB_VERSION)
 
 # should use AC_CONFIG_FILES
 AC_OUTPUT([
-Makefile 
+Makefile
 swig/perl/Makefile
 swig/perl/Makefile.PL
 swig/python/Makefile

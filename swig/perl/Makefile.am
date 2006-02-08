@@ -1,9 +1,9 @@
-# $Id: Makefile.am,v 1.9 2005/10/13 09:20:57 d1mag Exp $
+EXTRA_DIST = 	OBEXFTP.pm perl_wrap.c
+noinst_DATA =	OBEXFTP.so
+#noinst_LTLIBRARIES =	OBEXFTP.so
+#OBEXFTP_so_SOURCES = perl_wrap.c
 
-EXTRA_DIST = 	OBEXFTP.pm
-noinst_LTLIBRARIES =	OBEXFTP.so
-OBEXFTP_so_SOURCES = perl_wrap.c
-
+# these don't get passed to MakeMaker, how to do this right?
 AM_CFLAGS = -I../include \
          -fexceptions \
          -Wall \
