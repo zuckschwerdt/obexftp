@@ -9,6 +9,10 @@ if ENABLE_PYTHON
   MAYBE_PYTHON_ = python
 endif
 
+if ENABLE_RUBY
+  MAYBE_RUBY = ruby
+endif
+
 if ENABLE_TCL
   MAYBE_TCL = tcl
 endif

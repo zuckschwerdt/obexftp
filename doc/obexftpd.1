@@ -128,105 +128,42 @@
 .rm #[ #] #H #V #F C
 .\" ========================================================================
 .\"
-.IX Title "OBEXFTP 1"
-.TH OBEXFTP 1 "2006-05-16" "2006-05-16" "ObexFTP"
+.IX Title "OBEXFTPD 1"
+.TH OBEXFTPD 1 "2006-03-23" "2006-03-23" "ObexFTP"
 .SH "NAME"
-obexftp \- Mobile Equipment file transfer tool
+obexftpd \- Mobile Equipment file transfer server
 .SH "SYNOPSIS"
 .IX Header "SYNOPSIS"
-\&\fBobexftp\fR [\fI\s-1OPTION\s0\fR] [\fI\s-1COMMANDS\s0\fR]
+\&\fBobexftpd\fR [\fI\s-1OPTIONS\s0\fR] [\fI\s-1TRANSPORT\s0\fR]
 .SH "DESCRIPTION"
 .IX Header "DESCRIPTION"
-\&\fBobexftp\fR is used to access files on mobile equipment,
-i.e. cell phones. With \fBobexftpd\fR you can transfer files between any
-computers using \fBIrDA\fR, \fBBluetooth\fR and \fB\s-1TCP/IP\s0\fR.
-.PP
-This tool lets you access the \fBObexFTP\fR library by the means of
-a command line interface.
-You might consider using the other means available.
-E.g. the \fBObexFS\fR filesystem for Linux.
+With \fBobexftpd\fR you can set up an obex server on any
+computers using \fBIrDA\fR, \fBBluetooth\fR or \fB\s-1TCP/IP\s0\fR.
+Use e.g. \fBobexftp\fR or the \fBObexFS\fR to access the files on this server.
 .SH "OPTIONS"
 .IX Header "OPTIONS"
-The ordering of options is important. Every command will use the most
-recent device set. Every file without command switch will apply to the
-command given most recent. See \fB\s-1EXAMPLES\s0\fR
+The ordering of options is important. The first transport option will
+start the server. Use basedir and verbose options prior to any transport.
+See \fB\s-1EXAMPLES\s0\fR
 .Sh "Transport Options"
 .IX Subsection "Transport Options"
 .IP "\fB\-i\fR, \fB\-\-irda\fR" 4
 .IX Item "-i, --irda"
-Connect using the IrDA protocol. This is the default.
-.IP "\fB\-b\fR \fIdevice\fR, \fB\-\-bluetooth\fR \fIdevice\fR" 4
-.IX Item "-b device, --bluetooth device"
-Connect to this bluetooth device. If the device is not given the first
-device found will be used.
-.IP "\fB\-B\fR \fInumber\fR, \fB\-\-channel\fR \fInumber\fR" 4
-.IX Item "-B number, --channel number"
-Use this bluetooth channel when connecting.
-The channel will be discoverd automatically if this option is not used.
-.IP "\fB\-u\fR \fIintf no\fR, \fB\-\-usb\fR \fIintf no\fR" 4
-.IX Item "-u intf no, --usb intf no"
-Connect to this usb interface or list all available usb interfaces.
+Acceopt connections using the IrDA protocol.
+.IP "\fB\-b\fR, \fB\-\-bluetooth\fR" 4
+.IX Item "-b, --bluetooth"
+Accept connections via bluetooth.
 .IP "\fB\-t\fR \fIdevice\fR, \fB\-\-tty\fR \fIdevice\fR" 4
 .IX Item "-t device, --tty device"
-Connect to this tty device.
+Accept connections from this tty device. \s-1NOT\s0 \s-1WORKING\s0!
 .IP "\fB\-n\fR \fIhost\fR, \fB\-\-network\fR \fIhost\fR" 4
 .IX Item "-n host, --network host"
-Connect to this network host.
-.Sh "Compatibility Options"
-.IX Subsection "Compatibility Options"
-.IP "\fB\-U\fR \fIuuid\fR, \fB\-\-uuid\fR \fIuuid\fR" 4
-.IX Item "-U uuid, --uuid uuid"
-Select the \s-1UUID\s0 to connect with. Recognized values are currently
-\&\*(L"none\*(R" needed by some Nokia mobile devices,
-\&\*(L"\s-1FBS\s0\*(R" (default) for the normal file browsing service,
-\&\*(L"\s-1IRMC\s0\*(R" for \s-1IRMC\s0 synchronisation and
-\&\*(L"S45\*(R" when connecting to a Siemens S45.
-.IP "\fB\-H\fR, \fB\-\-noconn\fR" 4
-.IX Item "-H, --noconn"
-Suppress connection IDs (i.e. send no connection header to the mobile).
-.IP "\fB\-S\fR, \fB\-\-nopath\fR" 4
-.IX Item "-S, --nopath"
-Don't use \*(L"setpath\*(R" commands (i.e. send the whole path as filename to the
-mobile).
-Can be used together with \fB\-\-noconn\fR and \fB\-\-uuid none\fR to send an \s-1OBEX\-PUSH\s0.
+Accept connections from the network to this port.
 .Sh "Setting The File Path"
 .IX Subsection "Setting The File Path"
 .IP "\fB\-c\fR \fIfolder\fR, \fB\-\-chdir\fR \fIfolder\fR" 4
 .IX Item "-c folder, --chdir folder"
-Set the mobiles current working directory.
-.IP "\fB\-C\fR \fIfolder\fR, \fB\-\-mkdir\fR \fIfolder\fR" 4
-.IX Item "-C folder, --mkdir folder"
-Set the mobiles current working directory.
-The folder will be created if it doesn't exist.
-.IP "\fB\-l\fR \fIfolder\fR, \fB\-\-list\fR \fIfolder\fR" 4
-.IX Item "-l folder, --list folder"
-List a folder.
-.Sh "Sending And Retrieving Files"
-.IX Subsection "Sending And Retrieving Files"
-.IP "\fB\-g\fR \fIsource\fR, \fB\-\-get\fR \fIsource\fR" 4
-.IX Item "-g source, --get source"
-Retrieve files from mobile.
-.IP "\fB\-G\fR \fIsource\fR, \fB\-\-getdelete\fR \fIsource\fR" 4
-.IX Item "-G source, --getdelete source"
-Retrieve files from mobile and delete them on the mobile
-.IP "\fB\-p\fR \fIsource\fR, \fB\-\-put\fR \fIsource\fR" 4
-.IX Item "-p source, --put source"
-Send files to the mobile.
-.IP "\fB\-k\fR \fIsource\fR, \fB\-\-delete\fR \fIsource\fR" 4
-.IX Item "-k source, --delete source"
-Delete files from the mobile.
-.Sh "Experimental Extras"
-.IX Subsection "Experimental Extras"
-.IP "\fB\-X\fR, \fB\-\-capability\fR" 4
-.IX Item "-X, --capability"
-Retrieve the capability object from the mobile (if available).
-.IP "\fB\-x\fR, \fB\-\-info\fR" 4
-.IX Item "-x, --info"
-Retrieve misc infos from mobile. I.e. memory size and free memory.
-Siemens specific for now.
-.IP "\fB\-m\fR \fIsrc\fR \fIdest\fR, \fB\-\-move\fR \fIsrc\fR \fIdest\fR" 4
-.IX Item "-m src dest, --move src dest"
-Move (rename) files on the mobile. Siemens specific for now.
+Set the base directory for the server.
 .Sh "Version Information And Help"
 .IX Subsection "Version Information And Help"
 .IP "\fB\-v\fR, \fB\-\-verbose\fR" 4
@@ -240,21 +177,12 @@ Print version string and exit.
 Print short usage instructions.
 .SH "EXAMPLES"
 .IX Header "EXAMPLES"
-.IP "To get the directory listing from the first irda device:" 4
-.IX Item "To get the directory listing from the first irda device:"
-\&\fBobexftp \-i \-l\fR
-or just
-\&\fBobexftp \-l\fR
-as IrDA is the default.
-.IP "To get the file bar from directory foo from the first bluetooth device:" 4
-.IX Item "To get the file bar from directory foo from the first bluetooth device:"
-\&\fBobexftp \-b \-c foo \-g bar\fR
-.IP "To send the file bar to directory foo with device on first serial port:" 4
-.IX Item "To send the file bar to directory foo with device on first serial port:"
-\&\fBobexftp \-t /dev/ttyS0 \-c foo \-p bar\fR
+.IP "Start listening for bluetooth connections and use a safe basedir:" 4
+.IX Item "Start listening for bluetooth connections and use a safe basedir:"
+\&\fBobexftpd \-c /tmp/inbox \-b\fR
 .SH "SEE ALSO"
 .IX Header "SEE ALSO"
-obexftpd(1), openobex(3), obexftp(3), multicobex(3), libbfb(3).
+obexftp(1), openobex(3), obexftp(3), multicobex(3), libbfb(3).
 .SH "BUGS"
 .IX Header "BUGS"
 Bugs ? Features !
@@ -264,3 +192,4 @@ The software has been tested and reported working on at least Siemens, Ericsson,
 .SH "AUTHOR"
 .IX Header "AUTHOR"
 Christian W. Zuckschwerdt <zany@triq.net>
+Alan Zhang <vibra@tom.com>

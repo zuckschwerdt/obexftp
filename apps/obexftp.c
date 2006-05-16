@@ -179,11 +179,8 @@ static int transport = OBEX_TRANS_BLUETOOTH;
 #else
 static int transport = OBEX_TRANS_IRDA;
 #endif /* HAVE_BLUETOOTH */
-/*@only@*/ /*@null@*/ static char *tty = NULL;
-/*@only@*/ /*@null@*/ static char *btaddr = NULL;
-static int btchannel = -1;
-static int usbinterface = -1;
-/*@only@*/ /*@null@*/ static char *inethost = NULL;
+/*@only@*/ /*@null@*/ static char *device = NULL;
+static int channel = -1;
 static const char *use_uuid = UUID_FBS;
 static int use_uuid_len = sizeof(UUID_FBS);
 static int use_conn=1;
@@ -214,34 +211,12 @@ static int cli_connect_uuid(const char *uuid, int uuid_len)
 	for (retry = 0; retry < 3; retry++) {
 
 		/* Connect */
-                switch (transport) {
-		case OBEX_TRANS_INET:
-			if (obexftp_connect_uuid (cli, inethost, 0, uuid, uuid_len) >= 0)
-				return TRUE;
-			break;
-		case OBEX_TRANS_IRDA:
-			if (obexftp_connect_uuid (cli, NULL, 0, uuid, uuid_len) >= 0)
-				return TRUE;
-			break;
-		case OBEX_TRANS_USB:
-			if (obexftp_connect_uuid (cli, NULL, usbinterface, uuid, uuid_len) >= 0)
-				return TRUE;
-			break;
-		case OBEX_TRANS_CUSTOM:
-			if (obexftp_connect_uuid (cli, tty, 0, uuid, uuid_len) >= 0)
-				return TRUE;
-			break;
-		case OBEX_TRANS_BLUETOOTH:
-			if (obexftp_connect_uuid (cli, btaddr, btchannel, uuid, uuid_len) >= 0)
-				return TRUE;
-			break;
-		default:
-			fprintf(stderr, "Transport type unknown\n");
-			return FALSE;
-		}
+		if (obexftp_connect_uuid (cli, device, channel, uuid, uuid_len) >= 0)
+       			return TRUE;
 		fprintf(stderr, "Still trying to connect\n");
 	}
 
+	obexftp_close(cli);
 	cli = NULL;
 	return FALSE;
 }
@@ -413,33 +388,30 @@ int main(int argc, char *argv[])
 
 	/* preset the port from environment */
 	if (getenv(OBEXFTP_CHANNEL) != NULL) {
-		btchannel = atoi(getenv(OBEXFTP_CHANNEL));
-		usbinterface = atoi(getenv(OBEXFTP_CHANNEL));
+		channel = atoi(getenv(OBEXFTP_CHANNEL));
 	}
-	if (usbinterface >= 0) {
+	if (channel >= 0) {
 		transport = OBEX_TRANS_USB;
-		fprintf(stderr, "Using USB: %d\n", usbinterface);
+		fprintf(stderr, "Using USB: %d\n", channel);
 	}
-	tty = getenv(OBEXFTP_CABLE);
-	if (tty != NULL) {
-		tty = strdup(tty);
+	if (getenv(OBEXFTP_CABLE) != NULL) {
+		device = strdup(getenv(OBEXFTP_CABLE));
 		transport = OBEX_TRANS_CUSTOM;
-		fprintf(stderr, "Using TTY: %s\n", tty);
+		fprintf(stderr, "Using TTY: %s\n", device);
 	}
-	btaddr = getenv(OBEXFTP_BLUETOOTH);
-	if (btaddr != NULL) {
-		if (btchannel <= 0 || strlen(btaddr) < (6*2+5) || btaddr[2]!=':')
-			discover_bt(btaddr, &btaddr, &btchannel);
+	if (getenv(OBEXFTP_BLUETOOTH) != NULL) {
+		device = getenv(OBEXFTP_BLUETOOTH);
+		if (channel <= 0 || strlen(device) < (6*2+5) || device[2]!=':')
+			discover_bt(device, &device, &channel);
 		else
-			btaddr = strdup(btaddr);
+			device = strdup(device);
 		transport = OBEX_TRANS_BLUETOOTH;
-		fprintf(stderr, "Using BT: %s (%d)\n", btaddr, btchannel);
+		fprintf(stderr, "Using BT: %s (%d)\n", device, channel);
 	}
-	inethost = getenv(OBEXFTP_INET);
-	if (inethost != NULL) {
-		inethost = strdup(inethost);
+	if (getenv(OBEXFTP_INET) != NULL) {
+		device = strdup(getenv(OBEXFTP_INET));
 		transport = OBEX_TRANS_INET;
-		fprintf(stderr, "Using INET: %s\n", inethost);
+		fprintf(stderr, "Using INET: %s\n", device);
 	}
 	       
 
@@ -479,7 +451,7 @@ int main(int argc, char *argv[])
 			{0, 0, 0, 0}
 		};
 		
-		c = getopt_long (argc, argv, "-ib::B:u::t:n:U::HSL::l::c:C:f:o:g:G:p:k:XYxm:Vvh",
+		c = getopt_long (argc, argv, "-ib::B:u::t:n:U::HSL::l::c:C:f:o:g:G:p:k:XYxm:VvhN:FP",
 				 long_options, &option_index);
 		if (c == -1)
 			break;
@@ -491,38 +463,45 @@ int main(int argc, char *argv[])
 		
 		case 'i':
 			transport = OBEX_TRANS_IRDA;
+			if (device != NULL)
+				free(device);
+       			device = NULL;
+			channel = 0;
 			break;
 		
 #ifdef HAVE_BLUETOOTH
 		case 'b':
 			transport = OBEX_TRANS_BLUETOOTH;
-			if (btaddr != NULL)
-				free (btaddr);
-       			//btaddr = optarg;
+			if (device != NULL)
+				free(device);
+       			//device = optarg;
 			/* handle severed optional option argument */
 			if (!optarg && argc > optind && argv[optind][0] != '-') {
 				optarg = argv[optind];
 				optind++;
 			}
-			discover_bt(optarg, &btaddr, &btchannel);
-			//fprintf(stderr, "Got %s channel %d\n", btaddr, btchannel);
+			discover_bt(optarg, &device, &channel);
+			//fprintf(stderr, "Got %s channel %d\n", device, channel);
 			break;
 			
 		case 'B':
-			btchannel = atoi(optarg);
+			channel = atoi(optarg);
 			break;
 #endif /* HAVE_BLUETOOTH */
 
 #ifdef HAVE_USB
 		case 'u':
 			if (geteuid() != 0)
-				fprintf(stderr, "Superuser privileges are required to access USB.\n");
+				fprintf(stderr, "If USB doesn't work setup permissions in udev or run as superuser.\n");
 			transport = OBEX_TRANS_USB;
+			if (device != NULL)
+				free(device);
+       			device = NULL;
 			/* handle severed optional option argument */
 			if (!optarg && argc > optind && argv[optind][0] != '-') {
 				optarg = argv[optind];
 				optind++;
-				usbinterface = atoi(optarg);
+				channel = atoi(optarg);
 			} else {
 				discover_usb();
 			}
@@ -531,19 +510,23 @@ int main(int argc, char *argv[])
 		
 		case 't':
 			transport = OBEX_TRANS_CUSTOM;
-			if (tty != NULL)
-				free (tty); /* ok to to free an optarg? */
-       			tty = optarg; /* strdup? */
+			if (device != NULL)
+				free(device); /* ok to to free an optarg? */
+       			device = optarg; /* strdup? */
+			channel = 0;
 
 			if (strstr(optarg, "ir") != NULL)
 				fprintf(stderr, "Do you really want to use IrDA via ttys?\n");
 			break;
 
+		case 'N':
+			fprintf(stderr,"Option -%c is deprecated, use -%c instead\n",'N','n');
 		case 'n':
 			transport = OBEX_TRANS_INET;
-			if (inethost != NULL)
-				free (inethost); /* ok to to free an optarg? */
-       			inethost = optarg; /* strdup? */
+			if (device != NULL)
+				free(device); /* ok to to free an optarg? */
+       			device = optarg; /* strdup? */
+			channel = 0;
 
 			{
 				int n;
@@ -552,6 +535,9 @@ int main(int argc, char *argv[])
 			}
 			break;
 			
+		case 'F':
+			fprintf(stderr,"Option -%c is deprecated, use -%c instead\n",'F','U');
+			optarg = "none";
 		case 'U':
 			/* handle severed optional option argument */
 			if (!optarg && argc > optind && argv[optind][0] != '-') {
@@ -636,7 +622,7 @@ int main(int argc, char *argv[])
 				else p = optarg;
 				if (output_file) p = output_file;
 				/* Get file */
-				if (obexftp_get(cli, p, optarg))
+				if (obexftp_get(cli, p, optarg) && c == 'G')
 					(void) obexftp_del(cli, optarg);
 				output_file = NULL;
 			}
@@ -672,6 +658,8 @@ int main(int argc, char *argv[])
 			most_recent_cmd = 'h'; // not really
 			break;
 
+		case 'P':
+			fprintf(stderr,"Option -%c is deprecated, use -%c instead\n",'P','Y');
 		case 'Y':
 			if (cli == NULL)
 				probe_device();
@@ -682,7 +670,7 @@ int main(int argc, char *argv[])
 			if(cli_connect ()) {
 				/* for S65 */
 				(void) obexftp_disconnect (cli);
-				(void) obexftp_connect_uuid (cli, btaddr, btchannel, UUID_S45, sizeof(UUID_S45));
+				(void) obexftp_connect_uuid (cli, device, channel, UUID_S45, sizeof(UUID_S45));
 				/* Retrieve Infos */
 				(void) obexftp_info(cli, 0x01);
 				(void) obexftp_info(cli, 0x02);
@@ -744,7 +732,7 @@ int main(int argc, char *argv[])
 				" -p, --put <SOURCE>          send files\n"
 				" -k, --delete <SOURCE>       delete files\n\n"
 				" -X, --capability            retrieve capability object\n"
-				" -P, --probe                 probe and report device characteristics\n"
+				" -Y, --probe                 probe and report device characteristics\n"
 				" -x, --info                  retrieve infos (Siemens)\n"
 				" -m, --move <SRC> <DEST>     move files (Siemens)\n\n"
 				" -v, --verbose               verbose messages\n"

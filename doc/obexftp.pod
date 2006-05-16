@@ -9,13 +9,13 @@ B<obexftp> [I<OPTION>] [I<COMMANDS>]
 =head1 DESCRIPTION
 
 B<obexftp> is used to access files on mobile equipment,
-i.e. cell phones.
+i.e. cell phones. With B<obexftpd> you can transfer files between any
+computers using B<IrDA>, B<Bluetooth> and B<TCP/IP>.
 
 This tool lets you access the B<ObexFTP> library by the means of
 a command line interface.
 You might consider using the other means available.
-E.g. GTK Client B<gObexFtp>, Gnome-VFS-Module B<vfs-obexftp> and some
-others.
+E.g. the B<ObexFS> filesystem for Linux.
 
 =head1 OPTIONS
 
@@ -23,7 +23,9 @@ The ordering of options is important. Every command will use the most
 recent device set. Every file without command switch will apply to the
 command given most recent. See B<EXAMPLES>
 
-=over 8
+=head2 Transport Options
+
+=over
 
 =item B<-i>, B<--irda>
 
@@ -31,7 +33,8 @@ Connect using the IrDA protocol. This is the default.
 
 =item B<-b> I<device>, B<--bluetooth> I<device>
 
-Connect to this bluetooth device. If the device is not given the first device found will be used.
+Connect to this bluetooth device. If the device is not given the first
+device found will be used.
 
 =item B<-B> I<number>, B<--channel> I<number>
 
@@ -46,9 +49,41 @@ Connect to this usb interface or list all available usb interfaces.
 
 Connect to this tty device.
 
-=item B<-N> I<host>, B<--network> I<host>
+=item B<-n> I<host>, B<--network> I<host>
 
 Connect to this network host.
+
+=back
+
+
+=head2 Compatibility Options
+
+=over
+
+=item B<-U> I<uuid>, B<--uuid> I<uuid>
+
+Select the UUID to connect with. Recognized values are currently
+"none" needed by some Nokia mobile devices,
+"FBS" (default) for the normal file browsing service,
+"IRMC" for IRMC synchronisation and
+"S45" when connecting to a Siemens S45.
+
+=item B<-H>, B<--noconn>
+
+Suppress connection IDs (i.e. send no connection header to the mobile).
+
+=item B<-S>, B<--nopath>
+
+Don't use "setpath" commands (i.e. send the whole path as filename to the
+mobile).
+Can be used together with B<--noconn> and B<--uuid none> to send an OBEX-PUSH.
+
+=back
+
+
+=head2 Setting The File Path
+
+=over
 
 =item B<-c> I<folder>, B<--chdir> I<folder>
 
@@ -62,6 +97,13 @@ The folder will be created if it doesn't exist.
 =item B<-l> I<folder>, B<--list> I<folder>
 
 List a folder.
+
+=back
+
+
+=head2 Sending And Retrieving Files
+
+=over
 
 =item B<-g> I<source>, B<--get> I<source>
 
@@ -79,13 +121,32 @@ Send files to the mobile.
 
 Delete files from the mobile.
 
+=back
+
+
+=head2 Experimental Extras
+
+=over
+
+=item B<-X>, B<--capability>
+
+Retrieve the capability object from the mobile (if available).
+
 =item B<-x>, B<--info>
 
-Retrieve misc infos from mobile. I.e. memory size and free memory. Siemens specific for now.
+Retrieve misc infos from mobile. I.e. memory size and free memory.
+Siemens specific for now.
 
 =item B<-m> I<src> I<dest>, B<--move> I<src> I<dest>
 
 Move (rename) files on the mobile. Siemens specific for now.
+
+=back
+
+
+=head2 Version Information And Help
+
+=over
 
 =item B<-v>, B<--verbose>
 
@@ -103,7 +164,7 @@ Print short usage instructions.
 
 =head1 EXAMPLES
 
-=over 8
+=over
 
 =item To get the directory listing from the first irda device:
 
@@ -124,7 +185,7 @@ B<obexftp -t /dev/ttyS0 -c foo -p bar>
 
 =head1 SEE ALSO
 
-L<openobex>, L<obexftp>, L<cobex>, L<libbfb>.
+L<obexftpd>(1), L<openobex>(3), L<obexftp>(3), L<multicobex>(3), L<libbfb>(3).
 
 =head1 BUGS
 

@@ -1,6 +1,6 @@
 ## Process this file with autoconf to produce a configure script.
 # try CFLAGS="$CFLAGS -g -Wall -Wmissing-declarations -Wmissing-prototypes -Werror"
-AC_INIT(ObexFTP, 0.19, zany@triq.net)
+AC_INIT(ObexFTP, 0.20, zany@triq.net)
 #AC_CONFIG_SRCDIR(src/foo.c)
 AM_INIT_AUTOMAKE
 AM_CONFIG_HEADER(config.h)
@@ -65,10 +65,20 @@ if test "$ac_perl_enabled" = yes; then
 fi
 AM_CONDITIONAL([ENABLE_PERL], [test x"$PERL" != x""])
 
+AC_ARG_ENABLE([ruby],
+              [AS_HELP_STRING([--enable-ruby],
+                              [Enables ruby language bindings @<:@default=off@:>@])],
+              [ac_ruby_enabled=$enableval], [ac_ruby_enabled=no])
+
+if test "$ac_ruby_enabled" = yes; then
+	AC_PATH_PROG([RUBY], [ruby], [])
+fi
+AM_CONDITIONAL([ENABLE_RUBY], [test x"$RUBY" != x""])
+
 AC_ARG_ENABLE([tcl],
-              [AS_HELP_STRING([--disable-tcl],
-                              [Disables tcl language bindings @<:@default=auto@:>@])],
-              [ac_tcl_enabled=$enableval], [ac_tcl_enabled=yes])
+              [AS_HELP_STRING([--enable-tcl],
+                              [Enables tcl language bindings @<:@default=off@:>@])],
+              [ac_tcl_enabled=$enableval], [ac_tcl_enabled=no])
 
 if test "$ac_tcl_enabled" = yes; then
 	AC_PATH_PROG([TCLSH], [tclsh], [])

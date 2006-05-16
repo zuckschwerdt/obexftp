@@ -474,6 +474,13 @@ obexftp_client_t *obexftp_open(int transport, /*const*/ obex_ctrans_t *ctrans, o
 	return cli;
 }
 	
+/**
+ * obexftp_close - Close an obexftp client and free the resources
+ * @cli: the obexftp_client_t to be shut done and free'd.
+ *
+ * Close an obexftp client and free the resources.
+ */
+
 /* Close an obexftp client and free the resources */
 void obexftp_close(obexftp_client_t *cli)
 {

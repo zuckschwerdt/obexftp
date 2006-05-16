@@ -1,0 +1,60 @@
+NAME
+    obexftpd - Mobile Equipment file transfer server
+
+SYNOPSIS
+    obexftpd [*OPTIONS*] [*TRANSPORT*]
+
+DESCRIPTION
+    With obexftpd you can set up an obex server on any computers using IrDA,
+    Bluetooth or TCP/IP. Use e.g. obexftp or the ObexFS to access the files
+    on this server.
+
+OPTIONS
+    The ordering of options is important. The first transport option will
+    start the server. Use basedir and verbose options prior to any
+    transport. See EXAMPLES
+
+  Transport Options
+    -i, --irda
+        Acceopt connections using the IrDA protocol.
+
+    -b, --bluetooth
+        Accept connections via bluetooth.
+
+    -t *device*, --tty *device*
+        Accept connections from this tty device. NOT WORKING!
+
+    -n *host*, --network *host*
+        Accept connections from the network to this port.
+
+  Setting The File Path
+    -c *folder*, --chdir *folder*
+        Set the base directory for the server.
+
+  Version Information And Help
+    -v, --verbose
+        Be verbose and give some additional infos.
+
+    -V, --version
+        Print version string and exit.
+
+    -h, --help, --usage
+        Print short usage instructions.
+
+EXAMPLES
+    Start listening for bluetooth connections and use a safe basedir:
+        obexftpd -c /tmp/inbox -b
+
+SEE ALSO
+    obexftp(1), openobex(3), obexftp(3), multicobex(3), libbfb(3).
+
+BUGS
+    Bugs ? Features !
+
+NOTES
+    The software has been tested and reported working on at least Siemens,
+    Ericsson, and Nokia phones.
+
+AUTHOR
+    Christian W. Zuckschwerdt <zany@triq.net> Alan Zhang <vibra@tom.com>
+

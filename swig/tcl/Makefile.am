@@ -5,8 +5,7 @@ obexftp_la_LDFLAGS =	-module
 obexftp_la_LIBADD =	$(top_builddir)/obexftp/libobexftp.la \
 			$(top_builddir)/multicobex/libmulticobex.la \
 			$(top_builddir)/bfb/libbfb.la \
-			@OPENOBEX_LIBS@ \
-			@BLUETOOTH_LIBS@
+			@OPENOBEX_LIBS@
 
 if ENABLE_SWIG
 tcl_wrap.c : $(srcdir)/../client.i

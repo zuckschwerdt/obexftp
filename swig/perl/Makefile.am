@@ -19,7 +19,7 @@ AM_CFLAGS = -I../include \
          -DSKIP_SEARCH_H \
          -D_FILE_OFFSET_BITS=64
 
-AM_LDFLAGS = -lobexftp -lmulticobex -lbfb @OPENOBEX_LIBS@ @BLUETOOTH_LIBS@
+AM_LDFLAGS = -lobexftp -lmulticobex -lbfb @OPENOBEX_LIBS@
 
 if ENABLE_SWIG
 perl_wrap.c: $(srcdir)/../client.i

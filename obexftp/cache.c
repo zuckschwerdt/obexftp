@@ -27,9 +27,17 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <sys/stat.h> /* __S_IFDIR, __S_IFREG */
+#ifndef S_IFDIR
+#define S_IFDIR	__S_IFDIR
+#endif
+#ifndef S_IFREG
+#define S_IFDIR	__S_IFREG
+#endif
 
 #ifdef HAVE_ICONV
 #include <iconv.h>
+#include <locale.h>
+#include <langinfo.h>
 #endif
 
 #include <openobex/obex.h>
@@ -243,18 +251,25 @@ static stat_entry_t *parse_directory(char *xml)
 	if (!xml)
 		return NULL;
 #ifdef HAVE_ICONV
-	utf8 = iconv_open ("LATIN1", "UTF-8");
+	setlocale(LC_CTYPE, "");
+	DEBUG(2, "Iconv to %s\n", nl_langinfo(CODESET));
+	utf8 = iconv_open (nl_langinfo(CODESET), "UTF-8");
 	ni = strlen(xml);
 	no = ni;
 	xml_latin1 = xml_end = malloc(no);
+	p = xml;
 	if (xml_latin1) {
-		nrc = iconv (utf8, (char* *)&xml, &ni, &xml_end, &no);
+		nrc = iconv (utf8, (char* *)&p, &ni, &xml_end, &no);
 		ret = iconv_close (utf8);
-		if (nrc != (size_t)(-1))
+		if (nrc != (size_t)(-1)) {
 			xml = xml_latin1;
+		} else {
+			DEBUG(1, "Iconv conversion error: '%s'\n", p);
+		}
 	}
 #endif
 	
+	DEBUG(4, "Converted cache xml: '%s'\n", xml);
 	/* prepare a cache to hold this dir */
 	p = xml;
 	for (i = 0; p && *p; p = strchr(++p, '>')) i++;
@@ -286,14 +301,14 @@ static stat_entry_t *parse_directory(char *xml)
 		if (h) sscanf (h, "size=\"%200[^\"]\"", size);
 	
 		if (!strcmp("folder", tagname)) {
-                        dir->mode = __S_IFDIR | 0755;
+                        dir->mode = S_IFDIR | 0755;
                         strcpy(dir->name, name);
 			dir->mtime = atotime(mod);
                         dir->size = 0;
 			dir++;
                 }
 		if (!strcmp("file", tagname)) {
-                        dir->mode = __S_IFREG | 0644;
+                        dir->mode = S_IFREG | 0644;
                         strcpy(dir->name, name);
 			dir->mtime = atotime(mod);
 			i = 0;
