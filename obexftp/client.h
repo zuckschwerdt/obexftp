@@ -56,6 +56,10 @@ extern "C" {
 #define DEFAULT_CACHE_TIMEOUT 180	/* 3 minutes */
 #define DEFAULT_CACHE_MAXSIZE 10240	/* 10k */
 
+/* bt svclass */
+#define OBEX_SYNC_SERVICE	0x1104
+#define OBEX_PUSH_SERVICE	0x1105
+#define OBEX_FTP_SERVICE	0x1106
 
 /* types */
 
@@ -121,13 +125,28 @@ typedef struct obexftp_client
 
 void obexftp_close(/*@only@*/ /*@out@*/ /*@null@*/ obexftp_client_t *cli);
 
+char **obexftp_discover(int transport);
+char **obexftp_discover_bt(void); /* this is a quick hack */
+int obexftp_scan_bt(char *addr, int svclass);
+
 int obexftp_connect_uuid(obexftp_client_t *cli,
 				/*@null@*/ const char *device, /* for INET, BLUETOOTH */
 				int port, /* INET(?), BLUETOOTH, USB*/
 				/*@null@*/ const uint8_t uuid[], uint32_t uuid_len);
 
+//int obexftp_connect_service(obexftp_client_t *cli,
+//				/*@null@*/ const char *service,
+//				/*@null@*/ const char *device, /* for INET, BLUETOOTH */
+//				int port, /* INET(?), BLUETOOTH, USB*/ );
+
 #define	obexftp_connect(cli, device, port) \
 	obexftp_connect_uuid(cli, device, port, UUID_FBS, sizeof(UUID_FBS))
+#define	obexftp_connect_ftp(cli, device, port) \
+	obexftp_connect_uuid(cli, device, port, UUID_FBS, sizeof(UUID_FBS))
+#define	obexftp_connect_push(cli, device, port) \
+	obexftp_connect_uuid(cli, device, port, NULL, 0)
+#define	obexftp_connect_sync(cli, device, port) \
+	obexftp_connect_uuid(cli, device, port, UUID_IRMC, sizeof(UUID_IRMC))
 
 int obexftp_disconnect(obexftp_client_t *cli);
 

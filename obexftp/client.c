@@ -502,7 +502,7 @@ int obexftp_connect_uuid(obexftp_client_t *cli, const char *device, int port, co
 #endif
 #ifdef HAVE_USB
 	int obex_intf_cnt;
-	obex_usb_intf_t *obex_intf;
+	obex_interface_t *obex_intf;
 #endif
 	obex_object_t *object;
 	int ret = -1; /* no connection yet */
@@ -550,6 +550,9 @@ int obexftp_connect_uuid(obexftp_client_t *cli, const char *device, int port, co
 		if (!device) {
 			ret = -EINVAL;
 			break;
+		}
+		if (port < 1) {
+			port = obexftp_scan_bt(device, 0);
 		}
 		/* transform some chars to colons */
 		devicedup = devicep = strdup(device);
@@ -974,3 +977,51 @@ int obexftp_put_data(obexftp_client_t *cli, const char *data, int size,
 
 	return ret;
 }
+
+/* simple device discovery wrappers. USB and BT only */
+
+static char **discover_usb()
+{
+	char **res = NULL;
+#ifdef HAVE_USB
+	obex_t *handle;
+	obex_interface_t* obex_intf;
+	int i, interfaces_number;
+
+	if(! (handle = OBEX_Init(OBEX_TRANS_USB, cli_obex_event, 0))) {
+		DEBUG(1, "%s() OBEX_Init failed\n", __func__);
+		return NULL;
+	}
+	interfaces_number = OBEX_FindInterfaces(handle, &obex_intf);
+
+	res = calloc(interfaces_number + 1, sizeof(char *));
+	
+	for (i=0; i < interfaces_number; i++) {
+		res[i] = malloc(201);
+		snprintf(res[i], 200, "USB:%d (Manufacturer: %s Product: %s Serial: %s Interface description: %s)", i,
+			obex_intf[i].usb.manufacturer,
+			obex_intf[i].usb.product,
+			obex_intf[i].usb.serial,
+		       	obex_intf[i].usb.control_interface);
+	}
+	/* OBEX_FreeInterfaces(handle); OpenOBEX 1.2 will crash */
+	OBEX_Cleanup(handle);
+#endif /* HAVE_USB */
+	return res;
+}
+
+char **obexftp_discover(int transport)
+{
+	switch (transport)	{
+	case OBEX_TRANS_BLUETOOTH:
+		return obexftp_discover_bt();
+	
+	case OBEX_TRANS_USB:
+		return discover_usb();
+	
+	default:
+		DEBUG(1, "%s() Discovery not implemented: %d\n", __func__, transport);
+		return NULL;
+	}
+}
+

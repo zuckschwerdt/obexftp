@@ -1,3 +1,12 @@
+2006-05-26  Christian W. Zuckschwerdt  <zany@triq.net>
+
+	* Fixes to obexftpd suggested by Hendrik Sattler
+
+2006-05-24  Christian W. Zuckschwerdt  <zany@triq.net>
+
+	* Added ruby binding
+	* Added preliminary discovery function
+
 2006-05-16  Christian W. Zuckschwerdt  <zany@triq.net>
 
 	* Change __S_IFDIR to S_IFDIR with fallback sug. by Alex Kanavin

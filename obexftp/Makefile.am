@@ -16,7 +16,8 @@ libobexftp_la_SOURCES =		object.c object.h \
 				client.c client.h \
 				obexftp_io.c obexftp_io.h \
 				cache.c cache.h \
-				uuid.h obexftp.h
+				uuid.h obexftp.h \
+				bt_discovery.c
 
 obexftpinclude_HEADERS =	obexftp.h \
 				client.h \
@@ -24,6 +25,4 @@ obexftpinclude_HEADERS =	obexftp.h \
 				object.h
 	
 libobexftp_la_LDFLAGS =		-version-info $(OBEXFTP_VERSION)
-
-EXTRA_DIST =			client.i
 

@@ -19,22 +19,40 @@
  *     
  */
 
+/* perl croaks if this is lowercase. override for every other binding. */
 %module OBEXFTP
 %{
-#include "obexftp.h"
-#include "client.h"
+#include <obexftp/obexftp.h>
+#include <obexftp/client.h>
 %}
-     
-%name(client) typedef struct {
-} obexftp_client_t;
 
-%extend obexftp_client_t {
+%include "charmap.i"
 
 %constant int IRDA = OBEX_TRANS_IRDA;
 %constant int INET = OBEX_TRANS_INET;
 %constant int CABLE = OBEX_TRANS_CUSTOM;
 %constant int BLUETOOTH = OBEX_TRANS_BLUETOOTH;
 %constant int USB = OBEX_TRANS_USB;
+
+%constant int SYNC = OBEX_SYNC_SERVICE;
+%constant int PUSH = OBEX_PUSH_SERVICE;
+%constant int FTP = OBEX_FTP_SERVICE;
+
+%rename(discover) obexftp_discover;
+char **obexftp_discover(int transport);
+
+%rename(scanbt) obexftp_scan_bt;
+int obexftp_scan_bt(char *addr, int service);
+     
+/* Which binding wants this capitalized too? */
+%rename(client) obexftp_client_t;
+#ifdef SWIGRUBY
+%rename(Client) obexftp_client_t;
+#endif
+typedef struct {
+} obexftp_client_t;
+
+%extend obexftp_client_t {
 
 obexftp_client_t(int transport) {
 	return obexftp_open(transport, NULL, NULL, NULL);
@@ -43,11 +61,23 @@ obexftp_client_t(int transport) {
 	obexftp_close(self);
 }
 
+char **discover() {
+	return obexftp_discover(self->transport);
+}
+
 int connect(char *device, int port) {
-	obexftp_connect_uuid(self, device, port, UUID_FBS, sizeof(UUID_FBS));
+	return obexftp_connect_uuid(self, device, port, UUID_FBS, sizeof(UUID_FBS));
+}
+int connectpush(char *device, int port) {
+	self->quirks &= ~OBEXFTP_SPLIT_SETPATH;
+	return obexftp_connect_uuid(self, device, port, NULL, 0);
+}
+int connectsync(char *device, int port) {
+	self->quirks &= ~OBEXFTP_SPLIT_SETPATH;
+	return obexftp_connect_uuid(self, device, port, UUID_IRMC, sizeof(UUID_IRMC));
 }
 int disconnect() {
-	obexftp_disconnect(self);
+	return obexftp_disconnect(self);
 }
 
 int chpath(char *name) {
@@ -81,19 +111,6 @@ int put_file(char *filename, char *remotename=NULL) {
 	return obexftp_put_file(self, filename, remotename);
 }
 
-%typemap(in) (char *data, size_t size) {
-	// Danger Wil Robinson
-#ifdef SWIGPERL
-	$1 = SvPV($input,$2);
-#endif
-#ifdef SWIGPYTHON
-	$1 = PyString_AsString($input);
-	$2 = PyString_Size($input);
-#endif
-#ifdef SWIGTCL
-	$1 = Tcl_GetStringFromObj($input,&$2);
-#endif
-};
 int put_data(char *data, size_t size, char *remotename) {
 	return obexftp_put_data(self, data, size, remotename);
 }

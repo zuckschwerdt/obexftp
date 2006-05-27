@@ -23,7 +23,7 @@ AM_LDFLAGS = -lobexftp -lmulticobex -lbfb @OPENOBEX_LIBS@
 
 if ENABLE_SWIG
 perl_wrap.c: $(srcdir)/../client.i
-	$(SWIG) -perl -o $@ $(srcdir)/../client.i
+	$(SWIG) -perl -module OBEXFTP -o $@ $<
 endif
 
 Makefile.perl: Makefile.PL

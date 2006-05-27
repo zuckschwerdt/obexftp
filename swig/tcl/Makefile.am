@@ -1,6 +1,6 @@
 lib_LTLIBRARIES =	obexftp.la
 obexftp_la_SOURCES =	tcl_wrap.c
-obexftp_la_CPPFLAGS =	-I$(top_srcdir)/obexftp
+obexftp_la_CFLAGS =	-I$(top_srcdir)
 obexftp_la_LDFLAGS =	-module
 obexftp_la_LIBADD =	$(top_builddir)/obexftp/libobexftp.la \
 			$(top_builddir)/multicobex/libmulticobex.la \
@@ -9,5 +9,5 @@ obexftp_la_LIBADD =	$(top_builddir)/obexftp/libobexftp.la \
 
 if ENABLE_SWIG
 tcl_wrap.c : $(srcdir)/../client.i
-	$(SWIG) -tcl -module obexftp -I$(top_srcdir)/obexftp -o $@ $<
+	$(SWIG) -tcl -module obexftp -I$(top_srcdir) -o $@ $<
 endif

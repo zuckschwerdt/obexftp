@@ -1,5 +1,6 @@
 EXTRA_DIST = 			perl_example.pl \
 				python_example.py \
+				ruby_example.rb \
 				tcl_example.tcl
 
 INCLUDES =			@OPENOBEX_CFLAGS@ \

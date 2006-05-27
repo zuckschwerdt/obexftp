@@ -1,6 +1,6 @@
 ## Process this file with autoconf to produce a configure script.
 # try CFLAGS="$CFLAGS -g -Wall -Wmissing-declarations -Wmissing-prototypes -Werror"
-AC_INIT(ObexFTP, 0.20, zany@triq.net)
+AC_INIT(ObexFTP, 0.21, zany@triq.net)
 #AC_CONFIG_SRCDIR(src/foo.c)
 AM_INIT_AUTOMAKE
 AM_CONFIG_HEADER(config.h)
@@ -105,7 +105,7 @@ AC_TRY_COMPILE([
 
 dnl Turn on all warnings but no debugging when using gcc
 if test "$ac_cv_prog_gcc" = "yes"; then
-	CFLAGS="$CFLAGS -W -Wundef -Wmissing-declarations -Wmissing-prototypes"
+    CFLAGS="$CFLAGS -W -Wundef -Wmissing-declarations -Wmissing-prototypes"
 fi
        
 AC_SUBST(CFLAGS)
@@ -134,6 +134,7 @@ Makefile
 swig/perl/Makefile
 swig/perl/Makefile.PL
 swig/python/Makefile
+swig/ruby/Makefile
 swig/tcl/Makefile
 swig/Makefile
 contrib/Makefile

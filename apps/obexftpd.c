@@ -59,11 +59,6 @@
 /* define this to "", "\r\n" or "\n" */
 #define EOLCHARS "\n"
 
-#if !defined(MAX)
-#define MAX(a, b) \
-	(a > b ? a : b)
-#endif
-
 /* Application defined headers */
 #define HDR_CREATOR  0xcf	/* so we don't require OpenOBEX 1.3 */
 
@@ -109,7 +104,7 @@ static int parsehostport(const char *name, char **host, int *port) {
 	inaddr_any = INADDR_ANY;
 	*host = (char *)&inaddr_any;
 
-	if (sscanf(p, "%d.%d.%d.%d", &n[0], &n[1], &n[2], &n[3]) == 4) {
+	if (sscanf(p, "%hhd.%hhd.%hhd.%hhd", &n[0], &n[1], &n[2], &n[3]) == 4) {
 		inaddr_any = (in_addr_t) (*n);
 	} else {
 		e = gethostbyname(p);
@@ -138,45 +133,39 @@ static rawdata_stream_t* INIT_RAWDATA_STREAM(unsigned int size)
 	{
 		return NULL;
 	}
-	else
+	
+	stream->data = (char *)malloc(size);
+	if (NULL == stream->data)
 	{
-		stream->data = (char *)malloc(size);
-		if (NULL == stream->data)
-		{
-			free(stream);
-			return NULL;
-		}
-		else
-		{
-			strcpy(stream->data, "");
-			stream->size = 0;
-			stream->block_size = size;
-			stream->max_size = size;
-		}
+		free(stream);
+		return NULL;
 	}
+
+       	strcpy(stream->data, "");
+       	stream->size = 0;
+       	stream->block_size = size;
+       	stream->max_size = size;
 
 	return stream;
 }
 
-static int ADD_RAWDATA_STREAM_DATA(rawdata_stream_t *stream, char *data)
+static int ADD_RAWDATA_STREAM_DATA(rawdata_stream_t *stream, const char *data)
 {
-	char 			*databuf = NULL;
-	unsigned int 	size, new_size;
+	char 			*databuf;
+	unsigned int 	size;
 
 	size = strlen(data);
 	if ((size + stream->size) >= stream->max_size)
 	{
-		databuf = stream->data;
 		//printf("b malloc: stream->data=%x, databuf=%x\n", stream->data, databuf);
 		//printf("data: %s\n", stream->data);
 		//printf("size=%d, max_size=%d\n", stream->size, stream->max_size);
-		new_size = MAX(size + stream->size, stream->max_size + stream->block_size);
-		//printf("new size=%d\n", new_size);
-		while(stream->max_size <= new_size)
+		while((size + stream->size) >= stream->max_size)
 		{
 			stream->max_size += stream->block_size;
 		}
 		//printf("stream->max_size=%d\n", stream->max_size);	
+		databuf = stream->data;
 		stream->data = (char *)realloc(stream->data, stream->max_size);
 		//printf("a malloc: stream->data=%x, databuf=%x\n", stream->data, databuf);
 		if (NULL == stream->data)
@@ -185,12 +174,10 @@ static int ADD_RAWDATA_STREAM_DATA(rawdata_stream_t *stream, char *data)
 			stream->data = databuf;
 			return 0; 
 		}
-		else
-		{
-			strcat(stream->data, data);
-			stream->size += size;
-			//printf("size=%d, max_size=%d\n", stream->size, stream->max_size);
-		}
+
+       		strcat(stream->data, data);
+       		stream->size += size;
+       		//printf("size=%d, max_size=%d\n", stream->size, stream->max_size);
 	}
 	else
 	{
@@ -206,11 +193,6 @@ static void FREE_RAWDATA_STREAM(rawdata_stream_t *stream)
 	free(stream->data);
 	free(stream);
 }
-
-inline static void FL_XML_HEADER_BEGIN(rawdata_stream_t *stream)
-{
-	//NULL
-}
 	
 inline static void FL_XML_VERSION(rawdata_stream_t *stream)	
 {
@@ -220,11 +202,6 @@ inline static void FL_XML_VERSION(rawdata_stream_t *stream)
 inline static void FL_XML_TYPE(rawdata_stream_t *stream) 
 {
 	ADD_RAWDATA_STREAM_DATA(stream, "<!DOCTYPE folder-listing SYSTEM \"obex-folder-listing.dtd\">" EOLCHARS);
-}
-
-inline static void FL_XML_HEADER_END(rawdata_stream_t *stream)
-{
-	//NULL
 }
 
 inline static void FL_XML_BODY_BEGIN(rawdata_stream_t *stream)	
@@ -266,7 +243,7 @@ inline static void FL_XML_BODY_SIZE(rawdata_stream_t *stream, unsigned int size)
 	char str_size[16];
 
 	ADD_RAWDATA_STREAM_DATA(stream, "size=\"");
-	sprintf(str_size, "%d", size);
+	snprintf(str_size, 15, "%d", size);
 	ADD_RAWDATA_STREAM_DATA(stream, str_size);
 	ADD_RAWDATA_STREAM_DATA(stream, "\" ");
 }
@@ -276,47 +253,25 @@ inline static void FL_XML_BODY_PERM(rawdata_stream_t *stream)
 	ADD_RAWDATA_STREAM_DATA(stream, "user-perm=\"RWD\" ");
 }
 
-inline static void FL_XML_BODY_MTIME(rawdata_stream_t *stream, time_t time)	
+inline static void FL_XML_BODY_TIME(rawdata_stream_t *stream,
+                                    const char* type,
+                                    time_t time)
 {
-	struct tm 	tm;
-	char		str_tm[16];
-	
-	ADD_RAWDATA_STREAM_DATA(stream, "modified=\"");
-	tm = *localtime(&time);
-	sprintf(str_tm, "%d%02d%02dT%02d%02d%02dZ", 
-		1900 + tm.tm_year, tm.tm_mon, tm.tm_mday,
-		tm.tm_hour, tm.tm_min, tm.tm_sec);
-	ADD_RAWDATA_STREAM_DATA(stream, str_tm);	
-	ADD_RAWDATA_STREAM_DATA(stream, "\" ");
-}
+	struct tm* tm = gmtime(&time);
+	char str_tm[sizeof("=\"yyyymmddThhmmssZ\" ")];
 
-inline static void FL_XML_BODY_CTIME(rawdata_stream_t *stream, time_t time)	
-{
-	struct tm 	tm;
-	char		str_tm[16];
-	
-	ADD_RAWDATA_STREAM_DATA(stream, "created=\"");
-	tm = *localtime(&time);
-	sprintf(str_tm, "%d%02d%02dT%02d%02d%02dZ", 
-		1900 + tm.tm_year, tm.tm_mon, tm.tm_mday,
-		tm.tm_hour, tm.tm_min, tm.tm_sec);
-	ADD_RAWDATA_STREAM_DATA(stream, str_tm);	
-	ADD_RAWDATA_STREAM_DATA(stream, "\" ");
+	if (tm == NULL || stream == NULL ||
+	    strftime(str_tm,sizeof(str_tm),"=\"%Y%m%dT%H%M%SZ\" ",tm) == 0)
+		return;
+	ADD_RAWDATA_STREAM_DATA(stream, type);
+	ADD_RAWDATA_STREAM_DATA(stream, str_tm);
 }
-
-inline static void FL_XML_BODY_ATIME(rawdata_stream_t *stream, time_t time)
-{
-	struct tm 	tm;
-	char		str_tm[16];
-	
-	ADD_RAWDATA_STREAM_DATA(stream, "accessed=\"");
-	tm = *localtime(&time);
-	sprintf(str_tm, "%d%02d%02dT%02d%02d%02dZ", 
-		1900 + tm.tm_year, tm.tm_mon, tm.tm_mday,
-		tm.tm_hour, tm.tm_min, tm.tm_sec);
-	ADD_RAWDATA_STREAM_DATA(stream, str_tm);	
-	ADD_RAWDATA_STREAM_DATA(stream, "\" ");
-}
+#define FL_XML_BODY_MTIME(stream,time) \
+        FL_XML_BODY_TIME(stream,"modified",time)
+#define FL_XML_BODY_CTIME(stream,time) \
+        FL_XML_BODY_TIME(stream,"created",time)
+#define FL_XML_BODY_ATIME(stream,time) \
+        FL_XML_BODY_TIME(stream,"accessed",time)
 
 //END of compositor the folder listing XML document
 
@@ -543,7 +498,7 @@ static void get_server(obex_t *handle, obex_object_t *object)
 
 		case OBEX_HDR_APPARAM:
 			printf("%s() Found apparam\n", __FUNCTION__);
-       			printf("name:%d (%02x %02x ...)\n", hlen, hv.bs, hv.bs+1);
+       			printf("name:%d (%02x %02x ...)\n", hlen, *hv.bs, *(hv.bs+1));
 			break;
 			
 		default:
@@ -564,10 +519,8 @@ fprintf(stderr, "%s:%d:%s\n", __FILE__, __LINE__, __FUNCTION__);
 		{
 			goto out;
 		}
-		FL_XML_HEADER_BEGIN(xmldata);
 		FL_XML_VERSION(xmldata);
 		FL_XML_TYPE(xmldata);
-		FL_XML_HEADER_END(xmldata);
 		FL_XML_BODY_BEGIN(xmldata);
 
 		dp = opendir(CUR_DIR);
@@ -686,7 +639,7 @@ static int safe_save_file(char *name, const uint8_t *buf, int len)
 	printf("Filename = %s\n", name);
 
 #ifndef _WIN32
-	sprintf( filename, CUR_DIR);
+	snprintf(filename, 254, CUR_DIR);
 #endif
 	s = strrchr(name, '/');
 	if (s == NULL)
@@ -962,19 +915,19 @@ reset:
        			perror("failed to register inet server");
 	       		exit(-1);
 		}
-       	break;
+	       	break;
        	case OBEX_TRANS_BLUETOOTH:
 		if (0 > BtOBEX_ServerRegister(handle, bt_src, channel)) {
        			perror("failed to register bluetooth server");
 	       		exit(-1);
 		}
-       	break;
+       		break;
        	case OBEX_TRANS_IRDA:
 		if (0 > IrOBEX_ServerRegister(handle, "")) {
        			perror("failed to register IrDA server");
 	       		exit(-1);
 		}
-       	break;
+	       	break;
        	case OBEX_TRANS_CUSTOM:
 		/* A simple Ericsson protocol session perhaps? */
        	default:
