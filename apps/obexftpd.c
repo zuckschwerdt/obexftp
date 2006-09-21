@@ -1,8 +1,10 @@
 /*
  *  apps/obexftpd.c: OBEX server
  *
- *  Copyright (c) 2003 Christian W. Zuckschwerdt <zany@triq.net>
- *  Copyright (c) 2006 Alan Zhang <vibra@tom.com>
+ *  Copyright (c) 2003-2006 Christian W. Zuckschwerdt <zany@triq.net>
+ *                          Alan Zhang <vibra@tom.com>
+ *                          Hendrik Sattler <post@hendrik-sattler.de>
+ *                          Frode Isaksen <fisaksen@bewan.com>
  *
  *  This program is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the Free
@@ -23,6 +25,7 @@
  * Created at:    Don, 2 Okt 2003
  */
 
+#define _GNU_SOURCE
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -30,28 +33,19 @@
 #include <sys/stat.h>
 #include <dirent.h>
 #include <time.h>
-#define _GNU_SOURCE
 #include <getopt.h>
 #include <errno.h>
-
-#ifdef _WIN32
-#include <winsock.h>
-#else
-
 #include <sys/types.h>
 #include <netinet/in.h>
 #include <fcntl.h>
 #include <sys/socket.h>
 #include <netdb.h>
-#endif /*_WIN32*/
 
 /* just until there is a server layer in obexftp */
 #include <openobex/obex.h>
 
 #include <obexftp/obexftp.h>
-#include <obexftp/client.h>
 #include <obexftp/object.h>
-#include <multicobex/multi_cobex.h>
 #include <common.h>
 
 #include "obexftp_sdp.h"
@@ -65,27 +59,20 @@
 #define WORK_PATH_MAX		128
 #define CUR_DIR				"./"
 
-//BEGIN of constant
 
-bdaddr_t *bt_src = NULL;
-char *device = NULL;
-int channel = 10; /* OBEX_PUSH_HANDLE */
+static bdaddr_t *bt_src = NULL;
+static char *device = NULL;
+static int channel = 10; /* OBEX_PUSH_HANDLE */
 
-//const char *root_path = "/root/obexFTP/obexftp-0.10.7/apps/";
-char init_work_path[WORK_PATH_MAX];
-
-static char fl_type[] = XOBEX_LISTING;
-
-/* current command, set by main, read from info_cb */
-int c;
+static char init_work_path[WORK_PATH_MAX];
 
 volatile int finished = 0;
 volatile int success = 0;
 volatile int obexftpd_reset = 0;
 
-int connection_id = 0;
-char * filename_of_put = NULL;
-//END of constant
+uint32_t connection_id = 0;
+
+int verbose = 0;
 
 static in_addr_t inaddr_any = INADDR_ANY;
 static int parsehostport(const char *name, char **host, int *port) {
@@ -104,7 +91,7 @@ static int parsehostport(const char *name, char **host, int *port) {
 	inaddr_any = INADDR_ANY;
 	*host = (char *)&inaddr_any;
 
-	if (sscanf(p, "%hhd.%hhd.%hhd.%hhd", &n[0], &n[1], &n[2], &n[3]) == 4) {
+	if (sscanf(p, "%hhu.%hhu.%hhu.%hhu", &n[0], &n[1], &n[2], &n[3]) == 4) {
 		inaddr_any = (in_addr_t) (*n);
 	} else {
 		e = gethostbyname(p);
@@ -118,30 +105,29 @@ static int parsehostport(const char *name, char **host, int *port) {
 
 
 //BEGIN of compositor the folder listing XML document
-typedef struct 
-{
-	char 			*data;
+struct rawdata_stream {
+	char		*data;
 	unsigned int	block_size;
 	unsigned int 	size;
 	unsigned int 	max_size;
-} rawdata_stream_t;
+};
 
-static rawdata_stream_t* INIT_RAWDATA_STREAM(unsigned int size)
+static struct rawdata_stream* INIT_RAWDATA_STREAM(unsigned int size)
 {
-	rawdata_stream_t *stream = (rawdata_stream_t *)malloc(sizeof(rawdata_stream_t));
+	struct rawdata_stream *stream = malloc(sizeof(*stream));
 	if (NULL == stream)
 	{
 		return NULL;
 	}
 	
-	stream->data = (char *)malloc(size);
+	stream->data = malloc(size);
 	if (NULL == stream->data)
 	{
 		free(stream);
 		return NULL;
 	}
 
-       	strcpy(stream->data, "");
+       	memset(stream->data,0,size);
        	stream->size = 0;
        	stream->block_size = size;
        	stream->max_size = size;
@@ -149,111 +135,93 @@ static rawdata_stream_t* INIT_RAWDATA_STREAM(unsigned int size)
 	return stream;
 }
 
-static int ADD_RAWDATA_STREAM_DATA(rawdata_stream_t *stream, const char *data)
+static int ADD_RAWDATA_STREAM_DATA(struct rawdata_stream *stream, const char *data)
 {
-	char 			*databuf;
+	char   		*databuf;
 	unsigned int 	size;
 
+	if (data == NULL) return 0;
 	size = strlen(data);
+	if (size == 0) return 0;
 	if ((size + stream->size) >= stream->max_size)
 	{
-		//printf("b malloc: stream->data=%x, databuf=%x\n", stream->data, databuf);
-		//printf("data: %s\n", stream->data);
-		//printf("size=%d, max_size=%d\n", stream->size, stream->max_size);
 		while((size + stream->size) >= stream->max_size)
 		{
 			stream->max_size += stream->block_size;
 		}
-		//printf("stream->max_size=%d\n", stream->max_size);	
-		databuf = stream->data;
-		stream->data = (char *)realloc(stream->data, stream->max_size);
-		//printf("a malloc: stream->data=%x, databuf=%x\n", stream->data, databuf);
-		if (NULL == stream->data)
+		databuf = realloc(stream->data, stream->max_size);
+		if (NULL == databuf)
 		{
-			printf("realloc return NULL!!!\n");
-			stream->data = databuf;
-			return 0; 
+			fprintf(stderr, "realloc() failed\n");
+			return -1; 
 		}
-
-       		strcat(stream->data, data);
-       		stream->size += size;
-       		//printf("size=%d, max_size=%d\n", stream->size, stream->max_size);
+		stream->data = databuf;
 	}
-	else
-	{
-		//printf("b malloc: stream->data=%x, databuf=%x\n", stream->data, databuf);
-		strcat(stream->data, data);
-		stream->size += size;
-	}
-	return 1;
+	strcat(stream->data, data);
+	stream->size += size;
+	return size;
 }
 
-static void FREE_RAWDATA_STREAM(rawdata_stream_t *stream)
+static void FREE_RAWDATA_STREAM(struct rawdata_stream *stream)
 {
 	free(stream->data);
 	free(stream);
 }
 	
-inline static void FL_XML_VERSION(rawdata_stream_t *stream)	
-{
+#define FL_XML_VERSION(stream) \
 	ADD_RAWDATA_STREAM_DATA(stream, "<?xml version=\"1.0\"?>" EOLCHARS);
-}
 
-inline static void FL_XML_TYPE(rawdata_stream_t *stream) 
-{
+#define FL_XML_TYPE(stream) \
 	ADD_RAWDATA_STREAM_DATA(stream, "<!DOCTYPE folder-listing SYSTEM \"obex-folder-listing.dtd\">" EOLCHARS);
-}
 
-inline static void FL_XML_BODY_BEGIN(rawdata_stream_t *stream)	
-{
+#define FL_XML_BODY_BEGIN(stream) \
 	ADD_RAWDATA_STREAM_DATA(stream, "<folder-listing version=\"1.0\">" EOLCHARS);
-}
 
-inline static void FL_XML_BODY_END(rawdata_stream_t *stream)	
-{
+#define FL_XML_BODY_END(stream) \
 	ADD_RAWDATA_STREAM_DATA(stream, "</folder-listing>" EOLCHARS);
-}
 
-inline static void FL_XML_BODY_ITEM_BEGIN(rawdata_stream_t *stream)	
-{
+#define FL_XML_BODY_ITEM_BEGIN(stream) \
 	ADD_RAWDATA_STREAM_DATA(stream, "<");
-}
 
-inline static void FL_XML_BODY_ITEM_END(rawdata_stream_t *stream)	
-{
+#define FL_XML_BODY_ITEM_END(stream) \
 	ADD_RAWDATA_STREAM_DATA(stream, "/>" EOLCHARS);
-}
 
-inline static void FL_XML_BODY_FOLDERNAME(rawdata_stream_t *stream, char *name)
+inline static void FL_XML_BODY_FOLDERNAME(struct rawdata_stream *stream, char *name)
 {
 	ADD_RAWDATA_STREAM_DATA(stream, "folder name=\""); 
 	ADD_RAWDATA_STREAM_DATA(stream, name);		
 	ADD_RAWDATA_STREAM_DATA(stream, "\" ");
 }
 
-inline static void FL_XML_BODY_FILENAME(rawdata_stream_t *stream, char *name)
+inline static void FL_XML_BODY_FILENAME(struct rawdata_stream *stream, char *name)
 {
 	ADD_RAWDATA_STREAM_DATA(stream, "file name=\""); 
 	ADD_RAWDATA_STREAM_DATA(stream, name);		
 	ADD_RAWDATA_STREAM_DATA(stream, "\" ");
 }
 
-inline static void FL_XML_BODY_SIZE(rawdata_stream_t *stream, unsigned int size)	
+inline static void FL_XML_BODY_SIZE(struct rawdata_stream *stream, unsigned int size)	
 {
-	char str_size[16];
+	const char* format = "size=\"%d\" ";
+	char str_size[sizeof(format)+14];
 
-	ADD_RAWDATA_STREAM_DATA(stream, "size=\"");
-	snprintf(str_size, 15, "%d", size);
+	snprintf(str_size,sizeof(str_size), format, size);
 	ADD_RAWDATA_STREAM_DATA(stream, str_size);
-	ADD_RAWDATA_STREAM_DATA(stream, "\" ");
 }
 
-inline static void FL_XML_BODY_PERM(rawdata_stream_t *stream)	
+inline static void FL_XML_BODY_PERM(struct rawdata_stream *stream, mode_t file, mode_t dir)	
 {
-	ADD_RAWDATA_STREAM_DATA(stream, "user-perm=\"RWD\" ");
+	const char* format = "user-perm=\"%s%s%s\" ";
+	char str_perm[sizeof(format)];
+
+	snprintf(str_perm,sizeof(str_perm),format,
+		 (file & (S_IRUSR|S_IRGRP|S_IROTH)? "R": ""),
+		 (file & (S_IWUSR|S_IWGRP|S_IWOTH)? "W": ""),
+		 (dir & (S_IWUSR|S_IWGRP|S_IWOTH)? "D": ""));
+	ADD_RAWDATA_STREAM_DATA(stream,str_perm);
 }
 
-inline static void FL_XML_BODY_TIME(rawdata_stream_t *stream,
+inline static void FL_XML_BODY_TIME(struct rawdata_stream *stream,
                                     const char* type,
                                     time_t time)
 {
@@ -266,6 +234,7 @@ inline static void FL_XML_BODY_TIME(rawdata_stream_t *stream,
 	ADD_RAWDATA_STREAM_DATA(stream, type);
 	ADD_RAWDATA_STREAM_DATA(stream, str_tm);
 }
+
 #define FL_XML_BODY_MTIME(stream,time) \
         FL_XML_BODY_TIME(stream,"modified",time)
 #define FL_XML_BODY_CTIME(stream,time) \
@@ -275,56 +244,57 @@ inline static void FL_XML_BODY_TIME(rawdata_stream_t *stream,
 
 //END of compositor the folder listing XML document
 
-inline static int is_type_fl(char *type)
+inline static int is_type_fl(const char *type)
 {
-	if (NULL == type)
-	{
-		return 0;
-	}
-	
-	if (0 == strcmp(type, fl_type))
-	{
-		return 1;
-	}
-	else
-	{
-		return 0;
-	}
+	return (type && strcmp(type, XOBEX_LISTING) == 0);
 }
 
 static void connect_server(obex_t *handle, obex_object_t *object)
 {
 	obex_headerdata_t hv;
 	uint8_t hi;
-	int hlen;
+	uint32_t hlen;
+	uint8_t *target = NULL;
+	int target_len = 0;
 
-	const uint8_t *who = NULL;
-	int who_len = 0;
-	printf("%s()\n", __FUNCTION__);
+	//printf("%s()\n", __FUNCTION__);
 
-	while(OBEX_ObjectGetNextHeader(handle, object, &hi, &hv, &hlen))	{
-		if(hi == OBEX_HDR_WHO)	{
-			who = hv.bs;
-			who_len = hlen;
-		}
-		else	{
+	while (OBEX_ObjectGetNextHeader(handle, object, &hi, &hv, &hlen)) {
+		switch(hi) {
+		case OBEX_HDR_TARGET:
+			if (0 < hlen)
+			{
+				if( (target = malloc(hlen))) {
+					target_len = hlen;
+					memcpy(target,hv.bs,target_len);
+				}
+			}
+			break;
+		default:	
 			printf("%s() Skipped header %02x\n", __FUNCTION__, hi);
+			break;
 		}
 	}
-	if (who_len == 6)	{
-		if(strncmp("Linux", who, 6) == 0)	{
-			printf("Weeeha. I'm talking to the coolest OS ever!\n");
-		}
-	}
+
 	OBEX_ObjectSetRsp(object, OBEX_RSP_SUCCESS, OBEX_RSP_SUCCESS);
+	hv.bq4 = connection_id;
 	if(OBEX_ObjectAddHeader(handle, object, OBEX_HDR_CONNECTION,
-              		(obex_headerdata_t)((uint32_t) connection_id),
-                      	sizeof(uint32_t),
+              		hv, sizeof(hv.bq4),
                             OBEX_FL_FIT_ONE_PACKET) < 0 )    {
-                DEBUG(1, "Error adding header\n");
+                fprintf(stderr, "Error adding header CONNECTION\n");
                 OBEX_ObjectDelete(handle, object);
                 return;
-        } 
+        }
+	if (target && target_len) {
+		hv.bs = target;
+		if(OBEX_ObjectAddHeader(handle,object,OBEX_HDR_WHO,
+					hv,target_len,OBEX_FL_FIT_ONE_PACKET) < 0 ) {
+			fprintf(stderr, "Error adding header WHO\n");
+			OBEX_ObjectDelete(handle, object);
+			return;
+		}
+		free(target);
+	} 
 }
 
 
@@ -338,7 +308,7 @@ static void set_server_path(obex_t *handle, obex_object_t *object)
 	uint8_t *setpath_nohdr_data;
 	obex_headerdata_t hv;
 	uint8_t hi;
-	int hlen;
+	uint32_t hlen;
 
 	OBEX_ObjectGetNonHdrData(object, &setpath_nohdr_data);
 	if (NULL == setpath_nohdr_data) {
@@ -354,18 +324,14 @@ static void set_server_path(obex_t *handle, obex_object_t *object)
 			if (0 < hlen)
 			{
 				if( (name = malloc(hlen / 2)))	{
-					OBEX_UnicodeToChar(name, hv.bs, hlen);
+					OBEX_UnicodeToChar((uint8_t*)name, hv.bs, hlen);
 					printf("name:%s\n", name);
 				}
 			}
-			else if (0 == hlen)
-			{
-				printf("set path to root\n");
-				chdir(init_work_path);
-			}
 			else
 			{
-				printf("hlen < 0, impossible!\n");
+				if (verbose) printf("set path to root\n");
+				chdir(init_work_path);
 			}
 			break;
 			
@@ -376,19 +342,25 @@ static void set_server_path(obex_t *handle, obex_object_t *object)
 	
 	if (name)
 	{
+		if (strstr(name, "/../"))
+		{
+			OBEX_ObjectSetRsp(object, OBEX_RSP_CONTINUE, OBEX_RSP_FORBIDDEN);
+		} else {
 		strcpy(fullname, CUR_DIR);
-		strcat(fullname, name);
+		strncat(fullname, name, sizeof(fullname)-1);
 		if ((*setpath_nohdr_data & 2) == 0) {
-			printf("mkdir %s\n", name);
-			if (0 > mkdir(fullname, 0755)) {
+			if (verbose) printf("mkdir %s\n", name);
+			if (mkdir(fullname, 0755) < 0) {
 				perror("requested mkdir failed");
 			}
 		}
-		if (0 > chdir(fullname))
+		if (verbose) printf("Set path to %s\n",fullname);
+		if (chdir(fullname) < 0)
 		{
+			perror("requested chdir failed\n");
 			OBEX_ObjectSetRsp(object, OBEX_RSP_CONTINUE, OBEX_RSP_FORBIDDEN);
 		}
-		
+		}
 		free(name);
 		name = NULL;
 	}
@@ -399,25 +371,13 @@ static void set_server_path(obex_t *handle, obex_object_t *object)
 //
 static int get_filesize(const char *filename)
 {
-#ifdef _WIN32
-	HANDLE fh;
-	int size;
-	fh = CreateFile(filename, 0, 0, NULL, OPEN_EXISTING, 0, NULL);
-	if(fh == INVALID_HANDLE_VALUE) {
-		printf("Cannot open %s\n", filename);
-		return -1;	
-	}
-	size = GetFileSize(fh, NULL);
-	printf("fize size was %d\n", size);
-	CloseHandle(fh);
-	return size;
-
-#else
 	struct stat stats;
-	/*  Need to know the file length */
 	stat(filename, &stats);
+	if (S_ISDIR(stats.st_mode)) {
+		fprintf(stderr,"GET of directories not implemented !!!!\n");
+		return -1;
+	}
 	return (int) stats.st_size;
-#endif
 }
 
 //
@@ -432,31 +392,23 @@ static uint8_t* easy_readfile(const char *filename, int *file_size)
 	*file_size = get_filesize(filename);
 	printf("name=%s, size=%d\n", filename, *file_size);
 
-#ifdef _WIN32
-	fd = open(filename, O_RDONLY | O_BINARY, 0);
-#else
 	fd = open(filename, O_RDONLY, 0);
-#endif
 
-	if (fd == -1) {
+	if (fd == -1)
+	{
 		return NULL;
 	}
 	
-	if(! (buf = malloc(*file_size)) )	{
+	buf = malloc(sizeof(*file_size));
+	if(buf == NULL)
+	{
 		return NULL;
 	}
 
 	actual = read(fd, buf, *file_size);
 	close(fd); 
 
-#ifdef _WIN32
-	if(actual != *file_size) {
-		free(buf);
-		buf = NULL;
-	}
-#else
 	*file_size = actual;
-#endif
 	return buf;
 }
 
@@ -466,7 +418,7 @@ static void get_server(obex_t *handle, obex_object_t *object)
 
 	obex_headerdata_t hv;
 	uint8_t hi;
-	int hlen;
+	uint32_t hlen;
 	int file_size;
 
 	char *name = NULL;
@@ -479,14 +431,14 @@ static void get_server(obex_t *handle, obex_object_t *object)
 		case OBEX_HDR_NAME:
 			printf("%s() Found name\n", __FUNCTION__);
 			if( (name = malloc(hlen / 2)))	{
-				OBEX_UnicodeToChar(name, hv.bs, hlen);
+				OBEX_UnicodeToChar((uint8_t*)name, hv.bs, hlen);
 				printf("name:%s\n", name);
 			}
 			break;
 			
 		case OBEX_HDR_TYPE:
 			if( (type = malloc(hlen + 1)))	{
-				strcpy(type, hv.bs);
+				strcpy(type, (char *)hv.bs);
 			}
 			printf("%s() type:%s\n", __FUNCTION__, type);
 
@@ -505,31 +457,31 @@ static void get_server(obex_t *handle, obex_object_t *object)
 			printf("%s() Skipped header %02x\n", __FUNCTION__, hi);
 		}
 	}
-fprintf(stderr, "%s:%d:%s\n", __FILE__, __LINE__, __FUNCTION__);
+
+	//fprintf(stderr, "%s:%d:%s\n", __FILE__, __LINE__, __FUNCTION__);
 	if (is_type_fl(type))
 	{
-		struct dirent 		*dirp;
-		DIR 				*dp;
-		struct stat 		statbuf;
-		char				*filename;
-		rawdata_stream_t 	*xmldata;
+		struct dirent		*dirp;
+		DIR			*dp;
+		struct stat		statdir;
+		struct stat		statbuf;
+		char			*filename;
+		struct rawdata_stream	*xmldata;
 
 		xmldata = INIT_RAWDATA_STREAM(512);
 		if (NULL == xmldata)
-		{
 			goto out;
-		}
+
 		FL_XML_VERSION(xmldata);
 		FL_XML_TYPE(xmldata);
 		FL_XML_BODY_BEGIN(xmldata);
 
+		stat(CUR_DIR, &statdir);
 		dp = opendir(CUR_DIR);
 		while(NULL != dp && NULL != (dirp = readdir(dp))) 
 		{
 			if (0 == strcmp(dirp->d_name, ".") || 0 == strcmp(dirp->d_name, ".."))
-			{
 				continue;
-			}
 
 			FL_XML_BODY_ITEM_BEGIN(xmldata);
 
@@ -540,16 +492,12 @@ fprintf(stderr, "%s:%d:%s\n", __FILE__, __LINE__, __FUNCTION__);
 
 			lstat(filename, &statbuf);
 			if (0 == S_ISDIR(statbuf.st_mode)) //it is a file
-			{
 				FL_XML_BODY_FILENAME(xmldata, dirp->d_name);				
-			}
 			else	//it is a directory
-			{
 				FL_XML_BODY_FOLDERNAME(xmldata, dirp->d_name);
-			}
 			
 			FL_XML_BODY_SIZE(xmldata, statbuf.st_size);
-			FL_XML_BODY_PERM(xmldata);
+			FL_XML_BODY_PERM(xmldata, statbuf.st_mode, statdir.st_mode);
 			FL_XML_BODY_MTIME(xmldata, statbuf.st_mtime);
 			FL_XML_BODY_CTIME(xmldata, statbuf.st_ctime);
 			FL_XML_BODY_ATIME(xmldata, statbuf.st_atime);
@@ -557,12 +505,12 @@ fprintf(stderr, "%s:%d:%s\n", __FILE__, __LINE__, __FUNCTION__);
 			FL_XML_BODY_ITEM_END(xmldata);
 			
 			//printf("---filename:%s\n", filename);
-			fprintf(stderr, "%s:%d:%s\n", __FILE__, __LINE__, __FUNCTION__);
+			//fprintf(stderr, "%s:%d:%s\n", __FILE__, __LINE__, __FUNCTION__);
 			free(filename);
 			filename = NULL;
-			fprintf(stderr, "%s:%d:%s\n", __FILE__, __LINE__, __FUNCTION__);
+			//fprintf(stderr, "%s:%d:%s\n", __FILE__, __LINE__, __FUNCTION__);
 		}
-fprintf(stderr, "%s:%d:%s\n", __FILE__, __LINE__, __FUNCTION__);
+		//fprintf(stderr, "%s:%d:%s\n", __FILE__, __LINE__, __FUNCTION__);
 		FL_XML_BODY_END(xmldata);
 
 		closedir(dp);
@@ -570,13 +518,13 @@ fprintf(stderr, "%s:%d:%s\n", __FILE__, __LINE__, __FUNCTION__);
 		
 		//composite the obex obejct
 		OBEX_ObjectSetRsp(object, OBEX_RSP_CONTINUE, OBEX_RSP_SUCCESS);
-		hv.bs = xmldata->data;
+		hv.bs = (uint8_t *)xmldata->data;
 		OBEX_ObjectAddHeader(handle, object, OBEX_HDR_BODY, hv, xmldata->size, 0);
 		hv.bq4 = xmldata->size;
 		OBEX_ObjectAddHeader(handle, object, OBEX_HDR_LENGTH, hv, sizeof(uint32_t), 0);
-		fprintf(stderr, "%s:%d:%s\n", __FILE__, __LINE__, __FUNCTION__);
+		//fprintf(stderr, "%s:%d:%s\n", __FILE__, __LINE__, __FUNCTION__);
 		FREE_RAWDATA_STREAM(xmldata);
-		fprintf(stderr, "%s:%d:%s\n", __FILE__, __LINE__, __FUNCTION__);
+		//fprintf(stderr, "%s:%d:%s\n", __FILE__, __LINE__, __FUNCTION__);
 	}
 	else if (name)
 	{
@@ -601,23 +549,23 @@ fprintf(stderr, "%s:%d:%s\n", __FILE__, __LINE__, __FUNCTION__);
 		OBEX_ObjectSetRsp(object, OBEX_RSP_NOT_FOUND, OBEX_RSP_NOT_FOUND);
 		return;
 	}
-	fprintf(stderr, "%s:%d:%s\n", __FILE__, __LINE__, __FUNCTION__);
+	//fprintf(stderr, "%s:%d:%s\n", __FILE__, __LINE__, __FUNCTION__);
 	if (NULL != buf)
 	{
 		free(buf);
 	}
-	fprintf(stderr, "%s:%d:%s\n", __FILE__, __LINE__, __FUNCTION__);
+	//fprintf(stderr, "%s:%d:%s\n", __FILE__, __LINE__, __FUNCTION__);
 out:
 	if (NULL != name)
 	{
 		free(name);
 	}
-	fprintf(stderr, "%s:%d:%s\n", __FILE__, __LINE__, __FUNCTION__);
+	//fprintf(stderr, "%s:%d:%s\n", __FILE__, __LINE__, __FUNCTION__);
 	if (NULL != type)
 	{
 		free(type);
 	}
-	fprintf(stderr, "%s:%d:%s\n", __FILE__, __LINE__, __FUNCTION__);
+	//fprintf(stderr, "%s:%d:%s\n", __FILE__, __LINE__, __FUNCTION__);
 	
 	return;
 }
@@ -638,9 +586,6 @@ static int safe_save_file(char *name, const uint8_t *buf, int len)
 
 	printf("Filename = %s\n", name);
 
-#ifndef _WIN32
-	snprintf(filename, 254, CUR_DIR);
-#endif
 	s = strrchr(name, '/');
 	if (s == NULL)
 		s = name;
@@ -648,11 +593,7 @@ static int safe_save_file(char *name, const uint8_t *buf, int len)
 		s++;
 
 	strncat(filename, s, 250);
-#ifdef _WIN32
-	fd = open(filename, O_RDWR | O_CREAT, 0);
-#else
-	fd = open(filename, O_RDWR | O_CREAT, DEFFILEMODE);
-#endif
+	fd = open(filename, O_RDWR | O_CREAT | O_EXCL, S_IRUSR|S_IWUSR|S_IRGRP|S_IROTH);
 
 	if ( fd < 0) {
 		perror( filename);
@@ -678,7 +619,7 @@ static void put_done(obex_t *handle, obex_object_t *object, int final)
 {
 	obex_headerdata_t hv;
 	uint8_t hi;
-	int hlen;
+	uint32_t hlen;
 
 	const uint8_t *body = NULL;
 	int body_len = 0;
@@ -701,7 +642,7 @@ static void put_done(obex_t *handle, obex_object_t *object, int final)
 				free(name);
 			}
 			if( (name = malloc(hlen / 2)))	{
-				OBEX_UnicodeToChar(name, hv.bs, hlen);
+				OBEX_UnicodeToChar((uint8_t *)name, hv.bs, hlen);
 				fprintf(stderr, "put file name: %s\n", name);
 			}
 			break;
@@ -760,7 +701,7 @@ static void put_done(obex_t *handle, obex_object_t *object, int final)
  * Called when a request is about to come or has come.
  *
  */
-static void server_request(obex_t *handle, obex_object_t *object, int event, int cmd)
+static void server_request(obex_t *handle, obex_object_t *object, int UNUSED(event), int cmd)
 {
 	switch(cmd)	{
 	case OBEX_CMD_SETPATH:
@@ -862,11 +803,19 @@ static void obex_event(obex_t *handle, obex_object_t *obj, int mode, int event, 
 			break;
 		}
 		break;
+	case OBEX_EV_ABORT:
+		/* Request was aborted */
+            	printf("%s() OBEX_EV_ABORT: mode=%02x, obex_cmd=%02x, obex_rsp=%02x\n", __func__, 
+				mode, obex_cmd, obex_rsp);
+		break;
 
 	case OBEX_EV_STREAMEMPTY:
 		//(void) cli_fillstream(cli, object);
 		break;
 
+	case OBEX_EV_UNEXPECTED:
+		/* Unexpected data, not fatal */
+		break;
     default:
          printf("%s() Unhandled event %d\n", __func__, event);
          break;
@@ -887,7 +836,7 @@ static void start_server(int transport)
 		exit(0);
 	}
 
-       	if (transport==OBEX_TRANS_BLUETOOTH && 0 > obexftp_sdp_register())
+       	if (transport==OBEX_TRANS_BLUETOOTH && 0 > obexftp_sdp_register(channel))
        	{
        		//OBEX_Cleanup(handle);
        		fprintf(stderr, "register to SDP Server failed.\n");
@@ -965,13 +914,13 @@ reset:
 
 int main(int argc, char *argv[])
 {
-	int verbose = 0;
-
+	int c;
+	
 	while (1) {
 		int option_index = 0;
 		static struct option long_options[] = {
 			{"irda",	no_argument, NULL, 'i'},
-			{"bluetooth",	no_argument, NULL, 'b'},
+			{"bluetooth",	optional_argument, NULL, 'b'},
 			{"tty",		required_argument, NULL, 't'},
 			{"network",	required_argument, NULL, 'n'},
 			{"chdir",	required_argument, NULL, 'c'},
@@ -982,7 +931,7 @@ int main(int argc, char *argv[])
 			{0, 0, 0, 0}
 		};
 		
-		c = getopt_long (argc, argv, "-ibt:n:c:vVh",
+		c = getopt_long (argc, argv, "-ib::t:n:c:vVh",
 				 long_options, &option_index);
 		if (c == -1)
 			break;
@@ -994,17 +943,20 @@ int main(int argc, char *argv[])
 			break;
 		
 		case 'b':
+			if (optarg) {
+				channel = atoi(optarg);
+			}
 			start_server(OBEX_TRANS_BLUETOOTH);
 			fprintf(stderr, "server end\n");
 			break;
-		
+
 		case 'n':
 			parsehostport(optarg, &device, &channel);
 			//channel = atoi(optarg);
 			start_server(OBEX_TRANS_INET);
 			fprintf(stderr, "server end\n");
 			break;
-		
+
 		case 't':
 			printf("accepting on tty not implemented yet.");
 			/* start_server(OBEX_TRANS_CUSTOM); optarg */
@@ -1026,19 +978,19 @@ int main(int argc, char *argv[])
 			printf("ObexFTPd %s\n", VERSION);
 			printf("Usage: %s  [-c <path>]  [-v]  [-i | -b | -t <dev> | -n <port>]\n"
 				"Recieve files from/to Mobile Equipment.\n"
-				"Copyright (c) 2003-2006 Christian W. Zuckschwerdt and Alan Zhang\n"
+				"Copyright (c) 2003-2006 Christian W. Zuckschwerdt, Alan Zhang,\n"
+				"                        Hendrik Sattler, Frode Isaksen\n"
 				"\n"
 				" -i, --irda                  accept IrDA connections\n"
-				" -b, --bluetooth             accept bluetooth connections\n"
+				" -b, --bluetooth [<channel>] accept bluetooth connections\n"
 				" -t, --tty <device>          accept connections from this tty\n"
-				" -n, --network <port>        accept network connections\n\n"
-				" -c, --chdir <path>          set a default basedir\n"
-				" -v, --verbose               verbose messages\n\n"
-				" -V, --version               print version info\n"
-				" -h, --help, --usage         this help text\n"
+				" -n, --network <port>        accept network connections\n"
 				"\n"
-				"THIS IS JUST AN EXAMPLE AND HAS NOT BEEN TESTED YET!\n"
-				"\n",
+				" -c, --chdir <path>          set a default basedir\n"
+				" -v, --verbose               verbose messages\n"
+				"\n"
+				" -V, --version               print version info\n"
+				" -h, --help, --usage         this help text\n",
 				argv[0]);
 			exit(0);
 

@@ -22,11 +22,11 @@
  * Created at:    Don, 17 Jan 2002
  */
 
+#define _GNU_SOURCE
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
-#define _GNU_SOURCE
 #include <getopt.h>
 #include <errno.h>
 
@@ -106,7 +106,7 @@ static void info_cb(int event, const char *msg, int len, void *UNUSED(data))
 		break;
 
 	case OBEXFTP_EV_INFO:
-		printf("Got info %d: \n", (int)msg); // 64 bit problems ?
+		printf("Got info %u: \n", *(uint32_t*)msg);
 		break;
 
 	case OBEXFTP_EV_BODY:
@@ -375,10 +375,8 @@ int main(int argc, char *argv[])
 {
 	int verbose=0;
 	int most_recent_cmd = 0;
-	char *target_path = NULL;
 	char *output_file = NULL;
 	char *move_src = NULL;
-	/* char *inbox; */
 
 	/* preset mode of operation depending on our name */
 	if (strstr(argv[0], "ls") != NULL)	most_recent_cmd = 'l';
@@ -434,7 +432,6 @@ int main(int argc, char *argv[])
 			{"list",	optional_argument, NULL, 'l'},
 			{"chdir",	required_argument, NULL, 'c'},
 			{"mkdir",	required_argument, NULL, 'C'},
-			{"path",	required_argument, NULL, 'f'},
 			{"output",	required_argument, NULL, 'o'},
 			{"get",		required_argument, NULL, 'g'},
 			{"getdelete",	required_argument, NULL, 'G'},
@@ -606,10 +603,6 @@ int main(int argc, char *argv[])
 			most_recent_cmd = c;
 			break;
 
-		case 'f':
-			target_path = optarg;
-			break;
-
 		case 'o':
 			output_file = optarg;
 			break;
@@ -725,7 +718,7 @@ int main(int argc, char *argv[])
 				" -c, --chdir <DIR>           chdir\n"
 				" -C, --mkdir <DIR>           mkdir and chdir\n"
 				" -l, --list [<FOLDER>]       list current/given folder\n"
-				// " -f, --path <PATH>           specify the local file name or directory\n"
+				" -o, --output <PATH>         specify the target file name\n"
 				"                             get and put always specify the remote name.\n"
 				" -g, --get <SOURCE>          fetch files\n"
 				" -G, --getdelete <SOURCE>    fetch and delete (move) files \n"

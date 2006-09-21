@@ -23,6 +23,7 @@
  *  FIXME: win32 not done yet
  */
 
+#define _GNU_SOURCE
 #include <inttypes.h>
 #include <stdlib.h>
 #include <stdio.h>

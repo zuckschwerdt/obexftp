@@ -1,3 +1,19 @@
+2006-07-31  Christian W. Zuckschwerdt  <zany@triq.net>
+
+	* Changed LDADD to LIBADD sug. by Sergey Vlasov <vsu@altlinux.ru>
+
+2006-06-28  Christian W. Zuckschwerdt  <zany@triq.net>
+
+	* obexftpd clean up by Hendrik Sattler
+	* 64-bit fixes by Hendrik Sattler
+	* Removed all (dangerous) obex_headerdata_t casts
+
+2006-05-28  Christian W. Zuckschwerdt  <zany@triq.net>
+
+	* Reorganized all swig-dependant Makefiles
+	* Applied cobex write patch from Simon Ruggier <Simon80@gmail.com>
+	* Applied   from Frode Isaksen <fisaksen@bewan.com>
+
 2006-05-26  Christian W. Zuckschwerdt  <zany@triq.net>
 
 	* Fixes to obexftpd suggested by Hendrik Sattler

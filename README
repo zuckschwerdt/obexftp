@@ -50,7 +50,8 @@ To compile and install:
 	# make
 	# make install (as superuser)
 
-If you plan to use a Siemens S45 and no S65 or Ericsson use
+If you plan to use a Siemens x45 or x55 series (e.g. S45 or C55,
+not S65) use
 	CFLAGS="$CFLAGS -DCOMPAT_S45" ./configure
 instead
 

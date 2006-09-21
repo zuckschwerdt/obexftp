@@ -31,7 +31,7 @@ extern "C" {
 
 void obexftp_sdp_unregister(void); 
 
-int obexftp_sdp_register(void);
+int obexftp_sdp_register(int channel);
 
 //int obexftp_sdp_search(bdaddr_t *src, bdaddr_t *dst, uint16_t service);
 

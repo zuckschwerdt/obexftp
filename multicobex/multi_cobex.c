@@ -27,6 +27,7 @@
 #include <config.h>
 #endif
 
+#define _GNU_SOURCE
 #include <unistd.h>
 #include <stdlib.h>
 #include <string.h>
@@ -126,7 +127,7 @@ int cobex_disconnect(obex_t *self, void *data)
 /* Called from OBEX-lib when data needs to be written */
 int cobex_write(obex_t *self, void *data, uint8_t *buffer, int length)
 {
-	int actual;
+	int written;
 	cobex_t *c;
         return_val_if_fail (self != NULL, -1);
         return_val_if_fail (data != NULL, -1);
@@ -137,24 +138,37 @@ int cobex_write(obex_t *self, void *data, uint8_t *buffer, int length)
 	DEBUG(3, "%s() Data %d bytes\n", __func__, length);
 
 	if (c->type == CT_ERICSSON || c->type == CT_SIEMENS) {
-		actual = write(c->fd, buffer, length);
-		if (actual < length)	{
-			DEBUG(1, "Error writing to port (%d expected %d)\n", actual, length);
-			return actual; /* or -1? */
+		int retries=0, chunk, fails=0;
+		written = 0;
+		for (retries = 0; written < length; retries++) {
+			chunk = write(c->fd, buffer+written, length-written);
+			if (chunk <= 0) {
+				if ( ++fails >= 10 ) { // to avoid infinite looping if something is really wrong
+					DEBUG(1, "%s() Error writing to port (written %d bytes out of %d, in %d retries)\n", __func__, written, length, retries);
+					return written;
+				}
+				usleep(1); // This mysteriously avoids a resource not available error on write()
+			} else {
+				written += chunk;
+				fails = 0; // Reset error counter on successful write op
+			}
 		}
-		return actual;
+		
+		if (retries > 0)
+			DEBUG(2, "%s() Wrote %d bytes in %d retries\n", __func__, written, retries);
+		return written;
 	}
 
 	if (c->seq == 0){
-		actual = bfb_send_first(c->fd, buffer, length);
-		DEBUG(2, "%s() Wrote %d first packets (%d bytes)\n", __func__, actual, length);
+		written = bfb_send_first(c->fd, buffer, length);
+		DEBUG(2, "%s() Wrote %d first packets (%d bytes)\n", __func__, written, length);
 	} else {
-		actual = bfb_send_next(c->fd, buffer, length, c->seq);
-		DEBUG(2, "%s() Wrote %d packets (%d bytes)\n", __func__, actual, length);
+		written = bfb_send_next(c->fd, buffer, length, c->seq);
+		DEBUG(2, "%s() Wrote %d packets (%d bytes)\n", __func__, written, length);
 	}
 	c->seq++;
 
-	return actual;
+	return written;
 }
 
 /* Called when input data is needed */

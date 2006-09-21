@@ -1,49 +1,30 @@
-EXTRA_DIST = 	OBEXFTP.pm perl_wrap.c
+EXTRA_DIST =	perl_wrap.c OBEXFTP.pm
 noinst_DATA =	OBEXFTP.so
-#noinst_LTLIBRARIES =	OBEXFTP.so
-#OBEXFTP_so_SOURCES = perl_wrap.c
-
-# these don't get passed to MakeMaker, how to do this right?
-AM_CFLAGS = -I../include \
-         -fexceptions \
-         -Wall \
-         -W \
-         -Wundef \
-         -Wshadow \
-         -Wpointer-arith \
-         -Wcast-qual \
-         -Wcast-align \
-         -Wconversion \
-         -Wstrict-prototypes \
-         -Wredundant-decls \
-         -DSKIP_SEARCH_H \
-         -D_FILE_OFFSET_BITS=64
-
-AM_LDFLAGS = -lobexftp -lmulticobex -lbfb @OPENOBEX_LIBS@
 
 if ENABLE_SWIG
 perl_wrap.c: $(srcdir)/../client.i
 	$(SWIG) -perl -module OBEXFTP -o $@ $<
+	
+MOSTLYCLEANFILES=perl_wrap.c OBEXFTP.pm OBEXFTP.bs
 endif
 
 Makefile.perl: Makefile.PL
-	$(PERL) $< MAKEFILE=$@
+	$(PERL) $< PREFIX=$(prefix) MAKEFILE=$@
 
 OBEXFTP.so: perl_wrap.c Makefile.perl
+	if test ! -f perl_wrap.c; then cp $(srcdir)/perl_wrap.c . ; fi
 	$(MAKE) -fMakefile.perl
+	if test $(top_srcdir) != $(top_builddir) ; then rm -f perl_wrap.c ; fi
 
-install-data-local:
-	$(MAKE) -fMakefile.perl PREFIX=$(prefix) install
+install-data-local: Makefile.perl
+	$(MAKE) -fMakefile.perl install
 
-maintainer-clean-local:
-	rm -f OBEXFTP.pm perl_wrap.c
-
-CLEANFILES = *~ *.o *.PL
+# sadly there is no make uninstall for perl
+#uninstall-local: Makefile.perl
+#	$(MAKE) -fMakefile.perl uninstall
 
 clean-local:
 	if test -f Makefile.perl; then $(MAKE) -fMakefile.perl realclean; fi
-	rm -f Makefile.perl Makefile.perl.old
-	rm -f $(CLEANFILES)
+#	rm -f Makefile.perl Makefile.perl.old
+	rm -f *.so # *.o
 
-clean-generic:
-	rm -f *~ .*~

@@ -1,4 +1,24 @@
+#!/usr/bin/env ruby
+
 require 'mkmf'
+
+# hack 1: ruby black magic to write a Makefile.new instead of a Makefile
+alias open_orig open
+def open(path, mode=nil, perm=nil)
+  path = 'Makefile.new' if path == 'Makefile'
+  if block_given?
+    open_orig(path, mode, perm) { |io| yield(io) }
+  else
+    open_orig(path, mode, perm)
+  end
+end
+
+if ENV['PREFIX']
+  prefix = CONFIG['prefix']
+  CONFIG.each do |key, var|
+    CONFIG[key] = var.sub(/#{prefix}/, ENV['PREFIX'])
+  end
+end
 
 dir_config('obexftp')
 if have_library('openobex', 'OBEX_Init') and
@@ -6,11 +26,8 @@ if have_library('openobex', 'OBEX_Init') and
    find_library('bfb', 'bfb_io_open', '../../bfb/.libs') and
    find_library('multicobex', 'cobex_ctrans', '../../multicobex/.libs') and
    find_library('obexftp', 'obexftp_open', '../../obexftp/.libs')
-  # hack 1: save old Makefile and move Makefile to Makefile.ruby
-  File.rename('Makefile', 'Makefile.bak')
   create_makefile('obexftp')
-  File.rename('Makefile', 'Makefile.new')
-  File.rename('Makefile.bak', 'Makefile')
+
   # hack 2: strip all rpath references
   open('Makefile.ruby', 'w') do |out|
     IO.foreach('Makefile.new') do |line|

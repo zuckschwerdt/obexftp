@@ -1,5 +1,6 @@
 #include <common.h>
-#if HAVE_BLUETOOTH && HAVE_SDPLIB
+#ifdef HAVE_BLUETOOTH
+#ifdef HAVE_SDPLIB
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -153,15 +154,29 @@ int obexftp_scan_bt(char *addr, int svclass)
 }
 
 #else
+#warning "no bluetooth scan available"
+#include "client.h"
+char **obexftp_discover_bt()
+{
+    return NULL;
+}
+int obexftp_scan_bt(char *UNUSED(addr), int UNUSED(svclass))
+{
+    return 0;
+}
+
+#endif /* HAVE_SDPLIB */
+
+#else
 #warning "no bluetooth discovery available"
 #include "client.h"
 char **obexftp_discover_bt()
 {
     return NULL;
 }
-int obexftp_scan_bt(char *addr, int svclass)
+int obexftp_scan_bt(char *UNUSED(addr), int UNUSED(svclass))
 {
     return 0;
 }
 
-#endif /* HAVE_BLUETOOTH && HAVE_SDPLIB */
+#endif /* HAVE_BLUETOOTH */

@@ -4,9 +4,6 @@ INCLUDES =			@OPENOBEX_CFLAGS@ \
 				-I$(top_srcdir) \
 				-I$(top_srcdir)/includes
 
-LDADD =				@OPENOBEX_LIBS@ \
-				../bfb/libbfb.la
-
 multicobexincludedir =		$(includedir)/multicobex
 
 libmulticobex_la_SOURCES =	multi_cobex.c multi_cobex.h \
@@ -15,4 +12,7 @@ libmulticobex_la_SOURCES =	multi_cobex.c multi_cobex.h \
 multicobexinclude_HEADERS =	multi_cobex.h
 
 libmulticobex_la_LDFLAGS =	-version-info $(MULTICOBEX_VERSION)
+
+libmulticobex_la_LIBADD =	@OPENOBEX_LIBS@ \
+				../bfb/libbfb.la
 

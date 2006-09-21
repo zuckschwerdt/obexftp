@@ -23,6 +23,7 @@
 #include <config.h>
 #endif
 
+#define _GNU_SOURCE
 #include <string.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -31,7 +32,7 @@
 #define S_IFDIR	__S_IFDIR
 #endif
 #ifndef S_IFREG
-#define S_IFDIR	__S_IFREG
+#define S_IFREG	__S_IFREG
 #endif
 
 #ifdef HAVE_ICONV
@@ -332,11 +333,10 @@ static stat_entry_t *parse_directory(char *xml)
 
 /* directory handling */
 
-typedef struct dir_stream dir_stream_t;
-struct dir_stream {
+typedef struct {
 	stat_entry_t *cur;
 	/* stat_entry_t *head; -- so we can free this? */
-};
+} dir_stream_t;
 
 void *obexftp_opendir(obexftp_client_t *cli, const char *name)
 {

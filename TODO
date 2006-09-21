@@ -1,6 +1,8 @@
 ObexFTP to do list
 ==================
 
+* get perl and ruby to distcheck (only python and tcl distcheck ok)
+
 * transport select patch by Hendrik Sattler
 
 * OBEX-Push-only mode (no UUID) suggested by Antti Hayrynen

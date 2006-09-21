@@ -26,18 +26,22 @@
 
 obex_object_t *obexftp_build_info (obex_t obex, uint32_t conn, uint8_t opcode)
 {
-	obex_object_t *object = NULL;
+	obex_object_t *object;
+	obex_headerdata_t hv;
 	uint8_t cmdstr[] = {APPARAM_INFO_CODE, 0x01, 0x00};
 
         object = OBEX_ObjectNew(obex, OBEX_CMD_GET);
         if(object == NULL)
                 return NULL;
 
-        if(conn != 0xffffffff)
-		(void) OBEX_ObjectAddHeader(obex, object, OBEX_HDR_CONNECTION, (obex_headerdata_t) conn, sizeof(uint32_t), OBEX_FL_FIT_ONE_PACKET);
+        if(conn != 0xffffffff) {
+		hv.bq4 = conn;
+		(void) OBEX_ObjectAddHeader(obex, object, OBEX_HDR_CONNECTION, hv, sizeof(uint32_t), OBEX_FL_FIT_ONE_PACKET);
+	}
  
         cmdstr[2] = opcode;
-	(void) OBEX_ObjectAddHeader(obex, object, OBEX_HDR_APPARAM, (obex_headerdata_t) (const uint8_t *) cmdstr, sizeof(cmdstr), OBEX_FL_FIT_ONE_PACKET);
+	hv.bs = (const uint8_t *) cmdstr;
+	(void) OBEX_ObjectAddHeader(obex, object, OBEX_HDR_APPARAM, hv, sizeof(cmdstr), OBEX_FL_FIT_ONE_PACKET);
  
 	return object;
 }
@@ -46,7 +50,8 @@ obex_object_t *obexftp_build_info (obex_t obex, uint32_t conn, uint8_t opcode)
 /* name and type musn't both be null */
 obex_object_t *obexftp_build_get (obex_t obex, uint32_t conn, const char *name, const char *type)
 {
-	obex_object_t *object = NULL;
+	obex_object_t *object;
+	obex_headerdata_t hv;
         uint8_t *ucname;
         int ucname_len;
 
@@ -54,12 +59,15 @@ obex_object_t *obexftp_build_get (obex_t obex, uint32_t conn, const char *name, 
         if(object == NULL)
                 return NULL;
 
-        if(conn != 0xffffffff)
-		(void) OBEX_ObjectAddHeader(obex, object, OBEX_HDR_CONNECTION, (obex_headerdata_t) conn, sizeof(uint32_t), OBEX_FL_FIT_ONE_PACKET);
+        if(conn != 0xffffffff) {
+		hv.bq4 = conn;
+		(void) OBEX_ObjectAddHeader(obex, object, OBEX_HDR_CONNECTION, hv, sizeof(uint32_t), OBEX_FL_FIT_ONE_PACKET);
+	}
  
         if(type != NULL) {
 		// type header is a null terminated ascii string
-		(void) OBEX_ObjectAddHeader(obex, object, OBEX_HDR_TYPE, (obex_headerdata_t) (const uint8_t *) type, strlen(type)+1, OBEX_FL_FIT_ONE_PACKET);
+		hv.bs = (const uint8_t *) type;
+		(void) OBEX_ObjectAddHeader(obex, object, OBEX_HDR_TYPE, hv, strlen(type)+1, OBEX_FL_FIT_ONE_PACKET);
 	}	
  
 	if (name != NULL) {
@@ -70,9 +78,10 @@ obex_object_t *obexftp_build_get (obex_t obex, uint32_t conn, const char *name, 
 		        return NULL;
 		}
 
-		ucname_len = OBEX_CharToUnicode(ucname, name, ucname_len);
+		ucname_len = OBEX_CharToUnicode(ucname, (uint8_t*)name, ucname_len);
 
-		(void) OBEX_ObjectAddHeader(obex, object, OBEX_HDR_NAME, (obex_headerdata_t) (const uint8_t *) ucname, ucname_len, OBEX_FL_FIT_ONE_PACKET);
+		hv.bs = (const uint8_t *) ucname;
+		(void) OBEX_ObjectAddHeader(obex, object, OBEX_HDR_NAME, hv, ucname_len, OBEX_FL_FIT_ONE_PACKET);
 		free(ucname);
 	}
 	
@@ -83,7 +92,8 @@ obex_object_t *obexftp_build_get (obex_t obex, uint32_t conn, const char *name, 
 /* neither filename may be null */
 obex_object_t *obexftp_build_rename (obex_t obex, uint32_t conn, const char *from, const char *to)
 {
-	obex_object_t *object = NULL;
+	obex_object_t *object;
+	obex_headerdata_t hv;
         uint8_t *appstr;
         uint8_t *appstr_p;
         int appstr_len;
@@ -97,8 +107,10 @@ obex_object_t *obexftp_build_rename (obex_t obex, uint32_t conn, const char *fro
         if(object == NULL)
                 return NULL;
 
-        if(conn != 0xffffffff)
-		(void) OBEX_ObjectAddHeader(obex, object, OBEX_HDR_CONNECTION, (obex_headerdata_t) conn, sizeof(uint32_t), OBEX_FL_FIT_ONE_PACKET);
+        if(conn != 0xffffffff) {
+		hv.bq4 = conn;
+		(void) OBEX_ObjectAddHeader(obex, object, OBEX_HDR_CONNECTION, hv, sizeof(uint32_t), OBEX_FL_FIT_ONE_PACKET);
+	}
 
         appstr_len = 1 + 1 + sizeof(opname) +
 		strlen(from)*2 + 2 +
@@ -116,15 +128,16 @@ obex_object_t *obexftp_build_rename (obex_t obex, uint32_t conn, const char *fro
 	appstr_p += sizeof(opname);
 
 	*appstr_p++ = 0x35;
-        ucname_len = OBEX_CharToUnicode(appstr_p + 1, from, strlen(from)*2 + 2);
+        ucname_len = OBEX_CharToUnicode(appstr_p + 1, (uint8_t*)from, strlen(from)*2 + 2);
 	*appstr_p = ucname_len - 2; /* no trailing 0 */
 	appstr_p += ucname_len - 1;
 
 	*appstr_p++ = 0x36;
-        ucname_len = OBEX_CharToUnicode(appstr_p + 1, to, strlen(to)*2 + 2);
+        ucname_len = OBEX_CharToUnicode(appstr_p + 1, (uint8_t*)to, strlen(to)*2 + 2);
 	*appstr_p = ucname_len - 2; /* no trailing 0 */
 	
-        (void) OBEX_ObjectAddHeader(obex, object, OBEX_HDR_APPARAM, (obex_headerdata_t) (const uint8_t *) appstr, appstr_len - 2, 0);
+        hv.bs = (const uint8_t *) appstr;
+        (void) OBEX_ObjectAddHeader(obex, object, OBEX_HDR_APPARAM, hv, appstr_len - 2, 0);
         free(appstr);
 	
 	return object;
@@ -135,6 +148,7 @@ obex_object_t *obexftp_build_rename (obex_t obex, uint32_t conn, const char *fro
 obex_object_t *obexftp_build_del (obex_t obex, uint32_t conn, const char *name)
 {
 	obex_object_t *object;
+	obex_headerdata_t hv;
         uint8_t *ucname;
         int ucname_len;
 
@@ -145,8 +159,10 @@ obex_object_t *obexftp_build_del (obex_t obex, uint32_t conn, const char *name)
         if(object == NULL)
                 return NULL;
 
-        if(conn != 0xffffffff)
-		(void) OBEX_ObjectAddHeader(obex, object, OBEX_HDR_CONNECTION, (obex_headerdata_t) conn, sizeof(uint32_t), OBEX_FL_FIT_ONE_PACKET);
+        if(conn != 0xffffffff) {
+		hv.bq4 = conn;
+		(void) OBEX_ObjectAddHeader(obex, object, OBEX_HDR_CONNECTION, hv, sizeof(uint32_t), OBEX_FL_FIT_ONE_PACKET);
+	}
 
         ucname_len = strlen(name)*2 + 2;
         ucname = malloc(ucname_len);
@@ -155,9 +171,10 @@ obex_object_t *obexftp_build_del (obex_t obex, uint32_t conn, const char *name)
 	        return NULL;
 	}
 
-        ucname_len = OBEX_CharToUnicode(ucname, name, ucname_len);
+        ucname_len = OBEX_CharToUnicode(ucname, (uint8_t*)name, ucname_len);
 
-        (void) OBEX_ObjectAddHeader(obex, object, OBEX_HDR_NAME, (obex_headerdata_t) (const uint8_t *) ucname, ucname_len, OBEX_FL_FIT_ONE_PACKET);
+        hv.bs = (const uint8_t *) ucname;
+        (void) OBEX_ObjectAddHeader(obex, object, OBEX_HDR_NAME, hv, ucname_len, OBEX_FL_FIT_ONE_PACKET);
         free(ucname);
 	
 	return object;
@@ -169,18 +186,21 @@ obex_object_t *obexftp_build_del (obex_t obex, uint32_t conn, const char *name)
 obex_object_t *obexftp_build_setpath (obex_t obex, uint32_t conn, const char *name, int create)
 {
 	obex_object_t *object;
+	obex_headerdata_t hv;
 	// "Backup Level" and "Don't Create" flag in first byte
 	// second byte is reserved and needs to be 0
 	uint8_t setpath_nohdr_data[2] = {0, 0};
-	char *ucname;
+        uint8_t *ucname;
 	int ucname_len;
 
 	object = OBEX_ObjectNew(obex, OBEX_CMD_SETPATH);
 	if(object == NULL)
 		return NULL;
 
-        if(conn != 0xffffffff)
-		(void) OBEX_ObjectAddHeader(obex, object, OBEX_HDR_CONNECTION, (obex_headerdata_t) conn, sizeof(uint32_t), OBEX_FL_FIT_ONE_PACKET);
+        if(conn != 0xffffffff) {
+		hv.bq4 = conn;
+		(void) OBEX_ObjectAddHeader(obex, object, OBEX_HDR_CONNECTION, hv, sizeof(uint32_t), OBEX_FL_FIT_ONE_PACKET);
+	}
 
 	if (create == 0) {
 		// set the 'Don't Create' bit
@@ -193,13 +213,14 @@ obex_object_t *obexftp_build_setpath (obex_t obex, uint32_t conn, const char *na
 			(void) OBEX_ObjectDelete(obex, object);
 			return NULL;
 		}
-		ucname_len = OBEX_CharToUnicode(ucname, name, ucname_len);
+		ucname_len = OBEX_CharToUnicode(ucname, (uint8_t*)name, ucname_len);
 
 		/* apparently the empty name header is meant to be really empty... */
 		if (ucname_len == 2)
 			ucname_len = 0;
 
-		(void) OBEX_ObjectAddHeader(obex, object, OBEX_HDR_NAME, (obex_headerdata_t) (const uint8_t *) ucname, ucname_len, 0);
+        	hv.bs = (const uint8_t *) ucname;
+		(void) OBEX_ObjectAddHeader(obex, object, OBEX_HDR_NAME, hv, ucname_len, 0);
 		free(ucname);
 	}
 	else {
@@ -215,7 +236,8 @@ obex_object_t *obexftp_build_setpath (obex_t obex, uint32_t conn, const char *na
 /* use build_object_from_file() instead */
 obex_object_t *obexftp_build_put (obex_t obex, uint32_t conn, const char *name, const int size)
 {
-	obex_object_t *object = NULL;
+	obex_object_t *object;
+	obex_headerdata_t hv;
 	uint8_t *ucname;
 	int ucname_len;
 		
@@ -223,8 +245,10 @@ obex_object_t *obexftp_build_put (obex_t obex, uint32_t conn, const char *name, 
 	if(object == NULL)
 		return NULL;
 
-        if(conn != 0xffffffff)
-		(void) OBEX_ObjectAddHeader(obex, object, OBEX_HDR_CONNECTION, (obex_headerdata_t) conn, sizeof(uint32_t), OBEX_FL_FIT_ONE_PACKET);
+        if(conn != 0xffffffff) {
+		hv.bq4 = conn;
+		(void) OBEX_ObjectAddHeader(obex, object, OBEX_HDR_CONNECTION, hv, sizeof(uint32_t), OBEX_FL_FIT_ONE_PACKET);
+	}
 
 	ucname_len = strlen(name)*2 + 2;
 	ucname = malloc(ucname_len);
@@ -233,16 +257,17 @@ obex_object_t *obexftp_build_put (obex_t obex, uint32_t conn, const char *name, 
 		return NULL;
 	}
 
-	ucname_len = OBEX_CharToUnicode(ucname, name, ucname_len);
+	ucname_len = OBEX_CharToUnicode(ucname, (uint8_t*)name, ucname_len);
 
-	(void ) OBEX_ObjectAddHeader(obex, object, OBEX_HDR_NAME, (obex_headerdata_t) (const uint8_t *) ucname, ucname_len, 0);
+       	hv.bs = (const uint8_t *) ucname;
+	(void ) OBEX_ObjectAddHeader(obex, object, OBEX_HDR_NAME, hv, ucname_len, 0);
 	free(ucname);
 
-	(void) OBEX_ObjectAddHeader(obex, object, OBEX_HDR_LENGTH, (obex_headerdata_t) (uint32_t)size, sizeof(uint32_t), 0);
+	hv.bq4 = (uint32_t) size;
+	(void) OBEX_ObjectAddHeader(obex, object, OBEX_HDR_LENGTH, hv, sizeof(uint32_t), 0);
 
-	(void) OBEX_ObjectAddHeader(obex, object, OBEX_HDR_BODY,
-				(obex_headerdata_t) (const uint8_t *) NULL,
-				0, OBEX_FL_STREAM_START);
+	hv.bs = (const uint8_t *) NULL;
+	(void) OBEX_ObjectAddHeader(obex, object, OBEX_HDR_BODY, hv, 0, OBEX_FL_STREAM_START);
 
 	return object;
 }

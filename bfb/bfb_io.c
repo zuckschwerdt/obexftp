@@ -26,6 +26,7 @@
 #include <config.h>
 #endif
 
+#define _GNU_SOURCE
 #include <stdlib.h>
 #include <string.h>
 #include <fcntl.h>
@@ -242,7 +243,8 @@ int do_at_cmd(fd_t fd, const char *cmd, char *rspbuf, int rspbuflen)
        			}
        		}
 	}
-
+	/* try hard to discard remaing lines */
+	actual = bfb_io_read(fd, &tmpbuf[total], sizeof(tmpbuf) - total, 2);
 
 /* 	DEBUG(3, "%s() buf:%08lx answer:%08lx end:%08lx\n", __func__, tmpbuf, answer, answer_end); */
 
@@ -296,7 +298,7 @@ void bfb_io_close(fd_t fd, int force)
 /* Returns fd or -1 on failure */
 fd_t bfb_io_open(const char *ttyname, int *typeinfo)
 {
-	uint8_t rspbuf[200];
+	char rspbuf[200];
 #ifdef _WIN32
 	HANDLE ttyfd;
 	DCB dcb;

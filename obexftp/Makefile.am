@@ -4,12 +4,6 @@ INCLUDES =			@OPENOBEX_CFLAGS@ \
 				-I$(top_srcdir) \
 				-I$(top_srcdir)/includes
 
-LDADD =                         @OPENOBEX_LIBS@
-#				@BLUETOOTH_LIBS@ \
-#				@USB_LIBS@ \
-#				../multicobex/libmulticobex.la \
-#				../bfb/libbfb.la
-
 obexftpincludedir =		$(includedir)/obexftp
 
 libobexftp_la_SOURCES =		object.c object.h \
@@ -25,4 +19,8 @@ obexftpinclude_HEADERS =	obexftp.h \
 				object.h
 	
 libobexftp_la_LDFLAGS =		-version-info $(OBEXFTP_VERSION)
+
+libobexftp_la_LIBADD =		@OPENOBEX_LIBS@ \
+				../multicobex/libmulticobex.la \
+				../bfb/libbfb.la
 

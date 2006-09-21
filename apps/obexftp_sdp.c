@@ -34,6 +34,8 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 
+#ifdef HAVE_SDPLIB
+
 #include <bluetooth/bluetooth.h>
 #include <bluetooth/sdp.h>
 #include <bluetooth/sdp_lib.h>
@@ -55,7 +57,7 @@ void obexftp_sdp_unregister(void)
 	sdp_close(session);
 }
 
-int obexftp_sdp_register(void)
+int obexftp_sdp_register(int channel)
 {
 	sdp_list_t *svclass, *pfseq, *apseq, *root, *aproto;
 	uuid_t root_uuid, l2cap, rfcomm, obex, obexftp;
@@ -65,6 +67,8 @@ int obexftp_sdp_register(void)
 	uint8_t channel_id = OBEXFTP_RFCOMM_CHANNEL;
 	int status;
 
+	if (channel > 0) channel_id = channel;
+	
 	session = sdp_connect(BDADDR_ANY, BDADDR_LOCAL, 0);
 	if (!session) {
 		syslog(LOG_ERR, "Failed to connect to the local SDP server. %s(%d)", 
@@ -173,3 +177,17 @@ int obexftp_sdp_search(bdaddr_t *src, bdaddr_t *dst, uint16_t service)
 	return 0;
 }
 */
+
+#else
+
+void obexftp_sdp_unregister(void)
+{
+}
+
+int obexftp_sdp_register(void)
+{
+	syslog(LOG_ERR, "SDP not supported.");
+	return -1;
+}
+
+#endif // HAVE_SDPLIB

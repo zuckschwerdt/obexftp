@@ -43,7 +43,30 @@ char **obexftp_discover(int transport);
 
 %rename(scanbt) obexftp_scan_bt;
 int obexftp_scan_bt(char *addr, int service);
-     
+
+
+#if defined SWIGPERL
+#elif defined SWIGPYTHON
+/* http://www.swig.org/Doc1.1/HTML/Python.html#n11 */
+#elif defined SWIGRUBY
+%typemap(in) (obexftp_info_cb_t infocb, void *user_data) {
+	$1 = proxy_info_cb;
+	$2 = $input;
+};
+
+%{
+static void proxy_info_cb (int event, const char *buf, int len, void *data) {
+  VALUE proc = (VALUE)data;
+  VALUE msg = buf ? rb_str_new(buf, len) : Qnil;
+  rb_funcall(proc, rb_intern("call"), 2, INT2NUM(event), msg);
+}
+%}
+#elif defined SWIGTCL
+#else
+#warning "no callbacks for this language"
+#endif
+
+
 /* Which binding wants this capitalized too? */
 %rename(client) obexftp_client_t;
 #ifdef SWIGRUBY
@@ -59,6 +82,11 @@ obexftp_client_t(int transport) {
 }
 ~obexftp_client_t() {
 	obexftp_close(self);
+}
+
+void callback(obexftp_info_cb_t infocb, void *user_data) {
+	self->infocb = infocb;
+	self->infocb_data = user_data;
 }
 
 char **discover() {
@@ -93,16 +121,15 @@ int cdtop() {
 	return obexftp_setpath(self, "", 0);
 }
 
-// newSVpvn(s, len)
 char *get(char *path) {
 	(void) obexftp_get_type(self, NULL, NULL, path);
 	return self->buf_data;
 }
-char *list(char *path) {
+char *list(char *path=NULL) {
 	(void) obexftp_get_type(self, XOBEX_LISTING, NULL, path);
 	return self->buf_data;
 }
-char *get_capability(char *path) {
+char *get_capability(char *path=NULL) {
 	(void) obexftp_get_type(self, XOBEX_CAPABILITY, NULL, path);
 	return self->buf_data;
 }
@@ -111,7 +138,7 @@ int put_file(char *filename, char *remotename=NULL) {
 	return obexftp_put_file(self, filename, remotename);
 }
 
-int put_data(char *data, size_t size, char *remotename) {
+int put_data(char *data, size_t size, char *remotename=NULL) {
 	return obexftp_put_data(self, data, size, remotename);
 }
 

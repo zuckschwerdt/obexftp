@@ -19,6 +19,36 @@
  *     
  */
 
+/* handle strings that maybe NULL */
+#if defined SWIGPERL
+/* perl5.swg uses PL_sv_undef. */
+#elif defined SWIGPYTHON
+/* python.swg uses "". Change to Py_None maybe? */
+#elif defined SWIGRUBY
+%typemap(in) char *	"$1 = ($input != Qnil) ? StringValuePtr($input) : NULL;";
+%typemap(out) char *	"$result = $1 ? rb_str_new2($1) : Qnil;";
+#elif defined SWIGTCL
+/* tcl8.swg is naive about this. Does it work? */
+#else
+#warning "no char * out-typemap for this language"
+#endif
+
+/* handle non-sz strings */
+%typemap(out) char * {
+#if defined SWIGPERL
+	$result = newSVpvn(arg1->buf_data, arg1->buf_size);
+#elif defined SWIGPYTHON
+	$result = PyString_FromStringAndSize(arg1->buf_data, arg1->buf_size);
+#elif defined SWIGRUBY
+	$result = arg1->buf_data ? rb_str_new(arg1->buf_data, arg1->buf_size) : Qnil;
+#elif defined SWIGTCL
+	Tcl_SetObjResult(interp,Tcl_NewStringObj(arg1->buf_data,arg1->buf_size));
+#else
+#warning "no char * out-typemap for this language"
+#endif
+};
+
+/* handle arrays of strings */
 %typemap(out) char ** {
 #if defined SWIGPERL
   char **p;
@@ -41,7 +71,7 @@
   for (p = $1; p && *p; p++)
     Tcl_ListObjAppendElement(interp, $result, Tcl_NewStringObj(*p, strlen(*p)));
 #else
-#warning "no char ** typemap for this language"
+#warning "no char ** out-typemap for this language"
 #endif
 }
 
@@ -59,6 +89,6 @@
 #elif defined SWIGTCL
 	$1 = Tcl_GetStringFromObj($input,&$2);
 #else
-#warning "no char *, size_t typemap for this language"
+#warning "no char *, size_t in-typemap for this language"
 #endif
 };

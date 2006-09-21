@@ -7,7 +7,7 @@
 Summary:      Access devices via ObexFTP e.g. mobile phones
 Name:         obexftp
 Version:      @VERSION@
-Release:      @RELEASE@
+Release:      1
 Copyright:    GPL
 Group:        Utilities/Console
 Autoreqprov:  on

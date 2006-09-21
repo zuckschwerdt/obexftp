@@ -8,6 +8,9 @@ obexftp_la_LIBADD =	$(top_builddir)/obexftp/libobexftp.la \
 			@OPENOBEX_LIBS@
 
 if ENABLE_SWIG
-tcl_wrap.c : $(srcdir)/../client.i
+tcl_wrap.c: $(srcdir)/../client.i
 	$(SWIG) -tcl -module obexftp -I$(top_srcdir) -o $@ $<
+
+MOSTLYCLEANFILES=tcl_wrap.c
 endif
+

@@ -23,6 +23,7 @@
 #include <config.h>
 #endif
 
+#define _GNU_SOURCE
 #include <string.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -71,7 +72,7 @@ typedef struct { /* fixed to 6 bytes for now */
 	uint8_t code;
 	uint8_t info_len;
 	uint8_t info[4];
-} apparam_t;
+} __attribute__((packed)) apparam_t;
 
 
 static void dummy_info_cb(int UNUSED(event), const char *UNUSED(msg), int UNUSED(len), void *UNUSED(data))
@@ -173,6 +174,7 @@ static void split_file_path(const char *name, /*@only@*/ char **basepath, /*@onl
 /* Add more data from memory to stream. */
 static int cli_fillstream_from_memory(obexftp_client_t *cli, obex_object_t *object)
 {
+	obex_headerdata_t hv;
 	int actual = cli->out_size - cli->out_pos;
 	if (actual > STREAM_CHUNK)
 		actual = STREAM_CHUNK;
@@ -180,21 +182,24 @@ static int cli_fillstream_from_memory(obexftp_client_t *cli, obex_object_t *obje
 	
 	if(actual > 0) {
 		/* Read was ok! */
+		hv.bs = (const uint8_t *) &cli->out_data[cli->out_pos];
 		(void) OBEX_ObjectAddHeader(cli->obexhandle, object, OBEX_HDR_BODY,
-				(obex_headerdata_t) (const uint8_t *) &cli->out_data[cli->out_pos], actual, OBEX_FL_STREAM_DATA);
+				hv, actual, OBEX_FL_STREAM_DATA);
 		cli->out_pos += actual;
 	}
 	else if(actual == 0) {
 		/* EOF */
 		cli->out_data = NULL; /* dont free, isnt ours */
+		hv.bs = (const uint8_t *) &cli->out_data[cli->out_pos];
 		(void) OBEX_ObjectAddHeader(cli->obexhandle, object, OBEX_HDR_BODY,
-				(obex_headerdata_t) (const uint8_t *) &cli->out_data[cli->out_pos], 0, OBEX_FL_STREAM_DATAEND);
+				hv, 0, OBEX_FL_STREAM_DATAEND);
 	}
 	else {
 		/* Error */
 		cli->out_data = NULL; /* dont free, isnt ours */
+		hv.bs = (const uint8_t *) NULL;
 		(void) OBEX_ObjectAddHeader(cli->obexhandle, object, OBEX_HDR_BODY,
-				(obex_headerdata_t) (const uint8_t *) NULL, 0, OBEX_FL_STREAM_DATA);
+				hv, 0, OBEX_FL_STREAM_DATA);
 	}
 
 	return actual;
@@ -203,6 +208,7 @@ static int cli_fillstream_from_memory(obexftp_client_t *cli, obex_object_t *obje
 /* Add more data from file to stream. */
 static int cli_fillstream_from_file(obexftp_client_t *cli, obex_object_t *object)
 {
+	obex_headerdata_t hv;
 	int actual;
 		
 	DEBUG(3, "%s()\n", __func__);
@@ -213,23 +219,25 @@ static int cli_fillstream_from_file(obexftp_client_t *cli, obex_object_t *object
 	
 	if(actual > 0) {
 		/* Read was ok! */
+		hv.bs = (const uint8_t *) cli->stream_chunk;
 		(void) OBEX_ObjectAddHeader(cli->obexhandle, object, OBEX_HDR_BODY,
-				(obex_headerdata_t) (const uint8_t *) cli->stream_chunk, actual, OBEX_FL_STREAM_DATA);
+				hv, actual, OBEX_FL_STREAM_DATA);
 	}
 	else if(actual == 0) {
 		/* EOF */
 		(void) close(cli->fd);
 		cli->fd = -1;
+		hv.bs = (const uint8_t *) cli->stream_chunk;
 		(void) OBEX_ObjectAddHeader(cli->obexhandle, object, OBEX_HDR_BODY,
-				(obex_headerdata_t) (const uint8_t *) cli->stream_chunk, 0, OBEX_FL_STREAM_DATAEND);
+				hv, 0, OBEX_FL_STREAM_DATAEND);
 	}
         else {
 		/* Error */
 		(void) close(cli->fd);
 		cli->fd = -1;
+		hv.bs = (const uint8_t *) NULL;
 		(void) OBEX_ObjectAddHeader(cli->obexhandle, object, OBEX_HDR_BODY,
-				(obex_headerdata_t) (const uint8_t *) NULL,
-				0, OBEX_FL_STREAM_DATA);
+				hv, 0, OBEX_FL_STREAM_DATA);
 	}
 
 	return actual;
@@ -298,10 +306,10 @@ static void client_done(obex_t *handle, obex_object_t *object, int UNUSED(obex_c
 			DEBUG(3, "%s() Found application parameters\n", __func__);
                         if(hlen == sizeof(apparam_t)) {
 				app = (const apparam_t *)hv.bs;
-				 /* needed for alignment */
-				memcpy(&cli->apparam_info, &app->info, sizeof(cli->apparam_info));
-				cli->apparam_info = ntohl(cli->apparam_info); // 64 bit problems?
-				cli->infocb(OBEXFTP_EV_INFO, (void *)cli->apparam_info, 0, cli->infocb_data);
+				/* order is network byte order (big-endian) */
+				cli->apparam_info = (app->info[0] << (3*8)) + (app->info[1] << (2*8)) +
+				                    (app->info[2] << (1*8)) + (app->info[3] << (0*8));
+				cli->infocb(OBEXFTP_EV_INFO, (char*)&cli->apparam_info, 0, cli->infocb_data);
 			}
 			else
 				DEBUG(3, "%s() Application parameters don't fit %d vs. %d.\n", __func__, hlen, sizeof(apparam_t));
@@ -505,6 +513,7 @@ int obexftp_connect_uuid(obexftp_client_t *cli, const char *device, int port, co
 	obex_interface_t *obex_intf;
 #endif
 	obex_object_t *object;
+	obex_headerdata_t hv;
 	int ret = -1; /* no connection yet */
 
 	DEBUG(3, "%s()\n", __func__);
@@ -599,10 +608,9 @@ int obexftp_connect_uuid(obexftp_client_t *cli, const char *device, int port, co
 #ifdef COMPAT_S45
 	// try S45 UUID first.
 	object = OBEX_ObjectNew(cli->obexhandle, OBEX_CMD_CONNECT);
+	hv.bs = UUID_S45;
 	if(OBEX_ObjectAddHeader(cli->obexhandle, object, OBEX_HDR_TARGET,
-                                (obex_headerdata_t) UUID_S45,
-                                sizeof(UUID_S45),
-                                OBEX_FL_FIT_ONE_PACKET) < 0)    {
+                                hv, sizeof(UUID_S45), OBEX_FL_FIT_ONE_PACKET) < 0) {
                 DEBUG(1, "Error adding header\n");
                 OBEX_ObjectDelete(cli->obexhandle, object);
                 return -1;
@@ -615,10 +623,9 @@ int obexftp_connect_uuid(obexftp_client_t *cli, const char *device, int port, co
 #endif
 		object = OBEX_ObjectNew(cli->obexhandle, OBEX_CMD_CONNECT);
 		if (uuid) {
+			hv.bs = uuid;
 			if(OBEX_ObjectAddHeader(cli->obexhandle, object, OBEX_HDR_TARGET,
-        	        	                (obex_headerdata_t) uuid,
-        		                        uuid_len,
-	                	                OBEX_FL_FIT_ONE_PACKET) < 0)    {
+        	        	                hv, uuid_len, OBEX_FL_FIT_ONE_PACKET) < 0) {
 	        	        DEBUG(1, "Error adding header\n");
 		                OBEX_ObjectDelete(cli->obexhandle, object);
                 		return -1;
@@ -644,6 +651,7 @@ int obexftp_connect_uuid(obexftp_client_t *cli, const char *device, int port, co
 int obexftp_disconnect(obexftp_client_t *cli)
 {
 	obex_object_t *object;
+	obex_headerdata_t hv;
 	int ret;
 
 	DEBUG(3, "%s()\n", __func__);
@@ -652,7 +660,9 @@ int obexftp_disconnect(obexftp_client_t *cli)
 	cli->infocb(OBEXFTP_EV_DISCONNECTING, "", 0, cli->infocb_data);
 
 	object = OBEX_ObjectNew(cli->obexhandle, OBEX_CMD_DISCONNECT);
-	(void) OBEX_ObjectAddHeader(cli->obexhandle, object, OBEX_HDR_CONNECTION, (obex_headerdata_t) cli->connection_id, sizeof(uint32_t), OBEX_FL_FIT_ONE_PACKET);
+	hv.bq4 = cli->connection_id;
+	(void) OBEX_ObjectAddHeader(cli->obexhandle, object, OBEX_HDR_CONNECTION,
+				    hv, sizeof(uint32_t), OBEX_FL_FIT_ONE_PACKET);
 	ret = cli_sync_request(cli, object);
 
 	if(ret < 0)
@@ -837,9 +847,15 @@ int obexftp_setpath(obexftp_client_t *cli, const char *name, int create)
 			}
 	
 			cli->infocb(OBEXFTP_EV_SENDING, tail, 0, cli->infocb_data);
-			DEBUG(2, "%s() Setpath \"%s\"\n", __func__, tail);
-			object = obexftp_build_setpath (cli->obexhandle, cli->connection_id, tail, create);
+			DEBUG(2, "%s() Setpath \"%s\" (create:%d)\n", __func__, tail, create);
+			/* try without the create flag */
+			object = obexftp_build_setpath (cli->obexhandle, cli->connection_id, tail, 0);
 			ret = cli_sync_request(cli, object);
+			if ((ret < 0) && create) {
+				/* try again with create flag set maybe? */
+				object = obexftp_build_setpath (cli->obexhandle, cli->connection_id, tail, 1);
+				ret = cli_sync_request(cli, object);
+			}
 			if (ret < 0) break;
 
 			tail = p;

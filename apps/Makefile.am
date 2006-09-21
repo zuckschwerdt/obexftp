@@ -1,18 +1,17 @@
 EXTRA_DIST = 			perl_example.pl \
 				python_example.py \
 				ruby_example.rb \
-				tcl_example.tcl
+				tcl_example.tcl \
+				ruby_obexftp.rb
 
 INCLUDES =			@OPENOBEX_CFLAGS@ \
 				-I$(top_srcdir) \
 				-I$(top_srcdir)/includes
 
-LDADD =				../obexftp/libobexftp.la \
+LDADD =				@OPENOBEX_LIBS@ \
+				../obexftp/libobexftp.la \
 				../multicobex/libmulticobex.la \
-				../bfb/libbfb.la \
-				@OPENOBEX_LIBS@
-#				@BLUETOOTH_LIBS@
-#				@USB_LIBS@
+				../bfb/libbfb.la
 # need on win32:
 # getopt.o getopt1.o libopenobex.a libwsock32.a
 

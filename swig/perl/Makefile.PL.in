@@ -8,13 +8,15 @@ WriteMakefile(
 #    'VERSION'	=>	q[@VERSION@],
 # Avoid compilation problem for Fedora Core 1
     'DEFINE'    =>	q[-DSKIP_SEARCH_H @DEFS@],
-    'INC'       =>	q[-I@top_srcdir@/obexftp -I../.. @CPPFLAGS@],
+    'INC'       =>	q[-I@top_srcdir@ @CPPFLAGS@],
 # Default value for LDDLFLAGS is $Config{lddlflags}="-shared -L/usr/local/lib"
 # but we want rpath to be @libdir@ or @exec_prefix@/lib
-#    'LDDLFLAGS' =>      q[-shared -Wl,-L@top_builddir@obexftp/.libs -Wl,-rpath=@prefix@/lib],
     'LDDLFLAGS' =>      q[-shared -Wl,-rpath=@prefix@/lib],
-    'LIBS'      =>	q[-L@top_builddir@obexftp/.libs -lobexftp -L@top_builddir@multicobex/.libs -lmulticobex -L@top_builddir@bfb/.libs -lbfb @OPENOBEX_LIBS@ @BLUETOOTH_LIBS@ @LIBS@],
-    'OBJECT'	=>	'perl_wrap.o',
+    'LIBS'      =>	q[-L@top_builddir@obexftp/.libs -lobexftp
+    			  -L@top_builddir@multicobex/.libs -lmulticobex
+			  -L@top_builddir@bfb/.libs -lbfb
+			  @OPENOBEX_LIBS@ @BLUETOOTH_LIBS@ @LIBS@],
+    'OBJECT'	=>	'perl_wrap.o', # $(OBJ_EXT)
     'NAME'      =>	'OBEXFTP',
     'FIRST_MAKEFILE'      =>	'Makefile.perl',
 ) ;

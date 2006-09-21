@@ -1,3 +1,4 @@
+#define _GNU_SOURCE
 #include <common.h>
 #ifdef HAVE_BLUETOOTH
 #ifdef HAVE_SDPLIB

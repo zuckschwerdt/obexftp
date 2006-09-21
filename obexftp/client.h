@@ -63,13 +63,12 @@ extern "C" {
 
 /* types */
 
-typedef struct stat_entry stat_entry_t;
-struct stat_entry {
+typedef struct {
 	char name[256];
 	mode_t mode;
 	int size;
 	time_t mtime;
-};
+} stat_entry_t;
 
 typedef struct cache_object cache_object_t;
 struct cache_object
@@ -83,8 +82,7 @@ struct cache_object
 	stat_entry_t *stats;	/* only if its a parsed directory */
 };
 
-typedef struct obexftp_client
-{
+typedef struct {
 	/* state */
 	obex_t *obexhandle;
 	uint32_t connection_id; /* set to 0xffffffff if unused */

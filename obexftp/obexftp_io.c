@@ -65,7 +65,8 @@ static int get_fileinfo(const char *name, char *lastmod)
 /* Create an object from a file. Attach some info-headers to it */
 obex_object_t *build_object_from_file(obex_t *obex, uint32_t conn, const char *localname, const char *remotename)
 {
-	obex_object_t *object = NULL;
+	obex_object_t *object;
+	obex_headerdata_t hv;
 	uint8_t *ucname;
 	int ucname_len, size;
 	char lastmod[] = "11997700--0011--0011TT0000::0000::0000ZZ.";
@@ -77,8 +78,10 @@ obex_object_t *build_object_from_file(obex_t *obex, uint32_t conn, const char *l
 	if(object == NULL)
 		return NULL;
 
-        if(conn != 0xffffffff)
-		(void) OBEX_ObjectAddHeader(obex, object, OBEX_HDR_CONNECTION, (obex_headerdata_t) conn, sizeof(uint32_t), OBEX_FL_FIT_ONE_PACKET);
+        if(conn != 0xffffffff) {
+		hv.bq4 = conn;
+		(void) OBEX_ObjectAddHeader(obex, object, OBEX_HDR_CONNECTION, hv, sizeof(uint32_t), OBEX_FL_FIT_ONE_PACKET);
+	}
 
 	ucname_len = strlen(remotename)*2 + 2;
 	ucname = malloc(ucname_len);
@@ -87,22 +90,25 @@ obex_object_t *build_object_from_file(obex_t *obex, uint32_t conn, const char *l
 		return NULL;
 	}
 
-	ucname_len = OBEX_CharToUnicode(ucname, remotename, ucname_len);
+	ucname_len = OBEX_CharToUnicode(ucname, (uint8_t*)remotename, ucname_len);
 
-	(void ) OBEX_ObjectAddHeader(obex, object, OBEX_HDR_NAME, (obex_headerdata_t) (const uint8_t *) ucname, ucname_len, 0);
+	hv.bs = ucname;
+	(void ) OBEX_ObjectAddHeader(obex, object, OBEX_HDR_NAME, hv, ucname_len, 0);
 	free(ucname);
 
-	(void) OBEX_ObjectAddHeader(obex, object, OBEX_HDR_LENGTH, (obex_headerdata_t) (const uint32_t)size, sizeof(uint32_t), 0);
+	hv.bq4 = (const uint32_t) size;
+	(void) OBEX_ObjectAddHeader(obex, object, OBEX_HDR_LENGTH, hv, sizeof(uint32_t), 0);
 
 #if 0
 	/* Win2k excpects this header to be in unicode. I suspect this in
 	   incorrect so this will have to wait until that's investigated */
-	OBEX_ObjectAddHeader(obex, object, OBEX_HDR_TIME, (obex_headerdata_t) (const uint8_t *) lastmod, strlen(lastmod)+1, 0);
+	hv.bs = (const uint8_t *) lastmod;
+	OBEX_ObjectAddHeader(obex, object, OBEX_HDR_TIME, hv, strlen(lastmod)+1, 0);
 #endif
 		
+	hv.bs = (const uint8_t *) NULL;
 	(void) OBEX_ObjectAddHeader(obex, object, OBEX_HDR_BODY,
-				(obex_headerdata_t) (const uint8_t *) NULL,
-				0, OBEX_FL_STREAM_START);
+				hv, 0, OBEX_FL_STREAM_START);
 
 	DEBUG(3, "%s() Lastmod = %s\n", __func__, lastmod);
 	return object;

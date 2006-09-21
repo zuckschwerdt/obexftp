@@ -43,7 +43,7 @@ typedef struct {
         uint8_t chk;
         uint8_t payload[0]; /* ... up to 32 */
 	/* uint8_t xor; ? */
-} bfb_frame_t;
+} __attribute__((packed)) bfb_frame_t;
 
 typedef struct {
 	uint8_t cmd;
@@ -53,7 +53,7 @@ typedef struct {
 	uint8_t len1;
 	uint8_t data[0]; /* ... up to 518 ? */
 	/* uint16_t crc; */
-} bfb_data_t;
+} __attribute__((packed)) bfb_data_t;
 
 
 #define BFB_FRAME_CONNECT 0x02   /* ^B */
