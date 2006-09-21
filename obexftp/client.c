@@ -660,9 +660,11 @@ int obexftp_disconnect(obexftp_client_t *cli)
 	cli->infocb(OBEXFTP_EV_DISCONNECTING, "", 0, cli->infocb_data);
 
 	object = OBEX_ObjectNew(cli->obexhandle, OBEX_CMD_DISCONNECT);
-	hv.bq4 = cli->connection_id;
-	(void) OBEX_ObjectAddHeader(cli->obexhandle, object, OBEX_HDR_CONNECTION,
+	if(cli->connection_id != 0xffffffff) {
+		hv.bq4 = cli->connection_id;
+		(void) OBEX_ObjectAddHeader(cli->obexhandle, object, OBEX_HDR_CONNECTION,
 				    hv, sizeof(uint32_t), OBEX_FL_FIT_ONE_PACKET);
+	}
 	ret = cli_sync_request(cli, object);
 
 	if(ret < 0)

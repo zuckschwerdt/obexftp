@@ -1,3 +1,11 @@
+2006-09-19  Christian W. Zuckschwerdt  <zany@triq.net>
+
+	* fixed invalid conn_id in disconnect rep. by Alan J. McFarlane
+
+2006-08-03  Christian W. Zuckschwerdt  <zany@triq.net>
+
+	* better create flag handling in setpath
+
 2006-07-31  Christian W. Zuckschwerdt  <zany@triq.net>
 
 	* Changed LDADD to LIBADD sug. by Sergey Vlasov <vsu@altlinux.ru>
