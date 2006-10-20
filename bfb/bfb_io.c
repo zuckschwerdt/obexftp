@@ -463,15 +463,6 @@ fd_t bfb_io_open(const char *ttyname, int *typeinfo)
 	return ttyfd;
 
  ericsson:
-	if(do_at_cmd(ttyfd, "", rspbuf, sizeof(rspbuf)) < 0)	{
-		DEBUG(1, "Comm-error\n");
-		goto err;
-	}
-	if(strcasecmp("OK", rspbuf) != 0)	{
-		DEBUG(1, "Error completing AT+GMI (%s)\n", rspbuf);
-		goto err;
-	}
-
 	if(do_at_cmd(ttyfd, "AT*EOBEX\r\n", rspbuf, sizeof(rspbuf)) < 0) {
 		DEBUG(1, "Comm-error\n");
 		goto err;
