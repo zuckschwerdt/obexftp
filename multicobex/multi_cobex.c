@@ -78,7 +78,7 @@ static void cobex_cleanup(cobex_t *c, int force)
 int cobex_connect(obex_t *self, void *data)
 {
 	cobex_t *c;
-	int typeinfo;
+	enum trans_type typeinfo;
         return_val_if_fail (self != NULL, -1);
         return_val_if_fail (data != NULL, -1);
 	c = (cobex_t *) data;
@@ -88,14 +88,17 @@ int cobex_connect(obex_t *self, void *data)
 	c->fd = bfb_io_open(c->tty, &typeinfo);
 	DEBUG(3, "%s() bfb_io_open returned %d, %d\n", __func__, c->fd, typeinfo);
 	switch (typeinfo) {
-	case 1:
+	case TT_BFB:
 		c->type = CT_BFB;
 		break;
-	case 2:
+	case TT_ERICSSON:
 		c->type = CT_ERICSSON;
 		break;
-	case 3:
+	case TT_SIEMENS:
 		c->type = CT_SIEMENS;
+		break;
+	case TT_GENERIC:
+		c->type = CT_GENERIC;
 		break;
 	default:
 		c->type = 0; /* invalid */
@@ -137,7 +140,7 @@ int cobex_write(obex_t *self, void *data, uint8_t *buffer, int length)
 
 	DEBUG(3, "%s() Data %d bytes\n", __func__, length);
 
-	if (c->type == CT_ERICSSON || c->type == CT_SIEMENS) {
+	if (c->type != CT_BFB) {
 		int retries=0, chunk, fails=0;
 		written = 0;
 		for (retries = 0; written < length; retries++) {
@@ -216,7 +219,7 @@ int cobex_handleinput(obex_t *self, void *data, int timeout)
 	DEBUG(2, "%s() Read %d bytes (%d bytes already buffered)\n", __func__, actual, c->recv_len);
 #endif
 
-	if (c->type == CT_ERICSSON || c->type == CT_SIEMENS) {
+	if (c->type != CT_BFB) {
 		if (actual > 0) {
 			OBEX_CustomDataFeed(self, c->recv, actual);
 			return 1;

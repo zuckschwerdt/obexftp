@@ -24,6 +24,14 @@
 
 #include <inttypes.h>
 
+enum trans_type
+{
+        TT_BFB,			/* use a bfb transport */
+        TT_ERICSSON,		/* just custom init and teardown */
+        TT_SIEMENS,		/* new siemens, like ericsson above */
+        TT_GENERIC		/* should work on most phones */
+};
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -45,7 +53,7 @@ void	bfb_io_close(fd_t fd, int force);
 
 /* Init the phone and set it in BFB-mode */
 /* Returns fd or -1 on failure */
-fd_t	bfb_io_open(const char *ttyname, int *typeinfo);
+fd_t	bfb_io_open(const char *ttyname, enum trans_type *typeinfo);
 
 #ifdef __cplusplus
 }

@@ -296,7 +296,7 @@ void bfb_io_close(fd_t fd, int force)
 
 /* Init the phone and set it in BFB-mode */
 /* Returns fd or -1 on failure */
-fd_t bfb_io_open(const char *ttyname, int *typeinfo)
+fd_t bfb_io_open(const char *ttyname, enum trans_type *typeinfo)
 {
 	char rspbuf[200];
 #ifdef _WIN32
@@ -406,8 +406,8 @@ fd_t bfb_io_open(const char *ttyname, int *typeinfo)
 		goto ericsson;
 	}
 	if(strncasecmp("SIEMENS", rspbuf, 7) != 0) {
-		DEBUG(1, "No Siemens detected\n");
-		goto err;
+		DEBUG(1, "No Siemens detected. Trying generic.\n");
+		goto generic;
 	}
 
 	if(do_at_cmd(ttyfd, "AT^SIFS\r\n", rspbuf, sizeof(rspbuf)) < 0)	{
@@ -459,7 +459,7 @@ fd_t bfb_io_open(const char *ttyname, int *typeinfo)
 		}
 	}
 
-	*typeinfo = 1; // BFB
+	*typeinfo = TT_BFB;
 	return ttyfd;
 
  ericsson:
@@ -472,7 +472,7 @@ fd_t bfb_io_open(const char *ttyname, int *typeinfo)
 	       	goto err;
 	}
 	
-	*typeinfo = 2; // ERICSSON
+	*typeinfo = TT_ERICSSON;
 	return ttyfd;
 
  newsiemens:
@@ -486,7 +486,20 @@ fd_t bfb_io_open(const char *ttyname, int *typeinfo)
 	       	goto err;
 	}
 	
-	*typeinfo = 3; // SIEMENS
+	*typeinfo = TT_SIEMENS;
+	return ttyfd;
+
+ generic:
+	if(do_at_cmd(ttyfd, "AT+CPROT=0\r\n", rspbuf, sizeof(rspbuf)) < 0) {
+		DEBUG(1, "Comm-error\n");
+		goto err;
+	}
+	if(strcasecmp("CONNECT", rspbuf) != 0)	{
+		DEBUG(1, "Error doing AT+CPROT=0 (%s)\n", rspbuf);
+	       	goto err;
+	}
+	
+	*typeinfo = TT_GENERIC;
 	return ttyfd;
 
  err:

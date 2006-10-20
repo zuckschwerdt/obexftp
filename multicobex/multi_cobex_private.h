@@ -32,7 +32,8 @@ enum cobex_type
 {
         CT_BFB,			/* use a bfb transport */
         CT_ERICSSON,		/* just custom init and teardown */
-        CT_SIEMENS		/* new siemens, like ericsson above */
+        CT_SIEMENS,		/* new siemens, like ericsson above */
+        CT_GENERIC		/* should work on most phones */
 };
 
 typedef struct {
