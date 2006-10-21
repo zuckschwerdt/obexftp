@@ -276,6 +276,9 @@ void bfb_io_close(fd_t fd, int force)
         return_if_fail (fd > 0);
 #endif
 
+/* we don't know if it's a BFB type link, don't send */
+/*	bfb_write_at(fd, "at^sbfb=0\r");	*/
+
 	if(force)	{
 		/* Send a break to get out of OBEX-mode */
 #ifdef _WIN32

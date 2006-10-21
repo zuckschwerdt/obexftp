@@ -66,6 +66,9 @@ static void cobex_cleanup(cobex_t *c, int force)
         return_if_fail (c->fd > 0);
 #endif
 
+	if (c->type == CT_BFB) {
+		bfb_write_at(c->fd, "at^sbfb=0\r");
+	}
        	bfb_io_close(c->fd, force);
 
 #ifdef _WIN32
