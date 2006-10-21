@@ -100,6 +100,9 @@ int cobex_connect(obex_t *self, void *data)
 	case TT_SIEMENS:
 		c->type = CT_SIEMENS;
 		break;
+	case TT_MOTOROLA:
+		c->type = CT_MOTOROLA;
+		break;
 	case TT_GENERIC:
 		c->type = CT_GENERIC;
 		break;

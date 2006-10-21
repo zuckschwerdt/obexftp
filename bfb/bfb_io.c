@@ -408,6 +408,10 @@ fd_t bfb_io_open(const char *ttyname, enum trans_type *typeinfo)
 		DEBUG(1, "Ericsson detected\n");
 		goto ericsson;
 	}
+	if(strncasecmp("MOTOROLA", rspbuf, 8) == 0) {
+		DEBUG(1, "Motorola detected\n");
+		goto motorola;
+	}
 	if(strncasecmp("SIEMENS", rspbuf, 7) != 0) {
 		DEBUG(1, "No Siemens detected. Trying generic.\n");
 		goto generic;
@@ -476,6 +480,19 @@ fd_t bfb_io_open(const char *ttyname, enum trans_type *typeinfo)
 	}
 	
 	*typeinfo = TT_ERICSSON;
+	return ttyfd;
+
+ motorola:
+	if(do_at_cmd(ttyfd, "AT+MODE=22\r\n", rspbuf, sizeof(rspbuf)) < 0) {
+		DEBUG(1, "Comm-error\n");
+		goto err;
+	}
+	if(strcasecmp("CONNECT", rspbuf) != 0)	{
+		DEBUG(1, "Error doing AT+MODE=22 (%s)\n", rspbuf);
+	       	goto err;
+	}
+	
+	*typeinfo = TT_MOTOROLA;
 	return ttyfd;
 
  newsiemens:

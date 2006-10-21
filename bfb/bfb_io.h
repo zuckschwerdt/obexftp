@@ -29,6 +29,7 @@ enum trans_type
         TT_BFB,			/* use a bfb transport */
         TT_ERICSSON,		/* just custom init and teardown */
         TT_SIEMENS,		/* new siemens, like ericsson above */
+        TT_MOTOROLA,		/* experimental motorola support */
         TT_GENERIC		/* should work on most phones */
 };
 
