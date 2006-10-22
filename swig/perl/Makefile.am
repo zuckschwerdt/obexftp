@@ -2,8 +2,8 @@ EXTRA_DIST =	perl_wrap.c OBEXFTP.pm
 noinst_DATA =	OBEXFTP.so
 
 if ENABLE_SWIG
-perl_wrap.c: $(srcdir)/../client.i
-	$(SWIG) -perl -module OBEXFTP -o $@ $<
+perl_wrap.c: $(srcdir)/../client.i $(srcdir)/../charmap.i
+	$(SWIG) -perl -module OBEXFTP -o $@ $(srcdir)/../client.i
 	
 MOSTLYCLEANFILES=perl_wrap.c OBEXFTP.pm OBEXFTP.bs
 endif

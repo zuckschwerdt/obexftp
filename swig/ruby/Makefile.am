@@ -2,8 +2,8 @@ EXTRA_DIST =		extconf.rb ruby_wrap.c
 noinst_DATA =		obexftp.so
 
 if ENABLE_SWIG
-ruby_wrap.c : $(srcdir)/../client.i
-	$(SWIG) -ruby -module obexftp -I$(top_srcdir) -o $@ $<
+ruby_wrap.c : $(srcdir)/../client.i $(srcdir)/../charmap.i
+	$(SWIG) -ruby -module obexftp -I$(top_srcdir) -o $@ $(srcdir)/../client.i
 
 MOSTLYCLEANFILES=ruby_wrap.c
 endif

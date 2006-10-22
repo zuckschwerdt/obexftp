@@ -9,8 +9,8 @@ _obexftp_la_LIBADD =	$(top_builddir)/obexftp/libobexftp.la \
 			@OPENOBEX_LIBS@
 
 if ENABLE_SWIG
-python_wrap.c: $(srcdir)/../client.i
-	$(SWIG) $(SWIG_PYTHON_OPT) -module obexftp -I$(top_srcdir) -o $@ $<
+python_wrap.c: $(srcdir)/../client.i $(srcdir)/../charmap.i
+	$(SWIG) $(SWIG_PYTHON_OPT) -module obexftp -I$(top_srcdir) -o $@ $(srcdir)/../client.i
 	mv obexftp.py __init__.py
 
 MOSTLYCLEANFILES=python_wrap.c __init__.py
