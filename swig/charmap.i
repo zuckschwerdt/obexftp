@@ -37,6 +37,7 @@
 %typemap(out) char * {
 #if defined SWIGPERL
 	$result = newSVpvn(arg1->buf_data, arg1->buf_size);
+	argvi++;
 #elif defined SWIGPYTHON
 	$result = PyString_FromStringAndSize(arg1->buf_data, arg1->buf_size);
 #elif defined SWIGRUBY
@@ -52,9 +53,12 @@
 %typemap(out) char ** {
 #if defined SWIGPERL
   char **p;
-  $result = newAV();
+  AV *myav = newAV();
   for (p = $1; p && *p; p++)
-    av_push($result, newSVpv(*p, 0));
+    av_push(myav, newSVpv(*p, 0));
+  $result = newRV_noinc((SV*)myav);
+  sv_2mortal($result);
+  argvi++;
 #elif defined SWIGPYTHON
   char **p;
   $result = PyList_New(0);
