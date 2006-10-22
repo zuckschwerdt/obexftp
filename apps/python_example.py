@@ -19,7 +19,7 @@ data = cli.get("/images/some.jpg")
 file = open('downloaded.jpg', 'wb')
 file.write(data)
 
-print cli.disconnect
+print cli.disconnect()
 
 cli.delete
 
