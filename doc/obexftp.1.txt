@@ -44,7 +44,8 @@ OPTIONS
         Select the UUID to connect with. Recognized values are currently
         "none" needed by some Nokia mobile devices, "FBS" (default) for the
         normal file browsing service, "IRMC" for IRMC synchronisation and
-        "S45" when connecting to a Siemens S45.
+        "S45" when connecting to a Siemens S45 or "SHARP" for PCSOFTWARE
+        UUID with Sharp devices.
 
     -H, --noconn
         Suppress connection IDs (i.e. send no connection header to the
@@ -109,6 +110,15 @@ EXAMPLES
 
     To send the file bar to directory foo with device on first serial port:
         obexftp -t /dev/ttyS0 -c foo -p bar
+
+    It is possible to use RfComm (serial port over bluetooth):
+        obexftp -t /dev/rfcomm0 -c foo -p bar
+
+    And also IrComm (serial port over IrDA):
+        obexftp -t /dev/ircomm0 -c foo -p bar
+
+    To send the file bar using plain OBEX PUSH:
+        obexftp --bluetooth --nopath --noconn --uuid none --put bar
 
 SEE ALSO
     obexftpd(1), openobex(3), obexftp(3), multicobex(3), libbfb(3).
