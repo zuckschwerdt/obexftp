@@ -393,21 +393,19 @@ int main(int argc, char *argv[])
 		fprintf(stderr, "Using USB: %d\n", channel);
 	}
 	if (getenv(OBEXFTP_CABLE) != NULL) {
-		device = strdup(getenv(OBEXFTP_CABLE));
+		device = getenv(OBEXFTP_CABLE);
 		transport = OBEX_TRANS_CUSTOM;
 		fprintf(stderr, "Using TTY: %s\n", device);
 	}
 	if (getenv(OBEXFTP_BLUETOOTH) != NULL) {
 		device = getenv(OBEXFTP_BLUETOOTH);
 		if (channel <= 0 || strlen(device) < (6*2+5) || device[2]!=':')
-			discover_bt(device, &device, &channel);
-		else
-			device = strdup(device);
+			discover_bt(device, &device, &channel); // we should free() the discover_bt result at some point
 		transport = OBEX_TRANS_BLUETOOTH;
 		fprintf(stderr, "Using BT: %s (%d)\n", device, channel);
 	}
 	if (getenv(OBEXFTP_INET) != NULL) {
-		device = strdup(getenv(OBEXFTP_INET));
+		device = getenv(OBEXFTP_INET);
 		transport = OBEX_TRANS_INET;
 		fprintf(stderr, "Using INET: %s\n", device);
 	}
@@ -460,8 +458,6 @@ int main(int argc, char *argv[])
 		
 		case 'i':
 			transport = OBEX_TRANS_IRDA;
-			if (device != NULL)
-				free(device);
        			device = NULL;
 			channel = 0;
 			break;
@@ -469,15 +465,13 @@ int main(int argc, char *argv[])
 #ifdef HAVE_BLUETOOTH
 		case 'b':
 			transport = OBEX_TRANS_BLUETOOTH;
-			if (device != NULL)
-				free(device);
        			//device = optarg;
 			/* handle severed optional option argument */
 			if (!optarg && argc > optind && argv[optind][0] != '-') {
 				optarg = argv[optind];
 				optind++;
 			}
-			discover_bt(optarg, &device, &channel);
+			discover_bt(optarg, &device, &channel); // we should free() the discover_bt result at some point
 			//fprintf(stderr, "Got %s channel %d\n", device, channel);
 			break;
 			
@@ -491,8 +485,6 @@ int main(int argc, char *argv[])
 			if (geteuid() != 0)
 				fprintf(stderr, "If USB doesn't work setup permissions in udev or run as superuser.\n");
 			transport = OBEX_TRANS_USB;
-			if (device != NULL)
-				free(device);
        			device = NULL;
 			/* handle severed optional option argument */
 			if (!optarg && argc > optind && argv[optind][0] != '-') {
@@ -507,9 +499,7 @@ int main(int argc, char *argv[])
 		
 		case 't':
 			transport = OBEX_TRANS_CUSTOM;
-			if (device != NULL)
-				free(device); /* ok to to free an optarg? */
-       			device = optarg; /* strdup? */
+       			device = optarg;
 			channel = 0;
 
 			if (strstr(optarg, "ir") != NULL)
@@ -520,9 +510,7 @@ int main(int argc, char *argv[])
 			fprintf(stderr,"Option -%c is deprecated, use -%c instead\n",'N','n');
 		case 'n':
 			transport = OBEX_TRANS_INET;
-			if (device != NULL)
-				free(device); /* ok to to free an optarg? */
-       			device = optarg; /* strdup? */
+       			device = optarg;
 			channel = 0;
 
 			{
