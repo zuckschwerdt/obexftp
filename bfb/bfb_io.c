@@ -421,12 +421,11 @@ fd_t bfb_io_open(const char *ttyname, enum trans_type *typeinfo)
 		DEBUG(1, "Comm-error\n");
 		goto err;
 	}
-	if(strcasecmp("^SIFS: WIRE", rspbuf) != 0)	{ /* expect "OK" too! */
-		if(strcasecmp("^SIFS: BLUE", rspbuf) != 0)	{
-			if(strcasecmp("^SIFS: IRDA", rspbuf) != 0)      {
-				DEBUG(1, "Unknown connection doing AT^SIFS (%s), continuing anyway ...\n", rspbuf);
-			}
-		}
+	if(strcasecmp("^SIFS: WIRE", rspbuf) != 0	/* DCA-500, DCA-510 */
+	   && strcasecmp("^SIFS: BLUE", rspbuf) != 0
+	   && strcasecmp("^SIFS: IRDA", rspbuf) != 0
+	   && strcasecmp("^SIFS: USB", rspbuf) != 0) {	/* DCA-540 */
+		DEBUG(1, "Unknown connection doing AT^SIFS (%s), continuing anyway ...\n", rspbuf);
 	}
 
 	/* prefer connection without BFB */
@@ -496,15 +495,34 @@ fd_t bfb_io_open(const char *ttyname, enum trans_type *typeinfo)
 	return ttyfd;
 
  newsiemens:
-        /* ^SBFB=3 wont work */
+	/* ^SBFB=3 only works when switching from RCCP(0) to OBEX(3) 
+	 * but the phone may be in GIPSY(2) mode. 
+	 * No need to implement BFC(1) mode if we only want to run OBEX.
+	 */ 
+	if(do_at_cmd(ttyfd, "AT^SQWE?\r\n", rspbuf, sizeof(rspbuf)) < 0) { 
+		DEBUG(1, "Comm-error\n"); 
+		goto err; 
+	} 
+	if (strcasecmp("^SQWE:0",rspbuf) != 0) { 
+		if(do_at_cmd(ttyfd, "AT^SQWE=0\r\n", rspbuf, sizeof(rspbuf)) < 0) { 
+			DEBUG(1, "Comm-error\n"); 
+			goto err; 
+		} 
+		if(strcasecmp("OK", rspbuf) != 0)       { 
+			DEBUG(1, "Error doing AT^SQWE=0 (%s)\n", rspbuf); 
+			goto err; 
+		} 
+		sleep(1); 
+	} 
 	if(do_at_cmd(ttyfd, "AT^SQWE=3\r\n", rspbuf, sizeof(rspbuf)) < 0) {
 		DEBUG(1, "Comm-error\n");
 		goto err;
 	}
 	if(strcasecmp("OK", rspbuf) != 0)	{
-		DEBUG(1, "Error doing AT^SBFB=3 (%s)\n", rspbuf);
+		DEBUG(1, "Error doing AT^SQWE=3 (%s)\n", rspbuf);
 	       	goto err;
 	}
+	sleep(1); /* synch a bit */
 	
 	*typeinfo = TT_SIEMENS;
 	return ttyfd;
