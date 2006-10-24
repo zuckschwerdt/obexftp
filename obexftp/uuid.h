@@ -27,5 +27,12 @@
 { 'I', 'R', 'M', 'C', '-', 'S', 'Y', 'N', 'C' }
 
 #define UUID_IRMC ((const uint8_t []) __UUID_IRMC_bytes)
+
+/* UUID for Sharp mobiles */
+
+#define __UUID_PCSOFTWARE_bytes \
+{ 'P', 'C', 'S', 'O', 'F', 'T', 'W', 'A', 'R', 'E' }
+
+#define UUID_PCSOFTWARE ((const uint8_t []) __UUID_PCSOFTWARE_bytes)
 	
 #endif /* OBEXFTP_UUID_H */

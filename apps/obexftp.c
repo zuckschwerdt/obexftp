@@ -134,6 +134,7 @@ static void info_cb(int event, const char *msg, int len, void *UNUSED(data))
 static const char *fbs_uuid = UUID_FBS;
 static const char *irmc_uuid = UUID_IRMC;
 static const char *s45_uuid = UUID_S45;
+static const char *pcsoftware_uuid = UUID_PCSOFTWARE;
 
 /* parse UUID string to real bytes */
 static int parse_uuid(char *name, const char **uuid, int *uuid_len)
@@ -168,6 +169,13 @@ static int parse_uuid(char *name, const char **uuid, int *uuid_len)
 		if (uuid) *uuid = s45_uuid;
 		if (uuid_len) *uuid_len = sizeof(UUID_S45);
 		return sizeof(UUID_S45);
+	}
+	
+        if (!strncasecmp(name, "pcsoftware", 10) || !strncasecmp(name, "sharp", 5)) {
+		fprintf(stderr, "Using PCSOFTWARE uuid.\n");
+		if (uuid) *uuid = pcsoftware_uuid;
+		if (uuid_len) *uuid_len = sizeof(UUID_PCSOFTWARE);
+		return sizeof(UUID_PCSOFTWARE);
 	}
 
 	return -1;
@@ -700,7 +708,7 @@ int main(int argc, char *argv[])
 #endif
 				" -t, --tty <device>          connect to this tty using a custom transport\n"
 				" -n, --network <host>        connect to this host\n\n"
-				" -U, --uuid                  use given uuid (none, FBS, IRMC, S45)\n"
+				" -U, --uuid                  use given uuid (none, FBS, IRMC, S45, SHARP)\n"
 				" -H, --noconn                suppress connection ids (no conn header)\n"
 				" -S, --nopath                dont use setpaths (use path as filename)\n\n"
 				" -c, --chdir <DIR>           chdir\n"
