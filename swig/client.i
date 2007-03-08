@@ -134,6 +134,9 @@ char *get_capability(char *path=NULL) {
 	return self->buf_data;
 }
 
+int get_file(char *path, char *localname) { 
+        return obexftp_get_type(self, NULL, localname, path); 
+} 
 int put_file(char *filename, char *remotename=NULL) {
 	return obexftp_put_file(self, filename, remotename);
 }
