@@ -399,7 +399,7 @@ static uint8_t* easy_readfile(const char *filename, int *file_size)
 		return NULL;
 	}
 	
-	buf = malloc(sizeof(*file_size));
+	buf = malloc(*file_size);
 	if(buf == NULL)
 	{
 		return NULL;
