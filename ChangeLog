@@ -1,3 +1,7 @@
+2007-05-02  Christian W. Zuckschwerdt  <zany@triq.net>
+
+	* fixed month/day swapping in atotime, spotted by Dr. Johannes Zellner
+
 2006-09-19  Christian W. Zuckschwerdt  <zany@triq.net>
 
 	* fixed invalid conn_id in disconnect rep. by Alan J. McFarlane

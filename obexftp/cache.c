@@ -219,7 +219,7 @@ static time_t atotime (const char *date)
 	struct tm tm;
 
 	if (6 == sscanf(date, "%4d%2d%2dT%2d%2d%2d",
-			&tm.tm_year, &tm.tm_mday, &tm.tm_mon,
+			&tm.tm_year, &tm.tm_mon, &tm.tm_mday,
 			&tm.tm_hour, &tm.tm_min, &tm.tm_sec)) {
 		tm.tm_year -= 1900;
 		tm.tm_mon--;
