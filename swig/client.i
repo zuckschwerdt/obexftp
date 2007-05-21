@@ -41,8 +41,8 @@
 %rename(discover) obexftp_discover;
 char **obexftp_discover(int transport);
 
-%rename(scanbt) obexftp_scan_bt;
-int obexftp_scan_bt(char *addr, int service);
+%rename(browsebt) obexftp_browse_bt;
+int obexftp_browse_bt(char *addr, int service);
 
 
 #if defined SWIGPERL

@@ -71,7 +71,7 @@ char **obexftp_discover_bt()
   return res;
 }
 
-int obexftp_scan_bt(char *addr, int svclass)
+int obexftp_browse_bt(char *addr, int svclass)
 {
 	int res = -1;
   struct hci_dev_info di;
@@ -160,7 +160,7 @@ char **obexftp_discover_bt()
 {
     return NULL;
 }
-int obexftp_scan_bt(char *UNUSED(addr), int UNUSED(svclass))
+int obexftp_browse_bt(char *UNUSED(addr), int UNUSED(svclass))
 {
     return 0;
 }
@@ -174,7 +174,7 @@ char **obexftp_discover_bt()
 {
     return NULL;
 }
-int obexftp_scan_bt(char *UNUSED(addr), int UNUSED(svclass))
+int obexftp_browse_bt(char *UNUSED(addr), int UNUSED(svclass))
 {
     return 0;
 }
