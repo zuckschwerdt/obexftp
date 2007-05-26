@@ -26,6 +26,7 @@
 /* python.swg uses "". Change to Py_None maybe? */
 #elif defined SWIGRUBY
 %typemap(in) char *	"$1 = ($input != Qnil) ? StringValuePtr($input) : NULL;";
+%typemap(freearg) char * ""; /* Fix for >=swig-1.3.28 */
 %typemap(out) char *	"$result = $1 ? rb_str_new2($1) : Qnil;";
 #elif defined SWIGTCL
 /* tcl8.swg is naive about this. Does it work? */
