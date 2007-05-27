@@ -21,6 +21,7 @@ obexftpinclude_HEADERS =	obexftp.h \
 libobexftp_la_LDFLAGS =		-version-info $(OBEXFTP_VERSION)
 
 libobexftp_la_LIBADD =		@OPENOBEX_LIBS@ \
+				@BLUETOOTH_LIBS@ \
 				../multicobex/libmulticobex.la \
 				../bfb/libbfb.la
 

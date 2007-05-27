@@ -9,6 +9,7 @@ INCLUDES =			@OPENOBEX_CFLAGS@ \
 				-I$(top_srcdir)/includes
 
 LDADD =				@OPENOBEX_LIBS@ \
+				@BLUETOOTH_LIBS@ \
 				../obexftp/libobexftp.la \
 				../multicobex/libmulticobex.la \
 				../bfb/libbfb.la
