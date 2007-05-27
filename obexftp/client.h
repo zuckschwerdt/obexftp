@@ -128,11 +128,11 @@ char **obexftp_discover_bt(void); /* this is a quick hack */
 
 int obexftp_browse_bt(char *addr, int svclass);
 #define	obexftp_browse_bt_ftp(device) \
-	obexftp_browse_bt(device, OBEX_FILETRANS_SVCLASS_ID)
+	obexftp_browse_bt(device, OBEX_FTP_SERVICE)
 #define	obexftp_browse_bt_push(device) \
-	obexftp_browse_bt(device, OBEX_OBJPUSH_SVCLASS_ID)
+	obexftp_browse_bt(device, OBEX_PUSH_SERVICE)
 #define	obexftp_browse_bt_sync(device) \
-	obexftp_browse_bt(device, IRMC_SYNC_SVCLASS_ID)
+	obexftp_browse_bt(device, OBEX_SYNC_SERVICE)
 
 int obexftp_connect_uuid(obexftp_client_t *cli,
 				/*@null@*/ const char *device, /* for INET, BLUETOOTH */
