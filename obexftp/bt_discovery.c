@@ -19,6 +19,16 @@
 
 #include "client.h"
 
+/* Nokia OBEX PC Suite Services */
+/* 00005005-0000-1000-8000-0002ee000001 */
+/* prefer this over FTP on Series 60 devices */
+#define __SVC_UUID_PCSUITE_bytes \
+{ 0x00, 0x00, 0x50, 0x05, \
+  0x00, 0x00, 0x10, 0x00, 0x80, 0x00, \
+  0x00, 0x02, 0xee, 0x00, 0x00, 0x01 }
+#define SVC_UUID_PCSUITE ((const uint8_t []) __SVC_UUID_PCSUITE_bytes)
+static const uint8_t svc_uuid_pcsuite[] = SVC_UUID_PCSUITE;
+
 char **obexftp_discover_bt()
 {
 	char **res;
@@ -71,54 +81,18 @@ char **obexftp_discover_bt()
   return res;
 }
 
-int obexftp_browse_bt(char *addr, int svclass)
+static int browse_sdp_uuid(sdp_session_t *sess, uuid_t *uuid)
 {
-	int res = -1;
-  struct hci_dev_info di;
-  sdp_session_t *sess;
   sdp_list_t *attrid, *search, *seq, *loop;
   uint32_t range = SDP_ATTR_PROTO_DESC_LIST;
   /* 0x0000ffff for SDP_ATTR_REQ_RANGE */
-  uuid_t root_uuid;
-  bdaddr_t bdaddr;
+  int channel = -1;
 
-  if (!addr || strlen(addr) != 17)
-	  return -1;
-  str2ba(addr, &bdaddr);
-//  baswap(&bdswap, &bdaddr);
-//  *res_bdaddr = batostr(&bdswap);
-//  fprintf(stderr, "Browsing %s ...\n", *res_bdaddr);
-
-  // Get local bluetooth address
-  if(hci_devinfo(0, &di) < 0) 
-    {
-      perror("HCI device info failed");
-      exit(1);
-    }
-
-  // Connect to remote SDP server
-  sess = sdp_connect(&di.bdaddr, &bdaddr, SDP_RETRY_IF_BUSY);
-
-  if(!sess) 
-    {
-      perror("Failed to connect to SDP server");
-      exit(1);
-    }
-
-
-  // Build linked lists
-  if ((svclass != IRMC_SYNC_SVCLASS_ID) &&
-      (svclass != OBEX_OBJPUSH_SVCLASS_ID) &&
-      (svclass != OBEX_FILETRANS_SVCLASS_ID))
-  {
-    svclass = OBEX_FILETRANS_SVCLASS_ID;
-  }
-  sdp_uuid16_create(&root_uuid, svclass);
   /* or OBEX_FILETRANS_PROFILE_ID? */
   attrid = sdp_list_append(0, &range);
-  search = sdp_list_append(0, &root_uuid);
+  search = sdp_list_append(0, uuid);
 
-  // Get a linked list of services
+  /* Get a linked list of services */
   if(sdp_service_search_attr_req(sess, search, SDP_ATTR_REQ_INDIVIDUAL, attrid, &seq) < 0)
     {
       perror("SDP service search");
@@ -129,28 +103,80 @@ int obexftp_browse_bt(char *addr, int svclass)
   sdp_list_free(attrid, 0);
   sdp_list_free(search, 0);
 
-  // Loop through the list of services
+  /* Loop through the list of services */
   for(loop = seq; loop; loop = loop->next)
     {
       sdp_record_t *rec = (sdp_record_t *) loop->data;
       sdp_list_t *access = NULL;
-      int channel;
 
-      // Print the RFCOMM channel
+      /* get the RFCOMM channel */
       sdp_get_access_protos(rec, &access);
 
       if(access)
 	{
 	  channel = sdp_get_proto_port(access, RFCOMM_UUID);
-//	  fprintf(stderr, "Channel: %d\n", channel);
-	  res = channel;
 	}
     }
 
-    sdp_list_free(seq, 0);
-    sdp_close(sess);
+  sdp_list_free(seq, 0);
 
-    return res;
+  return channel;
+}
+
+int obexftp_browse_bt(char *addr, int svclass)
+{
+  int res = -1;
+  struct hci_dev_info di;
+  sdp_session_t *sess;
+  uuid_t root_uuid;
+  bdaddr_t bdaddr;
+
+  if (!addr || strlen(addr) != 17)
+	  return -1;
+  str2ba(addr, &bdaddr);
+//  baswap(&bdswap, &bdaddr);
+//  *res_bdaddr = batostr(&bdswap);
+//  fprintf(stderr, "Browsing %s ...\n", *res_bdaddr);
+
+  /* Get local bluetooth address */
+  if(hci_devinfo(0, &di) < 0) 
+    {
+      perror("HCI device info failed");
+      exit(1);
+    }
+
+  /* Connect to remote SDP server */
+  sess = sdp_connect(&di.bdaddr, &bdaddr, SDP_RETRY_IF_BUSY);
+
+  if(!sess) 
+    {
+      perror("Failed to connect to SDP server");
+      exit(1);
+    }
+
+  /* determine the service class we're looking for */
+  if ((svclass != IRMC_SYNC_SVCLASS_ID) &&
+      (svclass != OBEX_OBJPUSH_SVCLASS_ID) &&
+      (svclass != OBEX_FILETRANS_SVCLASS_ID))
+    {
+      svclass = OBEX_FILETRANS_SVCLASS_ID;
+    }
+
+  /* prefer PCSUITE over FTP */
+  if (svclass == OBEX_FILETRANS_SVCLASS_ID)
+    {
+      sdp_uuid128_create(&root_uuid, &svc_uuid_pcsuite);
+      res = browse_sdp_uuid(sess, &root_uuid);
+      if (res > 0) return res;
+    }
+
+  /* browse for the service class */
+  sdp_uuid16_create(&root_uuid, svclass);
+  res = browse_sdp_uuid(sess, &root_uuid);
+
+  sdp_close(sess);
+
+  return res;
 }
 
 #else
