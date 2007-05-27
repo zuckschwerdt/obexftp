@@ -44,10 +44,6 @@ void DUMPBUFFER(unsigned int n, char *label, char *msg) { }
 
 #include <common.h>
 
-//#ifdef HAVE_BLUETOOTH
-#include "bt_discovery.h"
-//#endif
-
 // perhaps this scheme would be better?
 // IRDA		irda://[nick?]
 // CABLE	tty://path
@@ -181,6 +177,73 @@ static int parse_uuid(char *name, const char **uuid, int *uuid_len)
 	return -1;
 }
 
+#ifdef HAVE_USB
+static void discover_cb(obex_t *handle, obex_object_t *object, int mode, int event, int obex_cmd, int obex_rsp)
+{
+	(void) handle;
+	(void) object;
+	(void) mode;
+	(void) event;
+	(void) obex_cmd;
+	(void) obex_rsp;
+}
+
+static void discover_usb()
+{
+	obex_t *handle;
+	obex_interface_t* obex_intf;
+	int i, interfaces_number;
+
+	if(! (handle = OBEX_Init(OBEX_TRANS_USB, discover_cb, 0))) {
+		printf( "OBEX_Init failed\n");
+		return;
+	}
+	interfaces_number = OBEX_FindInterfaces(handle, &obex_intf);
+	printf("Found %d USB OBEX interfaces\n", interfaces_number);
+	for (i=0; i < interfaces_number; i++)
+		printf("Interface %d:\n\tManufacturer: %s\n\tProduct: %s\n\tInterface description: %s\n", i,
+			obex_intf[i].usb.manufacturer,
+			obex_intf[i].usb.product,
+		       	obex_intf[i].usb.control_interface);
+	printf("Use '-u interface_number' to connect\n");
+	OBEX_Cleanup(handle);
+}
+#endif /* HAVE_USB */
+
+static int find_bt(char *addr, char **res_bdaddr, int *res_channel)
+{
+	char **devices;
+	char **dev;
+
+	*res_bdaddr = addr;
+	if (!addr || strlen(addr) < (6*2+5) || addr[2]!=':') {
+  		fprintf(stderr, "Scanning for %s ...\n", addr);
+		devices = obexftp_discover_bt();
+  
+		for(dev = devices; *dev; dev++) {
+      			if (!addr || strcasestr(*dev, addr)) {
+				fprintf(stderr, "Using: %s\n", *dev);
+				*res_bdaddr = *dev;
+				break;
+			}
+       			fprintf(stderr, "Found: %s\n", *dev);
+		}
+	}
+	if (!*res_bdaddr)
+		return -1; /* No (matching) BT device found */
+//	(*res_bdaddr)[17] = '\0';
+  
+       	if (*res_channel < 0) {
+		fprintf(stderr, "Browsing %s ...\n", *res_bdaddr);
+		*res_channel = obexftp_browse_bt_ftp(*res_bdaddr);
+	}
+	if (*res_channel < 0)
+		return -1; /* No valid BT channel found */
+
+	return 0;
+}
+
+
 /*@only@*/ /*@null@*/ static obexftp_client_t *cli = NULL;
 #ifdef HAVE_BLUETOOTH
 static int transport = OBEX_TRANS_BLUETOOTH;
@@ -236,6 +299,11 @@ static int cli_connect()
 		return TRUE;
 	}
 
+	/* complete bt address if necessary */
+	if (transport == OBEX_TRANS_BLUETOOTH) {
+		find_bt(device, &device, &channel);
+		// we should free() the find_bt result at some point
+	}
 	if (!cli_connect_uuid(use_uuid, use_uuid_len))
 		exit(1);
 
@@ -345,40 +413,6 @@ static void probe_device()
 }
 
 
-#ifdef HAVE_USB
-static void discover_cb(obex_t *handle, obex_object_t *object, int mode, int event, int obex_cmd, int obex_rsp)
-{
-	(void) handle;
-	(void) object;
-	(void) mode;
-	(void) event;
-	(void) obex_cmd;
-	(void) obex_rsp;
-}
-
-static void discover_usb()
-{
-	obex_t *handle;
-	obex_interface_t* obex_intf;
-	int i, interfaces_number;
-
-	if(! (handle = OBEX_Init(OBEX_TRANS_USB, discover_cb, 0))) {
-		printf( "OBEX_Init failed\n");
-		return;
-	}
-	interfaces_number = OBEX_FindInterfaces(handle, &obex_intf);
-	printf("Found %d USB OBEX interfaces\n", interfaces_number);
-	for (i=0; i < interfaces_number; i++)
-		printf("Interface %d:\n\tManufacturer: %s\n\tProduct: %s\n\tInterface description: %s\n", i,
-			obex_intf[i].usb.manufacturer,
-			obex_intf[i].usb.product,
-		       	obex_intf[i].usb.control_interface);
-	printf("Use '-u interface_number' to connect\n");
-	OBEX_Cleanup(handle);
-}
-#endif /* HAVE_USB */
-
-
 int main(int argc, char *argv[])
 {
 	int verbose=0;
@@ -407,8 +441,6 @@ int main(int argc, char *argv[])
 	}
 	if (getenv(OBEXFTP_BLUETOOTH) != NULL) {
 		device = getenv(OBEXFTP_BLUETOOTH);
-		if (channel <= 0 || strlen(device) < (6*2+5) || device[2]!=':')
-			discover_bt(device, &device, &channel); // we should free() the discover_bt result at some point
 		transport = OBEX_TRANS_BLUETOOTH;
 		fprintf(stderr, "Using BT: %s (%d)\n", device, channel);
 	}
@@ -473,14 +505,12 @@ int main(int argc, char *argv[])
 #ifdef HAVE_BLUETOOTH
 		case 'b':
 			transport = OBEX_TRANS_BLUETOOTH;
-       			//device = optarg;
 			/* handle severed optional option argument */
 			if (!optarg && argc > optind && argv[optind][0] != '-') {
 				optarg = argv[optind];
 				optind++;
 			}
-			discover_bt(optarg, &device, &channel); // we should free() the discover_bt result at some point
-			//fprintf(stderr, "Got %s channel %d\n", device, channel);
+       			device = optarg;
 			break;
 			
 		case 'B':

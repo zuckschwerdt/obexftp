@@ -16,9 +16,7 @@ LDADD =				@OPENOBEX_LIBS@ \
 # need on win32:
 # getopt.o getopt1.o libopenobex.a libwsock32.a
 
-obexftp_SOURCES =		obexftp.c \
-				bt_discovery.h \
-				bt_discovery.c
+obexftp_SOURCES =		obexftp.c
 
 obexftpd_SOURCES =		obexftpd.c obexftp_sdp.c obexftp_sdp.h
 stress_SOURCES =		stress.c
