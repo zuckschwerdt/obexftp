@@ -41,8 +41,7 @@ char **obexftp_discover_bt()
   int length = 8;
   int dd, i;
 
-
-	DEBUG(1, "%s: Scanning ...\n", __func__);
+  DEBUG(1, "%s: Scanning ...\n", __func__);
   num_rsp = hci_inquiry(dev_id, length, num_rsp, NULL, &info, flags);
 
   if(num_rsp < 0) 
@@ -62,16 +61,14 @@ char **obexftp_discover_bt()
   for(i = 0; i < num_rsp; i++) 
     {
       memset(name, 0, sizeof(name));
+      baswap(&bdswap, &(info+i)->bdaddr);
 
       if(hci_read_remote_name(dd, &(info+i)->bdaddr, sizeof(name), name, 100000) < 0)
 	{
-	  strcpy(name, "n/a");
+          strcpy(name, "No Name");
 	}
 
-      bacpy(&bdaddr, &(info+i)->bdaddr);
-      baswap(&bdswap, &(info+i)->bdaddr);
-
-	DEBUG(1, "%s: Found\t%s\t%s\n", __func__, batostr(&bdswap), name);
+      DEBUG(1, "%s: Found\t%s\t%s\n", __func__, batostr(&bdswap), name);
       res[i] = strdup(batostr(&bdswap));
   }
   
