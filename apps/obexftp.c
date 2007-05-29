@@ -177,38 +177,21 @@ static int parse_uuid(char *name, const char **uuid, int *uuid_len)
 	return -1;
 }
 
-#ifdef HAVE_USB
-static void discover_cb(obex_t *handle, obex_object_t *object, int mode, int event, int obex_cmd, int obex_rsp)
-{
-	(void) handle;
-	(void) object;
-	(void) mode;
-	(void) event;
-	(void) obex_cmd;
-	(void) obex_rsp;
-}
-
 static void discover_usb()
 {
-	obex_t *handle;
-	obex_interface_t* obex_intf;
-	int i, interfaces_number;
+	char **devices;
+	char **dev;
+	int interfaces_number;
 
-	if(! (handle = OBEX_Init(OBEX_TRANS_USB, discover_cb, 0))) {
-		printf( "OBEX_Init failed\n");
-		return;
-	}
-	interfaces_number = OBEX_FindInterfaces(handle, &obex_intf);
-	printf("Found %d USB OBEX interfaces\n", interfaces_number);
-	for (i=0; i < interfaces_number; i++)
-		printf("Interface %d:\n\tManufacturer: %s\n\tProduct: %s\n\tInterface description: %s\n", i,
-			obex_intf[i].usb.manufacturer,
-			obex_intf[i].usb.product,
-		       	obex_intf[i].usb.control_interface);
-	printf("Use '-u interface_number' to connect\n");
-	OBEX_Cleanup(handle);
+       	devices = obexftp_discover(OBEX_TRANS_USB);
+	interfaces_number = 0;
+	for(dev = devices; *dev; dev++) interfaces_number++;
+	printf("Found %d USB OBEX interfaces\n\n", interfaces_number);
+       	for(dev = devices; *dev; dev++) {
+		fprintf(stderr, "%s\n", *dev);
+       	}
+	printf("\nUse '-u interface_number' to connect\n");
 }
-#endif /* HAVE_USB */
 
 static int find_bt(char *addr, char **res_bdaddr, int *res_channel)
 {
@@ -218,7 +201,7 @@ static int find_bt(char *addr, char **res_bdaddr, int *res_channel)
 	*res_bdaddr = addr;
 	if (!addr || strlen(addr) < (6*2+5) || addr[2]!=':') {
   		fprintf(stderr, "Scanning for %s ...\n", addr);
-		devices = obexftp_discover_bt();
+		devices = obexftp_discover(OBEX_TRANS_BLUETOOTH);
   
 		for(dev = devices; *dev; dev++) {
       			if (!addr || strcasestr(*dev, addr)) {
