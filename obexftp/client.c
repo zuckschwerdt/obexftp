@@ -1016,7 +1016,7 @@ static char **discover_usb()
 	
 	for (i=0; i < interfaces_number; i++) {
 		res[i] = malloc(201);
-		snprintf(res[i], 200, "USB:%d (Manufacturer: %s Product: %s Serial: %s Interface description: %s)", i,
+		snprintf(res[i], 200, "%d (Manufacturer: %s Product: %s Serial: %s Interface description: %s)", i,
 			obex_intf[i].usb.manufacturer,
 			obex_intf[i].usb.product,
 			obex_intf[i].usb.serial,
