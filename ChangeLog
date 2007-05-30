@@ -1,3 +1,8 @@
+2007-05-27  Christian W. Zuckschwerdt  <zany@triq.net>
+
+	* prefer PCSUITE over FTP, req. by Martin Storsjö for Series 60 2nd Ed.
+	* switched obexftp cli to new discovery api 
+
 2007-05-26  Christian W. Zuckschwerdt  <zany@triq.net>
 
 	* fixed compile error with >=swig-1.3.28
