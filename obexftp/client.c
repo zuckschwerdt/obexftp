@@ -534,6 +534,7 @@ int obexftp_connect_uuid(obexftp_client_t *cli, const char *device, int port, co
 			break;
 		}
 		if (inet_aton(device, &peer.sin_addr)) {
+			peer.sin_family = AF_INET;
 			peer.sin_port = htons(port); /* overridden with OBEX_PORT 650 anyhow */
 			ret = OBEX_TransportConnect(cli->obexhandle, (struct sockaddr *) &peer,
 						  sizeof(struct sockaddr_in));
