@@ -205,11 +205,11 @@ static int find_bt(char *addr, char **res_bdaddr, int *res_channel)
   
 		for(dev = devices; *dev; dev++) {
       			if (!addr || strcasestr(*dev, addr)) {
-				fprintf(stderr, "Using: %s\n", *dev);
+				fprintf(stderr, "Found: %s\n", *dev);
 				*res_bdaddr = *dev;
 				break;
 			}
-       			fprintf(stderr, "Found: %s\n", *dev);
+       			fprintf(stderr, "Seen: %s\n", *dev);
 		}
 	}
 	if (!*res_bdaddr)
@@ -415,22 +415,22 @@ int main(int argc, char *argv[])
 	}
 	if (channel >= 0) {
 		transport = OBEX_TRANS_USB;
-		fprintf(stderr, "Using USB: %d\n", channel);
+		fprintf(stderr, "Presetting to USB: %d\n", channel);
 	}
 	if (getenv(OBEXFTP_CABLE) != NULL) {
 		device = getenv(OBEXFTP_CABLE);
 		transport = OBEX_TRANS_CUSTOM;
-		fprintf(stderr, "Using TTY: %s\n", device);
+		fprintf(stderr, "Presetting to TTY: %s\n", device);
 	}
 	if (getenv(OBEXFTP_BLUETOOTH) != NULL) {
 		device = getenv(OBEXFTP_BLUETOOTH);
 		transport = OBEX_TRANS_BLUETOOTH;
-		fprintf(stderr, "Using BT: %s (%d)\n", device, channel);
+		fprintf(stderr, "Presetting to BT: %s (%d)\n", device, channel);
 	}
 	if (getenv(OBEXFTP_INET) != NULL) {
 		device = getenv(OBEXFTP_INET);
 		transport = OBEX_TRANS_INET;
-		fprintf(stderr, "Using INET: %s\n", device);
+		fprintf(stderr, "Presetting to INET: %s\n", device);
 	}
 	       
 
