@@ -1,3 +1,7 @@
+2007-06-01  Christian W. Zuckschwerdt  <zany@triq.net>
+
+	* added hci selection support, drafted by Manuel Naranjo
+
 2007-05-27  Christian W. Zuckschwerdt  <zany@triq.net>
 
 	* prefer PCSUITE over FTP, req. by Martin Storsjö for Series 60 2nd Ed.
