@@ -7,7 +7,7 @@ dnl
 
 AC_DEFUN([IRDA_CHECK],[
 AC_ARG_ENABLE([irda],
-              [AS_HELP_STRING([--disable-irda],
+              [AC_HELP_STRING([--disable-irda],
                               [Disables openftp irda support @<:@default=auto@:>@])],
               [ac_irda_enabled=$enableval], [ac_irda_enabled=yes])
 
@@ -32,7 +32,7 @@ dnl
 
 AC_DEFUN([BLUETOOTH_CHECK],[  
 AC_ARG_ENABLE([bluetooth],
-              [AS_HELP_STRING([--disable-bluetooth],
+              [AC_HELP_STRING([--disable-bluetooth],
                               [Disables openftp bluetooth support @<:@default=auto@:>@])],
        	      [ac_bluetooth_enabled=$enableval], [ac_bluetooth_enabled=yes])
 

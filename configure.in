@@ -5,6 +5,9 @@ AC_INIT(ObexFTP, 0.22, zany@triq.net)
 AM_INIT_AUTOMAKE(dist-bzip2)
 AM_CONFIG_HEADER(config.h)
 
+# note: AC_HELP_STRING is deprecated in autoconf 2.59 and later but
+# AS_HELP_STRING is not available in autoconf 2.57 or earlier.
+
 dnl AM_MAINTAINER_MODE
 
 # Checks for programs.
@@ -34,7 +37,7 @@ USB_CHECK
 
 # check for optional swig rebuild
 AC_ARG_ENABLE([swig],
-		[AS_HELP_STRING([--enable-swig],
+		[AC_HELP_STRING([--enable-swig],
 			[Rebuild language bindings @<:@default=no@:>@])],
 [case "${enableval}" in
   yes) want_swig_rebuild=true ;;
@@ -48,7 +51,7 @@ fi
 
 # check for language bindings
 AC_ARG_ENABLE([perl],
-              [AS_HELP_STRING([--disable-perl],
+              [AC_HELP_STRING([--disable-perl],
                               [Disables perl language bindings @<:@default=auto@:>@])],
               [ac_perl_enabled=$enableval], [ac_perl_enabled=yes])
 
@@ -58,7 +61,7 @@ fi
 AM_CONDITIONAL([ENABLE_PERL], [test x"$PERL" != x""])
 
 AC_ARG_ENABLE([python],
-              [AS_HELP_STRING([--disable-python],
+              [AC_HELP_STRING([--disable-python],
                               [Disables python language bindings @<:@default=auto@:>@])],
               [ac_python_enabled=$enableval], [ac_python_enabled=yes])
 
@@ -68,7 +71,7 @@ fi
 AM_CONDITIONAL([ENABLE_PYTHON], [test x"$PYTHON_CPPFLAGS" != x""])
 
 AC_ARG_ENABLE([ruby],
-              [AS_HELP_STRING([--disable-ruby],
+              [AC_HELP_STRING([--disable-ruby],
                               [Disables ruby language bindings @<:@default=auto@:>@])],
               [ac_ruby_enabled=$enableval], [ac_ruby_enabled=yes])
 
@@ -78,7 +81,7 @@ fi
 AM_CONDITIONAL([ENABLE_RUBY], [test x"$RUBY" != x""])
 
 AC_ARG_ENABLE([tcl],
-              [AS_HELP_STRING([--enable-tcl],
+              [AC_HELP_STRING([--enable-tcl],
                               [Enables tcl language bindings @<:@default=off@:>@])],
               [ac_tcl_enabled=$enableval], [ac_tcl_enabled=no])
 
@@ -90,7 +93,7 @@ AM_CONDITIONAL([ENABLE_TCL], [test x"$TCLSH" != x""])
 
 dnl no need to build docs by default
 AC_ARG_ENABLE(builddocs,
-	AS_HELP_STRING([--enable-builddocs],
+	AC_HELP_STRING([--enable-builddocs],
 			[Compile documentation @<:@default=no@:>@]),
 [case "${enableval}" in
   yes) builddocs=true ;;
