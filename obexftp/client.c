@@ -52,6 +52,8 @@
 #else /* Linux */
 #include <bluetooth/bluetooth.h>
 #include <bluetooth/rfcomm.h>
+#include <bluetooth/hci.h>
+#include <bluetooth/hci_lib.h>
 #endif /* __FreeBSD__ */
 #endif
 
@@ -503,10 +505,16 @@ void obexftp_close(obexftp_client_t *cli)
 /* Do connect as client */
 int obexftp_connect_uuid(obexftp_client_t *cli, const char *device, int port, const uint8_t uuid[], uint32_t uuid_len)
 {
+	return obexftp_connect_src(cli, NULL, device, port, uuid, uuid_len);
+}
+
+int obexftp_connect_src(obexftp_client_t *cli, const char *src, const char *device, int port, const uint8_t uuid[], uint32_t uuid_len)
+{
 	struct sockaddr_in peer;
 #ifdef HAVE_BLUETOOTH
 	char *devicedup, *devicep;
-	bdaddr_t bdaddr;
+	bdaddr_t bdaddr, src_addr;
+	int hci_id;
 #endif
 #ifdef HAVE_USB
 	int obex_intf_cnt;
@@ -557,6 +565,15 @@ int obexftp_connect_uuid(obexftp_client_t *cli, const char *device, int port, co
 
 #ifdef HAVE_BLUETOOTH
 	case OBEX_TRANS_BLUETOOTH:
+		if (!src) {
+			bacpy(&src_addr, BDADDR_ANY);
+		} else {
+			str2ba(src, &src_addr);
+			hci_id = atoi(src);
+			if (hci_id > 0) {
+				hci_devba(hci_id, &src_addr);	
+			}
+		}
 		if (!device) {
 			ret = -EINVAL;
 			break;
@@ -571,9 +588,9 @@ int obexftp_connect_uuid(obexftp_client_t *cli, const char *device, int port, co
 			if (*devicep == '_') *devicep = ':';
 			if (*devicep == '/') *devicep = ':';
 		}
-		(void) str2ba(devicedup, &bdaddr); /* what is the meaning of the return code? */
+		(void) str2ba(devicedup, &bdaddr);
 		free(devicedup);
-		ret = BtOBEX_TransportConnect(cli->obexhandle, BDADDR_ANY, &bdaddr, (uint8_t)port);
+		ret = BtOBEX_TransportConnect(cli->obexhandle, &src_addr, &bdaddr, (uint8_t)port);
 		DEBUG(3, "%s() BT %d\n", __func__, ret);
 		break;
 #endif /* HAVE_BLUETOOTH */

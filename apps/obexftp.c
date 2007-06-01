@@ -228,6 +228,7 @@ static int find_bt(char *addr, char **res_bdaddr, int *res_channel)
 
 
 /*@only@*/ /*@null@*/ static obexftp_client_t *cli = NULL;
+static const char *src_dev = NULL;
 #ifdef HAVE_BLUETOOTH
 static int transport = OBEX_TRANS_BLUETOOTH;
 #else
@@ -265,7 +266,7 @@ static int cli_connect_uuid(const char *uuid, int uuid_len)
 	for (retry = 0; retry < 3; retry++) {
 
 		/* Connect */
-		if (obexftp_connect_uuid (cli, device, channel, uuid, uuid_len) >= 0)
+		if (obexftp_connect_src (cli, src_dev, device, channel, uuid, uuid_len) >= 0)
        			return TRUE;
 		fprintf(stderr, "Still trying to connect\n");
 	}
@@ -440,8 +441,9 @@ int main(int argc, char *argv[])
 			{"irda",	no_argument, NULL, 'i'},
 #ifdef HAVE_BLUETOOTH
 			{"bluetooth",	optional_argument, NULL, 'b'},
-#endif
 			{"channel",	required_argument, NULL, 'B'},
+			{"hci",		required_argument, NULL, 'd'},
+#endif
 #ifdef HAVE_USB
 			{"usb",		optional_argument, NULL, 'u'},
 #endif
@@ -469,7 +471,7 @@ int main(int argc, char *argv[])
 			{0, 0, 0, 0}
 		};
 		
-		c = getopt_long (argc, argv, "-ib::B:u::t:n:U::HSL::l::c:C:f:o:g:G:p:k:XYxm:VvhN:FP",
+		c = getopt_long (argc, argv, "-ib::B:d:u::t:n:U::HSL::l::c:C:f:o:g:G:p:k:XYxm:VvhN:FP",
 				 long_options, &option_index);
 		if (c == -1)
 			break;
@@ -498,6 +500,10 @@ int main(int argc, char *argv[])
 			
 		case 'B':
 			channel = atoi(optarg);
+			break;
+			
+		case 'd':
+			src_dev = optarg;
 			break;
 #endif /* HAVE_BLUETOOTH */
 
@@ -715,6 +721,7 @@ int main(int argc, char *argv[])
 #ifdef HAVE_BLUETOOTH
 				" -b, --bluetooth [<device>]  use or search a bluetooth device\n"
 				" [ -B, --channel <number> ]  use this bluetooth channel when connecting\n"
+				" [ -d, --hci <no/address> ]  use source device with this address or number\n"
 #endif
 #ifdef HAVE_USB
 				" -u, --usb [<intf>]          connect to a usb interface or list interfaces\n"
