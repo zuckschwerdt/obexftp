@@ -123,7 +123,7 @@ static int browse_sdp_uuid(sdp_session_t *sess, uuid_t *uuid)
   return channel;
 }
 
-int obexftp_browse_bt(char *addr, int svclass)
+int obexftp_browse_bt(const char *addr, int svclass)
 {
   int res = -1;
   int dev_id;
@@ -184,7 +184,7 @@ char **obexftp_discover_bt()
 {
     return NULL;
 }
-int obexftp_browse_bt(char *UNUSED(addr), int UNUSED(svclass))
+int obexftp_browse_bt(const char *UNUSED(addr), int UNUSED(svclass))
 {
     return 0;
 }
@@ -198,7 +198,7 @@ char **obexftp_discover_bt()
 {
     return NULL;
 }
-int obexftp_browse_bt(char *UNUSED(addr), int UNUSED(svclass))
+int obexftp_browse_bt(const char *UNUSED(addr), int UNUSED(svclass))
 {
     return 0;
 }

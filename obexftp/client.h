@@ -126,7 +126,7 @@ void obexftp_close(/*@only@*/ /*@out@*/ /*@null@*/ obexftp_client_t *cli);
 char **obexftp_discover(int transport);
 char **obexftp_discover_bt(void); /* this is a quick hack */
 
-int obexftp_browse_bt(char *addr, int svclass);
+int obexftp_browse_bt(const char *addr, int svclass);
 #define	obexftp_browse_bt_ftp(device) \
 	obexftp_browse_bt(device, OBEX_FTP_SERVICE)
 #define	obexftp_browse_bt_push(device) \
