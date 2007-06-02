@@ -408,7 +408,8 @@ fd_t bfb_io_open(const char *ttyname, enum trans_type *typeinfo)
 		DEBUG(1, "Ericsson detected\n");
 		goto ericsson;
 	}
-	if(strncasecmp("MOTOROLA", rspbuf, 8) == 0) {
+	if(strncasecmp("MOTOROLA", rspbuf, 8) == 0 || /* is this needed? */
+	   strstr(rspbuf, "Motorola")) {
 		DEBUG(1, "Motorola detected\n");
 		goto motorola;
 	}
@@ -486,7 +487,8 @@ fd_t bfb_io_open(const char *ttyname, enum trans_type *typeinfo)
 		DEBUG(1, "Comm-error\n");
 		goto err;
 	}
-	if(strcasecmp("CONNECT", rspbuf) != 0)	{
+	if(strcasecmp("CONNECT", rspbuf) != 0 || /* is this needed? */
+	   strcasecmp("OK", rspbuf) != 0)	{
 		DEBUG(1, "Error doing AT+MODE=22 (%s)\n", rspbuf);
 	       	goto err;
 	}

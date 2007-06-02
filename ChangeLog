@@ -1,3 +1,7 @@
+2007-06-02  Christian W. Zuckschwerdt  <zany@triq.net>
+
+	* Motorola SLVR L2 cobex fix by Andrey Rahmatullin
+
 2007-06-01  Christian W. Zuckschwerdt  <zany@triq.net>
 
 	* added hci selection support, drafted by Manuel Naranjo
