@@ -127,10 +127,10 @@ static void info_cb(int event, const char *msg, int len, void *UNUSED(data))
 }
 
 /* create global uuid buffers */
-static const char *fbs_uuid = UUID_FBS;
-static const char *irmc_uuid = UUID_IRMC;
-static const char *s45_uuid = UUID_S45;
-static const char *pcsoftware_uuid = UUID_PCSOFTWARE;
+static const char *fbs_uuid = (const char *)UUID_FBS;
+static const char *irmc_uuid = (const char *)UUID_IRMC;
+static const char *s45_uuid = (const char *)UUID_S45;
+static const char *pcsoftware_uuid = (const char *)UUID_PCSOFTWARE;
 
 /* parse UUID string to real bytes */
 static int parse_uuid(char *name, const char **uuid, int *uuid_len)
@@ -236,7 +236,7 @@ static int transport = OBEX_TRANS_IRDA;
 #endif /* HAVE_BLUETOOTH */
 /*@only@*/ /*@null@*/ static char *device = NULL;
 static int channel = -1;
-static const char *use_uuid = UUID_FBS;
+static const char *use_uuid = (const char *)UUID_FBS;
 static int use_uuid_len = sizeof(UUID_FBS);
 static int use_conn=1;
 static int use_path=1;
