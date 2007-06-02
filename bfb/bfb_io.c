@@ -42,7 +42,7 @@
 
 #ifdef _WIN32
 #include <windows.h>
-#define sleep(n)	_sleep(n*1000)
+#define sleep(n)	Sleep(n*1000)
 #else
 #include <sys/ioctl.h>
 #include <termios.h>

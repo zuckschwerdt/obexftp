@@ -39,6 +39,9 @@
 
 #ifdef _WIN32
 #include <winsock.h>
+#define ESOCKTNOSUPPORT WSAESOCKTNOSUPPORT
+#define S_IRGRP 0
+#define S_IROTH 0
 #else
 #include <sys/socket.h>
 #include <arpa/inet.h>
