@@ -38,7 +38,7 @@
 #include <time.h>
 
 #ifdef _WIN32
-#include <winsock.h>
+#include <winsock2.h>
 #define ESOCKTNOSUPPORT WSAESOCKTNOSUPPORT
 #define S_IRGRP 0
 #define S_IROTH 0
@@ -544,7 +544,13 @@ int obexftp_connect_src(obexftp_client_t *cli, const char *src, const char *devi
 			ret = -EINVAL;
 			break;
 		}
-		if (inet_aton(device, &peer.sin_addr)) {
+#ifdef _WIN32
+		peer.sin_addr.s_addr = inet_addr(device);
+		ret = (peer.sin_addr.s_addr == INADDR_NONE) ? 0 : 1;
+#else
+		ret = inet_aton(device, &peer.sin_addr);
+#endif
+		if (ret) {
 			peer.sin_family = AF_INET;
 			peer.sin_port = htons(port); /* overridden with OBEX_PORT 650 anyhow */
 			ret = OBEX_TransportConnect(cli->obexhandle, (struct sockaddr *) &peer,

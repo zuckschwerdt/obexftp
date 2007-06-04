@@ -42,6 +42,10 @@ void DEBUG(unsigned int n, ...) { }
 void DUMPBUFFER(unsigned int n, char *label, char *msg) { }
 #endif /* _WIN32 */
 
+#ifdef _WIN32
+#define strcasestr strstr
+#endif /* _WIN32 */
+
 #include <common.h>
 
 // perhaps this scheme would be better?
@@ -509,8 +513,10 @@ int main(int argc, char *argv[])
 
 #ifdef HAVE_USB
 		case 'u':
+#ifndef _WIN32
 			if (geteuid() != 0)
 				fprintf(stderr, "If USB doesn't work setup permissions in udev or run as superuser.\n");
+#endif
 			transport = OBEX_TRANS_USB;
        			device = NULL;
 			/* handle severed optional option argument */

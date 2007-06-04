@@ -36,10 +36,23 @@
 #include <getopt.h>
 #include <errno.h>
 #include <sys/types.h>
-#include <netinet/in.h>
 #include <fcntl.h>
+#ifdef _WIN32
+#include <winsock2.h>
+#define S_IRGRP 0
+#define S_IROTH 0
+#define S_IWGRP 0
+#define S_IWOTH 0
+#define S_IXGRP 0
+#define S_IXOTH 0
+#define sleep(n)	Sleep((n) * 1000)
+#define mkdir(dir,mode)	_mkdir(dir)
+#define lstat stat
+#else
+#include <netinet/in.h>
 #include <sys/socket.h>
 #include <netdb.h>
+#endif
 
 /* just until there is a server layer in obexftp */
 #include <openobex/obex.h>
@@ -60,7 +73,9 @@
 #define CUR_DIR				"./"
 
 
+#ifdef HAVE_BLUETOOTH
 static bdaddr_t *bt_src = NULL;
+#endif
 static char *device = NULL;
 static int channel = 10; /* OBEX_PUSH_HANDLE */
 
@@ -74,7 +89,7 @@ uint32_t connection_id = 0;
 
 int verbose = 0;
 
-static in_addr_t inaddr_any = INADDR_ANY;
+// this whole thing needs a review:
 static int parsehostport(const char *name, char **host, int *port) {
 	struct hostent *e;
 	char *p, *s;
@@ -88,15 +103,14 @@ static int parsehostport(const char *name, char **host, int *port) {
 		*port = atoi(++s);
 	}
 
-	inaddr_any = INADDR_ANY;
-	*host = (char *)&inaddr_any;
+	*host = "0.0.0.0";
 
 	if (sscanf(p, "%hhu.%hhu.%hhu.%hhu", &n[0], &n[1], &n[2], &n[3]) == 4) {
-		inaddr_any = (in_addr_t) (*n);
+		*host = strdup(p);
 	} else {
 		e = gethostbyname(p);
 		if (e) {
-			*host = e->h_addr_list[0];
+			*host = e->h_addr_list[0]; // inet_ntoa needed!
 		}
 	}
 	free(p);
@@ -858,19 +872,25 @@ reset:
        	case OBEX_TRANS_INET:
 	        saddr.sin_family = AF_INET;
 	        saddr.sin_port = htons(channel);
-	        saddr.sin_addr.s_addr = (in_addr_t)*device; //INADDR_ANY;
+#ifdef _WIN32
+                saddr.sin_addr.s_addr = inet_addr(device);
+#else
+                (void) inet_aton(device, &saddr.sin_addr);
+#endif
 		//InOBEX_ServerRegister(handle); /* always port 650 */
 		if (0 > OBEX_ServerRegister(handle, (struct sockaddr *)&saddr, sizeof(saddr))) {
        			perror("failed to register inet server");
 	       		exit(-1);
 		}
 	       	break;
+#ifdef HAVE_BLUETOOTH
        	case OBEX_TRANS_BLUETOOTH:
 		if (0 > BtOBEX_ServerRegister(handle, bt_src, channel)) {
        			perror("failed to register bluetooth server");
 	       		exit(-1);
 		}
        		break;
+#endif
        	case OBEX_TRANS_IRDA:
 		if (0 > IrOBEX_ServerRegister(handle, "")) {
        			perror("failed to register IrDA server");

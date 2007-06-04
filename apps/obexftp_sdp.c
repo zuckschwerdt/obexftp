@@ -30,9 +30,22 @@
 #include <unistd.h>
 #include <stdlib.h>
 #include <string.h>
-#include <syslog.h>
 #include <sys/types.h>
+#ifdef _WIN32
+#include <winsock2.h>
+#else
 #include <sys/socket.h>
+#endif
+
+#ifndef _WIN32
+#include <syslog.h>
+#define log_err(format, args...) syslog(LOG_ERR, format, ##args)
+#define log_err_prefix "ObexFTPd: "
+#else
+#include <stdio.h>
+#define log_err(format, args...) fprintf(stderr, format, ##args)
+#define log_err_prefix ""
+#endif
 
 #ifdef HAVE_SDPLIB
 
@@ -52,7 +65,7 @@ static sdp_session_t *session;
 void obexftp_sdp_unregister(void) 
 {
 	if (record && sdp_record_unregister(session, record))
-		syslog(LOG_ERR, "Service record unregistration failed.");
+		log_err("Service record unregistration failed.");
 
 	sdp_close(session);
 }
@@ -71,14 +84,14 @@ int obexftp_sdp_register(int channel)
 	
 	session = sdp_connect(BDADDR_ANY, BDADDR_LOCAL, 0);
 	if (!session) {
-		syslog(LOG_ERR, "Failed to connect to the local SDP server. %s(%d)", 
+		log_err("Failed to connect to the local SDP server. %s(%d)", 
 				strerror(errno), errno);
 		return -1;
 	}
 
 	record = sdp_record_alloc();
 	if (!record) {
-		syslog(LOG_ERR, "Failed to allocate service record %s(%d)", 
+		log_err("Failed to allocate service record %s(%d)", 
 				strerror(errno), errno);
 		sdp_close(session);
 		return -1;
@@ -131,7 +144,7 @@ int obexftp_sdp_register(int channel)
 
 	status = sdp_device_record_register(session, BDADDR_ANY, record, 0);
 	if (status) {
-		syslog(LOG_ERR, "SDP registration failed.");
+		log_err("SDP registration failed.");
 		sdp_record_free(record); record = NULL;
 		sdp_close(session);
 		return -1;
@@ -161,7 +174,7 @@ int obexftp_sdp_search(bdaddr_t *src, bdaddr_t *dst, uint16_t service)
 
 	s = sdp_connect(src, dst, 0);
 	if (!s) {
-		syslog(LOG_ERR, "Failed to connect to the SDP server. %s(%d)",
+		log_err("Failed to connect to the SDP server. %s(%d)",
 				strerror(errno), errno);
 		return 0;
 	}
@@ -186,7 +199,7 @@ void obexftp_sdp_unregister(void)
 
 int obexftp_sdp_register(void)
 {
-	syslog(LOG_ERR, "SDP not supported.");
+	log_err("SDP not supported.");
 	return -1;
 }
 

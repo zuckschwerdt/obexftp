@@ -45,6 +45,8 @@
 #ifdef _WIN32
 #include <windows.h>
 #include <stdlib.h>
+#define sleep(t) Sleep((t) * 1000)
+#define usleep(t) Sleep((t) < 500 ? 1 : ((t) + 500) / 1000);
 #else
 #include <sys/ioctl.h>
 #include <termios.h>
