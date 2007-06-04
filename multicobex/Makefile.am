@@ -11,8 +11,9 @@ libmulticobex_la_SOURCES =	multi_cobex.c multi_cobex.h \
 
 multicobexinclude_HEADERS =	multi_cobex.h
 
-libmulticobex_la_LDFLAGS =	-version-info $(MULTICOBEX_VERSION)
+libmulticobex_la_LDFLAGS =	-no-undefined \
+				-version-info $(MULTICOBEX_VERSION)
 
 libmulticobex_la_LIBADD =	@OPENOBEX_LIBS@ \
-				../bfb/libbfb.la
-
+				../bfb/libbfb.la \
+				@EXTRA_LIBS@
