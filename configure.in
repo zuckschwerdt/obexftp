@@ -16,8 +16,6 @@ AC_PROG_CC
 AC_PROG_INSTALL
 AC_PROG_LN_S
 
-AC_PATH_WIN32
-
 # Initialize libtool
 AC_PROG_LIBTOOL
 
@@ -25,6 +23,8 @@ AC_PROG_LIBTOOL
 AC_HEADER_STDC
 AC_HEADER_DIRENT
 AC_CHECK_HEADERS([arpa/inet.h errno.h fcntl.h netdb.h netinet/in.h stdlib.h string.h sys/ioctl.h sys/socket.h sys/time.h termios.h unistd.h sys/select.h])
+
+AC_PATH_WIN32
 
 # Checks for libraries.
 PKG_CHECK_MODULES(OPENOBEX,openobex)
