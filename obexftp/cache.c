@@ -24,9 +24,10 @@
 #endif
 
 #define _GNU_SOURCE
-#include <string.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <string.h>
 #include <sys/stat.h> /* __S_IFDIR, __S_IFREG */
 #ifndef S_IFDIR
 #define S_IFDIR	__S_IFDIR

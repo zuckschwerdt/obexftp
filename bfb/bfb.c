@@ -27,6 +27,7 @@
 #include <config.h>
 #endif
 
+#include <stdio.h>
 #include <stdlib.h>
 #include <inttypes.h>
 #include <string.h>
@@ -39,6 +40,7 @@
 /* htons */
 #ifdef _WIN32
 #include <winsock2.h>
+#include <sys/param.h> /* for endianess */
 #else
 #include <netinet/in.h>
 #endif

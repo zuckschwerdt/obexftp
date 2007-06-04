@@ -19,10 +19,10 @@
  *     
  */
 
-#include <inttypes.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
-#include <stdio.h>	/* FIXME: libraries shouldn't do this */
+#include <inttypes.h>
 #include <errno.h>
 #include <sys/stat.h>
 

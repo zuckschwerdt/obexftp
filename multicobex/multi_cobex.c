@@ -28,8 +28,9 @@
 #endif
 
 #define _GNU_SOURCE
-#include <unistd.h>
+#include <stdio.h>
 #include <stdlib.h>
+#include <unistd.h>
 #include <string.h>
 #include <sys/types.h>
 #ifdef HAVE_SYS_SELECT_H
@@ -44,7 +45,6 @@
 
 #ifdef _WIN32
 #include <windows.h>
-#include <stdlib.h>
 #define sleep(t) Sleep((t) * 1000)
 #define usleep(t) Sleep((t) < 500 ? 1 : ((t) + 500) / 1000);
 #else
