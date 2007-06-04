@@ -4,7 +4,7 @@
 #include <unistd.h>
 #include <sys/types.h>
 #ifdef _WIN32
-#include <process.h>
+#include <windows.h>
 #else
 #include <sys/wait.h>
 #endif
