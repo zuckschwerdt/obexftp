@@ -50,6 +50,13 @@
 #endif /* _WIN32 */
 
 #ifdef HAVE_BLUETOOTH
+#ifdef _WIN32
+#include <ws2bth.h>
+#define bdaddr_t	BTH_ADDR
+#define BDADDR_ANY	BTH_ADDR_NULL
+#define bacpy(dst,src)	memcpy((dst),(src),sizeof(BTH_ADDR))
+#else /* _WIN32 */
+
 #ifdef __FreeBSD__
 #include <sys/types.h>
 #include <bluetooth.h>
@@ -59,7 +66,9 @@
 #include <bluetooth/hci.h>
 #include <bluetooth/hci_lib.h>
 #endif /* __FreeBSD__ */
-#endif
+
+#endif /* _WIN32 */
+#endif /* HAVE_BLUETOOTH */
 
 #include <openobex/obex.h>
 #include <multicobex/multi_cobex.h>
@@ -80,6 +89,26 @@ typedef struct { /* fixed to 6 bytes for now */
 	uint8_t info[4];
 } __attribute__((packed)) apparam_t;
 
+#ifdef _WIN32
+#ifdef HAVE_BLUETOOTH
+static int str2ba(const char *straddr, BTH_ADDR *btaddr)
+{
+	int i;
+	unsigned int aaddr[6];
+	BTH_ADDR tmpaddr = 0;
+
+	if (sscanf(straddr, "%02x:%02x:%02x:%02x:%02x:%02x",
+		   &aaddr[0], &aaddr[1], &aaddr[2], &aaddr[3], &aaddr[4], &aaddr[5]) != 6)
+		return 1;
+	*btaddr = 0;
+	for (i = 0; i < 6; i++) {
+		tmpaddr = (BTH_ADDR) (aaddr[i] & 0xff);
+		*btaddr = ((*btaddr) << 8) + tmpaddr;
+	}
+	return 0;
+}
+#endif
+#endif
 
 static void dummy_info_cb(int UNUSED(event), const char *UNUSED(msg), int UNUSED(len), void *UNUSED(data))
 {
@@ -554,7 +583,7 @@ int obexftp_connect_src(obexftp_client_t *cli, const char *src, const char *devi
 		if (ret) {
 			peer.sin_family = AF_INET;
 			peer.sin_port = htons(port); /* overridden with OBEX_PORT 650 anyhow */
-			ret = OBEX_TransportConnect(cli->obexhandle, (struct sockaddr *) &peer,
+			ret = InOBEX_TransportConnect(cli->obexhandle, (struct sockaddr *) &peer,
 						  sizeof(struct sockaddr_in));
 			DEBUG(3, "%s() TCP %d\n", __func__, ret);
 		} else
@@ -580,9 +609,11 @@ int obexftp_connect_src(obexftp_client_t *cli, const char *src, const char *devi
 		} else {
 			str2ba(src, &src_addr);
 			hci_id = atoi(src);
+#ifndef _WIN32
 			if (hci_id > 0) {
 				hci_devba(hci_id, &src_addr);	
 			}
+#endif
 		}
 		if (!device) {
 			ret = -EINVAL;

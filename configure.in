@@ -32,7 +32,7 @@ PKG_CHECK_MODULES(OPENOBEX,openobex)
 AM_ICONV
 dnl IRDA_CHECK
 BLUETOOTH_CHECK
-if test $am_cv_bluetooth_found = yes; then
+if test "${bluez_found}" = "yes"; then
 	SDPLIB_CHECK
 fi
 USB_CHECK

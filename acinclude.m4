@@ -40,6 +40,59 @@ dnl Option to enable or disable Bluetooth support
 dnl Waring: the AC_TRY_COMPILE won't work with -Werror
 dnl
 
+AC_DEFUN([AC_PATH_WINBT], [ 
+	AC_CACHE_VAL(winbt_found,[ 
+		AC_CHECK_HEADERS(ws2bth.h, winbt_found=yes, winbt_found=no, [ 
+				#include <winsock2.h> 
+		]) 
+	]) 
+	AC_MSG_CHECKING([for Windows Bluetooth support]) 
+	AC_MSG_RESULT([$winbt_found]) 
+])
+
+AC_DEFUN([AC_PATH_NETBSDBT], [
+	AC_CACHE_CHECK([for NetBSD Bluetooth support], netbsdbt_found, [
+		AC_TRY_COMPILE([
+				#include <bluetooth.h>
+			], [
+				struct sockaddr_bt *bt;
+			], netbsdbt_found=yes, netbsdbt_found=no)
+	])
+])
+
+AC_DEFUN([AC_PATH_FREEBSDBT], [
+	AC_CACHE_CHECK([for FreeBSD Bluetooth support], freebsdbt_found, [
+		AC_TRY_COMPILE([
+				#include <bluetooth.h>
+			], [
+				struct sockaddr_rfcomm *rfcomm;
+			], freebsdbt_found=yes, freebsdbt_found=no)
+	])
+])
+
+AC_DEFUN([AC_PATH_BLUEZ], [
+	PKG_CHECK_MODULES(BLUETOOTH, bluez, bluez_found=yes, AC_MSG_RESULT(no)) 
+])
+
+AC_DEFUN([AC_PATH_BLUETOOTH], [
+        case $host in
+        *-*-linux*)
+                AC_PATH_BLUEZ
+                ;;
+        *-*-freebsd*)
+                AC_PATH_FREEBSDBT
+                ;;
+        *-*-netbsd*)
+                AC_PATH_NETBSDBT
+                ;;
+	*-*-mingw32*) 
+		AC_PATH_WINBT 
+		;;
+        esac
+	AC_SUBST(BLUETOOTH_CFLAGS)
+	AC_SUBST(BLUETOOTH_LIBS)
+])
+
 AC_DEFUN([BLUETOOTH_CHECK],[  
 AC_ARG_ENABLE([bluetooth],
               [AC_HELP_STRING([--disable-bluetooth],
@@ -47,35 +100,10 @@ AC_ARG_ENABLE([bluetooth],
        	      [ac_bluetooth_enabled=$enableval], [ac_bluetooth_enabled=yes])
 
 if test "$ac_bluetooth_enabled" = yes; then
-	AC_CACHE_CHECK([for Bluetooth support], am_cv_bluetooth_found,[
-
-		AC_TRY_COMPILE([
-				#ifdef __FreeBSD__
-				#include <sys/types.h>
-				#include <bluetooth.h>
-				#else /* Linux */
-				#include <sys/socket.h>
-				#include <bluetooth/bluetooth.h>
-				#include <bluetooth/rfcomm.h>
-				#endif
-			],[
-				#ifdef __FreeBSD__
-				bdaddr_t bdaddr;
-				struct sockaddr_rfcomm addr;
-				#else /* Linux */
-				bdaddr_t bdaddr;
-				struct sockaddr_rc addr;
-				#endif
-			],
-				am_cv_bluetooth_found=yes,
-				am_cv_bluetooth_found=no)])
-	if test $am_cv_bluetooth_found = yes; then
+       	AC_PATH_BLUETOOTH
+	if test "${netbsdbt_found}" = "yes" -o "${freebsdbt_found}" = "yes" -o "${bluez_found}" = "yes" -o "${winbt_found}" = "yes"; then
 		AC_DEFINE([HAVE_BLUETOOTH], [1], [Define if system supports Bluetooth and it's enabled])
-		BLUETOOTH_CFLAGS=""
-		BLUETOOTH_LIBS="-lbluetooth"
 	fi
-	AC_SUBST(BLUETOOTH_CFLAGS)
-	AC_SUBST(BLUETOOTH_LIBS)
 fi
 ])
 
