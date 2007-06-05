@@ -54,7 +54,6 @@
 #include <ws2bth.h>
 #define bdaddr_t	BTH_ADDR
 #define BDADDR_ANY	BTH_ADDR_NULL
-#define bacpy(dst,src)	memcpy((dst),(src),sizeof(BTH_ADDR))
 #else /* _WIN32 */
 
 #ifdef __FreeBSD__
@@ -605,7 +604,11 @@ int obexftp_connect_src(obexftp_client_t *cli, const char *src, const char *devi
 #ifdef HAVE_BLUETOOTH
 	case OBEX_TRANS_BLUETOOTH:
 		if (!src) {
+#ifdef _WIN32
+			src_addr = BDADDR_ANY;
+#else
 			bacpy(&src_addr, BDADDR_ANY);
+#endif
 		} else {
 			str2ba(src, &src_addr);
 			hci_id = atoi(src);
