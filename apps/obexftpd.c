@@ -46,7 +46,6 @@
 #ifdef HAVE_BLUETOOTH
 #include <ws2bth.h>
 #define bdaddr_t	BTH_ADDR
-#define BDADDR_ANY	BTH_ADDR_NULL
 #endif
 #define S_IRGRP 0
 #define S_IROTH 0
