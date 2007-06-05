@@ -115,7 +115,7 @@ OptionParser.new do |opts|
       @device = intfs.first
     end
 
-    @channel = Obexftp.scanbt(@device, @service)
+    @channel = Obexftp.browsebt(@device, @service)
 
     puts "Got channel #{@channel}"
   end

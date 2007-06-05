@@ -16,13 +16,13 @@ intfs.each { |i| puts i }
 dev = intfs.first
 
 puts 'Sync channel'
-puts Obexftp.scanbt(dev, Obexftp::SYNC)
+puts Obexftp.browsebt(dev, Obexftp::SYNC)
 puts 'Push channel'
-puts Obexftp.scanbt(dev, Obexftp::PUSH)
+puts Obexftp.browsebt(dev, Obexftp::PUSH)
 puts 'FTP channel'
-puts Obexftp.scanbt(dev, Obexftp::FTP)
+puts Obexftp.browsebt(dev, Obexftp::FTP)
 
-channel = Obexftp.scanbt(dev, 0) # default is ftp
+channel = Obexftp.browsebt(dev, 0) # default is ftp
 cli = Obexftp::Client.new(Obexftp::BLUETOOTH) # or reuse the above
 puts cli.connect(dev, channel)
 puts cli.list('/')
