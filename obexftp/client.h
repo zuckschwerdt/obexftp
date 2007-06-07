@@ -124,15 +124,19 @@ typedef struct {
 void obexftp_close(/*@only@*/ /*@out@*/ /*@null@*/ obexftp_client_t *cli);
 
 char **obexftp_discover(int transport);
-char **obexftp_discover_bt(void); /* this is a quick hack */
+char **obexftp_discover_bt_src(const char *src); /* HCI no. or address */
+#define	obexftp_discover_bt() \
+	obexftp_discover_bt_src(NULL)
 
-int obexftp_browse_bt(const char *addr, int svclass);
+int obexftp_browse_bt_src(const char *src, const char *addr, int svclass);
+#define	obexftp_browse_bt(device, service) \
+	obexftp_browse_bt_src(NULL, device, service)
 #define	obexftp_browse_bt_ftp(device) \
-	obexftp_browse_bt(device, OBEX_FTP_SERVICE)
+	obexftp_browse_bt_src(NULL, device, OBEX_FTP_SERVICE)
 #define	obexftp_browse_bt_push(device) \
-	obexftp_browse_bt(device, OBEX_PUSH_SERVICE)
+	obexftp_browse_bt_src(NULL, device, OBEX_PUSH_SERVICE)
 #define	obexftp_browse_bt_sync(device) \
-	obexftp_browse_bt(device, OBEX_SYNC_SERVICE)
+	obexftp_browse_bt_src(NULL, device, OBEX_SYNC_SERVICE)
 
 int obexftp_connect_uuid(obexftp_client_t *cli,
 				/*@null@*/ const char *device, /* for INET, BLUETOOTH */

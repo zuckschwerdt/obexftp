@@ -13,7 +13,6 @@
 #include <bluetooth/bluetooth.h>
 #include <bluetooth/hci.h>
 #include <bluetooth/hci_lib.h>
-
 #include <bluetooth/sdp.h>
 #include <bluetooth/sdp_lib.h>
 
@@ -29,7 +28,7 @@
 #define SVC_UUID_PCSUITE ((const uint8_t []) __SVC_UUID_PCSUITE_bytes)
 static const uint8_t svc_uuid_pcsuite[] = SVC_UUID_PCSUITE;
 
-char **obexftp_discover_bt()
+char **obexftp_discover_bt_src(const char *src)
 {
 	char **res;
   inquiry_info *info = NULL;
@@ -41,8 +40,13 @@ char **obexftp_discover_bt()
   int length = 8;
   int dd, i;
 
-  dev_id = hci_get_route(NULL);
-  /* dev_id = hci_devid( "01:23:45:67:89:AB" ); */
+  /* Get local bluetooth address */
+  if (src && strlen(src) == 17)
+      dev_id = hci_devid(src);
+  else if (src)
+      dev_id = atoi(src);
+  else
+      dev_id = hci_get_route(NULL);
   DEBUG(1, "%s: Scanning ...\n", __func__);
   flags = IREQ_CACHE_FLUSH; /* only show devices currently in range */
   num_rsp = hci_inquiry(dev_id, length, num_rsp, NULL, &info, flags);
@@ -123,7 +127,7 @@ static int browse_sdp_uuid(sdp_session_t *sess, uuid_t *uuid)
   return channel;
 }
 
-int obexftp_browse_bt(const char *addr, int svclass)
+int obexftp_browse_bt_src(const char *src, const char *addr, int svclass)
 {
   int res = -1;
   int dev_id;
@@ -136,8 +140,12 @@ int obexftp_browse_bt(const char *addr, int svclass)
   str2ba(addr, &bdaddr);
 
   /* Get local bluetooth address */
-  dev_id = hci_get_route(NULL);
-  /* dev_id = hci_devid( "01:23:45:67:89:AB" ); */
+  if (src && strlen(src) == 17)
+      dev_id = hci_devid(src);
+  else if (src)
+      dev_id = atoi(src);
+  else
+      dev_id = hci_get_route(NULL);
 
   /* Connect to remote SDP server */
   sess = sdp_connect(BDADDR_ANY, &bdaddr, SDP_RETRY_IF_BUSY);
