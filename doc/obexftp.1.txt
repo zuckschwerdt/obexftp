@@ -30,6 +30,10 @@ OPTIONS
         Use this bluetooth channel when connecting. The channel will be
         discoverd automatically if this option is not used.
 
+    -d *no/address*, --hci *no/address*
+        Use the bluetooth device referenced by number or address as source
+        device for the connection.
+
     -u *intf no*, --usb *intf no*
         Connect to this usb interface or list all available usb interfaces.
 
@@ -44,8 +48,8 @@ OPTIONS
         Select the UUID to connect with. Recognized values are currently
         "none" needed by some Nokia mobile devices, "FBS" (default) for the
         normal file browsing service, "IRMC" for IRMC synchronisation and
-        "S45" when connecting to a Siemens S45 or "SHARP" for PCSOFTWARE
-        UUID with Sharp devices.
+        "S45" when connecting to a Siemens Mobile phone via cable or "SHARP"
+        for PCSOFTWARE UUID with Sharp devices.
 
     -H, --noconn
         Suppress connection IDs (i.e. send no connection header to the
@@ -68,6 +72,10 @@ OPTIONS
         List a folder.
 
   Sending And Retrieving Files
+    -o *path*, --output *path*
+        Specify the target file name, overriding the implicit local name
+        from --get or the implicit remote name from --put
+
     -g *source*, --get *source*
         Retrieve files from mobile.
 
@@ -83,6 +91,8 @@ OPTIONS
   Experimental Extras
     -X, --capability
         Retrieve the capability object from the mobile (if available).
+
+        Probe and report device characteristics
 
     -x, --info
         Retrieve misc infos from mobile. I.e. memory size and free memory.
