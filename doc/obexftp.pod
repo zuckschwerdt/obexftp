@@ -41,6 +41,11 @@ device found will be used.
 Use this bluetooth channel when connecting.
 The channel will be discoverd automatically if this option is not used.
 
+=item B<-d> I<no/address>, B<--hci> I<no/address>
+
+Use the bluetooth device referenced by number or address as
+source device for the connection.
+
 =item B<-u> I<intf no>, B<--usb> I<intf no>
 
 Connect to this usb interface or list all available usb interfaces.
@@ -66,7 +71,7 @@ Select the UUID to connect with. Recognized values are currently
 "none" needed by some Nokia mobile devices,
 "FBS" (default) for the normal file browsing service,
 "IRMC" for IRMC synchronisation and
-"S45" when connecting to a Siemens S45 or
+"S45" when connecting to a Siemens Mobile phone via cable or
 "SHARP" for PCSOFTWARE UUID with Sharp devices.
 
 =item B<-H>, B<--noconn>
@@ -106,6 +111,11 @@ List a folder.
 
 =over
 
+=item B<-o> I<path>, B<--output> I<path>
+
+Specify the target file name, overriding the implicit local name from B<--get>
+or the implicit remote name from B<--put>
+
 =item B<-g> I<source>, B<--get> I<source>
 
 Retrieve files from mobile.
@@ -132,6 +142,10 @@ Delete files from the mobile.
 =item B<-X>, B<--capability>
 
 Retrieve the capability object from the mobile (if available).
+
+=Item B<-Y>, B<--probe>
+
+Probe and report device characteristics
 
 =item B<-x>, B<--info>
 
