@@ -57,8 +57,9 @@
 #define mkdir(dir,mode)	_mkdir(dir)
 #define lstat stat
 #else
-#include <netinet/in.h>
 #include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
 #include <netdb.h>
 #endif
 
