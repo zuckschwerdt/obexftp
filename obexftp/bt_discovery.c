@@ -26,7 +26,6 @@
   0x00, 0x00, 0x10, 0x00, 0x80, 0x00, \
   0x00, 0x02, 0xee, 0x00, 0x00, 0x01 }
 #define SVC_UUID_PCSUITE ((const uint8_t []) __SVC_UUID_PCSUITE_bytes)
-static const uint8_t svc_uuid_pcsuite[] = SVC_UUID_PCSUITE;
 
 char **obexftp_discover_bt_src(const char *src)
 {
@@ -171,7 +170,7 @@ int obexftp_browse_bt_src(const char *src, const char *addr, int svclass)
   /* prefer PCSUITE over FTP */
   if (svclass == OBEX_FILETRANS_SVCLASS_ID)
     {
-      sdp_uuid128_create(&root_uuid, &svc_uuid_pcsuite);
+      sdp_uuid128_create(&root_uuid, &SVC_UUID_PCSUITE);
       res = browse_sdp_uuid(sess, &root_uuid);
       if (res > 0) return res;
     }
