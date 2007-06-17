@@ -15,8 +15,8 @@ end
 
 if ENV['PREFIX']
   prefix = CONFIG['prefix']
-  CONFIG.each do |key, var|
-    CONFIG[key] = var.sub(/#{prefix}/, ENV['PREFIX'])
+  %w[ prefix sitedir datadir infodir mandir oldincludedir ].each do |key|
+    CONFIG[key] = CONFIG[key].sub(/#{prefix}/, ENV['PREFIX'])
   end
 end
 
