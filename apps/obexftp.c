@@ -207,7 +207,7 @@ static int find_bt(char *addr, char **res_bdaddr, int *res_channel)
   		fprintf(stderr, "Scanning for %s ...\n", addr);
 		devices = obexftp_discover(OBEX_TRANS_BLUETOOTH);
   
-		for(dev = devices; *dev; dev++) {
+		for(dev = devices; dev && *dev; dev++) {
       			if (!addr || strcasestr(*dev, addr)) {
 				fprintf(stderr, "Found: %s\n", *dev);
 				*res_bdaddr = *dev;
