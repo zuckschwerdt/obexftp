@@ -55,7 +55,8 @@ fi
 AC_ARG_ENABLE([perl],
               [AC_HELP_STRING([--disable-perl],
                               [Disables perl language bindings @<:@default=auto@:>@])],
-              [ac_perl_enabled=$enableval], [ac_perl_enabled=yes])
+              [ac_perl_enabled=$enableval],
+              [AC_CHECK_PROG([ac_perl_enabled],[perl],[yes],[no])])
 
 if test "$ac_perl_enabled" = yes; then
 	AC_PATH_PROG([PERL], [perl], [])
@@ -65,7 +66,8 @@ AM_CONDITIONAL([ENABLE_PERL], [test x"$PERL" != x""])
 AC_ARG_ENABLE([python],
               [AC_HELP_STRING([--disable-python],
                               [Disables python language bindings @<:@default=auto@:>@])],
-              [ac_python_enabled=$enableval], [ac_python_enabled=yes])
+              [ac_python_enabled=$enableval],
+              [AC_CHECK_PROG([ac_python_enabled],[python[$PYTHON_VERSION]],[yes],[no])])
 
 if test "$ac_python_enabled" = yes; then
 	SWIG_PYTHON
@@ -75,7 +77,8 @@ AM_CONDITIONAL([ENABLE_PYTHON], [test x"$PYTHON_CPPFLAGS" != x""])
 AC_ARG_ENABLE([ruby],
               [AC_HELP_STRING([--disable-ruby],
                               [Disables ruby language bindings @<:@default=auto@:>@])],
-              [ac_ruby_enabled=$enableval], [ac_ruby_enabled=yes])
+              [ac_ruby_enabled=$enableval],
+              [AC_CHECK_PROG([ac_ruby_enabled],[ruby],[yes],[no])])
 
 if test "$ac_ruby_enabled" = yes; then
 	AC_PATH_PROG([RUBY], [ruby], [])
@@ -85,7 +88,8 @@ AM_CONDITIONAL([ENABLE_RUBY], [test x"$RUBY" != x""])
 AC_ARG_ENABLE([tcl],
               [AC_HELP_STRING([--enable-tcl],
                               [Enables tcl language bindings @<:@default=off@:>@])],
-              [ac_tcl_enabled=$enableval], [ac_tcl_enabled=no])
+              [ac_tcl_enabled=$enableval],
+              [AC_CHECK_PROG([ac_tcl_enabled],[tclsh],[yes],[no])])
 
 if test "$ac_tcl_enabled" = yes; then
 	AC_PATH_PROG([TCLSH], [tclsh], [])
