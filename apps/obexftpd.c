@@ -863,7 +863,6 @@ static void start_server(int transport)
        	{
        		//OBEX_Cleanup(handle);
        		fprintf(stderr, "register to SDP Server failed.\n");
-       		exit(0);
        	}
        	else
        	{
