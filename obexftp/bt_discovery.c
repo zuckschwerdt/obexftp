@@ -46,14 +46,14 @@ char **obexftp_discover_bt_src(const char *src)
       dev_id = atoi(src);
   else
       dev_id = hci_get_route(NULL);
-  DEBUG(1, "%s: Scanning ...\n", __func__);
+  DEBUG(2, "%s: Scanning ...\n", __func__);
   flags = IREQ_CACHE_FLUSH; /* only show devices currently in range */
   num_rsp = hci_inquiry(dev_id, length, num_rsp, NULL, &info, flags);
 
   if(num_rsp < 0) 
     {
       perror("Inquiry failed.");
-      exit(1);
+      return NULL;
     }
 
   dd = hci_open_dev(dev_id); 
@@ -61,7 +61,7 @@ char **obexftp_discover_bt_src(const char *src)
     {
       perror("HCI device open failed");
       free(info);
-      exit(1);
+      return NULL;
     }
   
   res = calloc(num_rsp + 1, sizeof(char *));
@@ -75,7 +75,7 @@ char **obexftp_discover_bt_src(const char *src)
           strcpy(name, "No Name");
 	}
 
-      DEBUG(1, "%s: Found\t%s\t%s\n", __func__, batostr(&bdswap), name);
+      DEBUG(2, "%s: Found\t%s\t%s\n", __func__, batostr(&bdswap), name);
       res[i] = strdup(batostr(&bdswap));
   }
   
@@ -100,7 +100,7 @@ static int browse_sdp_uuid(sdp_session_t *sess, uuid_t *uuid)
     {
       perror("SDP service search");
       sdp_close(sess);
-      exit(1);
+      return -1;
     }
 
   sdp_list_free(attrid, 0);
@@ -152,7 +152,7 @@ int obexftp_browse_bt_src(const char *src, const char *addr, int svclass)
   if(!sess) 
     {
       perror("Failed to connect to SDP server");
-      exit(1);
+      return -1;
     }
 //  baswap(&bdswap, &bdaddr);
 //  *res_bdaddr = batostr(&bdswap);
@@ -187,13 +187,13 @@ int obexftp_browse_bt_src(const char *src, const char *addr, int svclass)
 #else
 #warning "no bluetooth scan available"
 #include "client.h"
-char **obexftp_discover_bt()
+char **obexftp_discover_bt_src(const char *UNUSED(src))
 {
     return NULL;
 }
-int obexftp_browse_bt(const char *UNUSED(addr), int UNUSED(svclass))
+int obexftp_browse_bt_src(const char *UNUSED(src), const char *UNUSED(addr), int UNUSED(svclass))
 {
-    return 0;
+    return -1;
 }
 
 #endif /* HAVE_SDPLIB */
@@ -201,13 +201,13 @@ int obexftp_browse_bt(const char *UNUSED(addr), int UNUSED(svclass))
 #else
 #warning "no bluetooth discovery available"
 #include "client.h"
-char **obexftp_discover_bt()
+char **obexftp_discover_bt_src(const char *src)
 {
     return NULL;
 }
-int obexftp_browse_bt(const char *UNUSED(addr), int UNUSED(svclass))
+int obexftp_browse_bt_src(const char *UNUSED(src), const char *UNUSED(addr), int UNUSED(svclass))
 {
-    return 0;
+    return -1;
 }
 
 #endif /* HAVE_BLUETOOTH */
