@@ -70,9 +70,9 @@ AC_ARG_ENABLE([python],
               [AC_CHECK_PROG([ac_python_enabled],[python[$PYTHON_VERSION]],[yes],[no])])
 
 if test "$ac_python_enabled" = yes; then
-	SWIG_PYTHON
+	AM_PATH_PYTHON
 fi
-AM_CONDITIONAL([ENABLE_PYTHON], [test x"$PYTHON_CPPFLAGS" != x""])
+AM_CONDITIONAL([ENABLE_PYTHON], [test x"$PYTHON" != x""])
 
 AC_ARG_ENABLE([ruby],
               [AC_HELP_STRING([--disable-ruby],
@@ -143,6 +143,7 @@ Makefile
 swig/perl/Makefile
 swig/perl/Makefile.PL
 swig/python/Makefile
+swig/python/setup.py
 swig/ruby/Makefile
 swig/tcl/Makefile
 swig/Makefile
