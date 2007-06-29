@@ -2,8 +2,6 @@ lib_LTLIBRARIES =		libbfb.la
 
 INCLUDES =			-I$(top_srcdir)/includes
 
-LDADD =				
-
 bfbincludedir =			$(includedir)/bfb
 
 libbfb_la_SOURCES =		bfb.c bfb.h \
