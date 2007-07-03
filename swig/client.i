@@ -123,15 +123,15 @@ int cdtop() {
 
 char *get(char *path) {
 	(void) obexftp_get_type(self, NULL, NULL, path);
-	return self->buf_data;
+	return (char *)self->buf_data;
 }
 char *list(char *path=NULL) {
 	(void) obexftp_get_type(self, XOBEX_LISTING, NULL, path);
-	return self->buf_data;
+	return (char *)self->buf_data;
 }
 char *get_capability(char *path=NULL) {
 	(void) obexftp_get_type(self, XOBEX_CAPABILITY, NULL, path);
-	return self->buf_data;
+	return (char *)self->buf_data;
 }
 
 int get_file(char *path, char *localname) { 

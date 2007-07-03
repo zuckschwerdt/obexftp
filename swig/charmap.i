@@ -31,7 +31,7 @@
 #elif defined SWIGTCL
 /* tcl8.swg is naive about this. Does it work? */
 #else
-#warning "no char * out-typemap for this language"
+#warning "no char * in-typemap for this language"
 #endif
 
 /* handle non-sz strings */
@@ -44,7 +44,7 @@
 #elif defined SWIGRUBY
 	$result = arg1->buf_data ? rb_str_new(arg1->buf_data, arg1->buf_size) : Qnil;
 #elif defined SWIGTCL
-	Tcl_SetObjResult(interp,Tcl_NewStringObj(arg1->buf_data,arg1->buf_size));
+	Tcl_SetObjResult(interp,Tcl_NewStringObj((char *)arg1->buf_data,arg1->buf_size));
 #else
 #warning "no char * out-typemap for this language"
 #endif
