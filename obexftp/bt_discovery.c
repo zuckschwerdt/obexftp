@@ -52,14 +52,14 @@ char **obexftp_discover_bt_src(const char *src)
 
   if(num_rsp < 0) 
     {
-      perror("Inquiry failed.");
+      DEBUG(1, "%s: Inquiry failed", __func__);
       return NULL;
     }
 
   dd = hci_open_dev(dev_id); 
   if (dd < 0) 
     {
-      perror("HCI device open failed");
+      DEBUG(1, "%s: HCI device open failed", __func__);
       free(info);
       return NULL;
     }
@@ -98,7 +98,7 @@ static int browse_sdp_uuid(sdp_session_t *sess, uuid_t *uuid)
   /* Get a linked list of services */
   if(sdp_service_search_attr_req(sess, search, SDP_ATTR_REQ_INDIVIDUAL, attrid, &seq) < 0)
     {
-      perror("SDP service search");
+      DEBUG(1, "%s: SDP service search failed", __func__);
       sdp_close(sess);
       return -1;
     }
@@ -151,7 +151,7 @@ int obexftp_browse_bt_src(const char *src, const char *addr, int svclass)
 
   if(!sess) 
     {
-      perror("Failed to connect to SDP server");
+      DEBUG(1, "%s: Failed to connect to SDP server", __func__);
       return -1;
     }
 //  baswap(&bdswap, &bdaddr);
