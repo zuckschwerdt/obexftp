@@ -18,7 +18,7 @@ dnl
 AC_DEFUN([IRDA_CHECK],[
 AC_ARG_ENABLE([irda],
               [AC_HELP_STRING([--disable-irda],
-                              [Disables openftp irda support @<:@default=auto@:>@])],
+                              [Disables irda support @<:@default=auto@:>@])],
               [ac_irda_enabled=$enableval], [ac_irda_enabled=yes])
 
 if test "$ac_irda_enabled" = yes; then
@@ -68,6 +68,9 @@ AC_DEFUN([AC_PATH_FREEBSDBT], [
 				struct sockaddr_rfcomm *rfcomm;
 			], freebsdbt_found=yes, freebsdbt_found=no)
 	])
+	if test "${freebsdbt_found}" = "yes"; then
+		BLUETOOTH_LIBS=-lbluetooth
+	fi
 ])
 
 AC_DEFUN([AC_PATH_BLUEZ], [
@@ -96,7 +99,7 @@ AC_DEFUN([AC_PATH_BLUETOOTH], [
 AC_DEFUN([BLUETOOTH_CHECK],[  
 AC_ARG_ENABLE([bluetooth],
               [AC_HELP_STRING([--disable-bluetooth],
-                              [Disables openftp bluetooth support @<:@default=auto@:>@])],
+                              [Disables bluetooth support @<:@default=auto@:>@])],
        	      [ac_bluetooth_enabled=$enableval], [ac_bluetooth_enabled=yes])
 
 if test "$ac_bluetooth_enabled" = yes; then

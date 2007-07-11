@@ -62,6 +62,8 @@
 #ifdef __FreeBSD__
 #include <sys/types.h>
 #include <bluetooth.h>
+#define BDADDR_ANY	(&(bdaddr_t) {{0, 0, 0, 0, 0, 0}})
+
 #else /* Linux */
 #include <bluetooth/bluetooth.h>
 #include <bluetooth/rfcomm.h>
@@ -607,7 +609,7 @@ int obexftp_connect_src(obexftp_client_t *cli, const char *src, const char *devi
 		if (!src) {
 			bacpy(&src_addr, BDADDR_ANY);
 		}
-#ifndef _WIN32
+#ifdef HAVE_SDPLIB
 		else if (!strncmp(src, "hci", 3)) {
 			hci_devba(atoi(src + 3), &src_addr);
 		}
