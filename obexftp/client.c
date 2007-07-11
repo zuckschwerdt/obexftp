@@ -548,7 +548,6 @@ int obexftp_connect_src(obexftp_client_t *cli, const char *src, const char *devi
 #ifdef HAVE_BLUETOOTH
 	char *devicedup, *devicep;
 	bdaddr_t bdaddr, src_addr;
-	int hci_id;
 #endif
 #ifdef HAVE_USB
 	int obex_intf_cnt;
@@ -607,14 +606,14 @@ int obexftp_connect_src(obexftp_client_t *cli, const char *src, const char *devi
 	case OBEX_TRANS_BLUETOOTH:
 		if (!src) {
 			bacpy(&src_addr, BDADDR_ANY);
-		} else {
-			str2ba(src, &src_addr);
-			hci_id = atoi(src);
+		}
 #ifndef _WIN32
-			if (hci_id > 0) {
-				hci_devba(hci_id, &src_addr);	
-			}
+		else if (!strncmp(src, "hci", 3)) {
+			hci_devba(atoi(src + 3), &src_addr);
+		}
 #endif
+		else {
+			str2ba(src, &src_addr);
 		}
 		if (!device) {
 			ret = -EINVAL;
