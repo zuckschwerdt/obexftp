@@ -41,12 +41,14 @@
 #ifdef _WIN32
 #include <winsock2.h>
 #define ESOCKTNOSUPPORT WSAESOCKTNOSUPPORT
-#define S_IRGRP 0
-#define S_IROTH 0
+#define O_BINARY (_O_BINARY)
+#define CREATE_MODE_FILE (S_IRUSR|S_IWUSR)
 #else
 #include <sys/socket.h>
 #include <arpa/inet.h>
 #include <netinet/in.h>
+#define O_BINARY (0)
+#define CREATE_MODE_FILE (S_IRUSR|S_IWUSR|S_IRGRP|S_IROTH)
 #endif /* _WIN32 */
 
 #ifdef HAVE_BLUETOOTH
@@ -361,8 +363,7 @@ static void client_done(obex_t *handle, obex_object_t *object, int UNUSED(obex_c
 				/* simple body writer */
 				int fd;
 				//fd = open_safe("", cli-> target_fn);
-				fd = creat(cli-> target_fn,
-					   S_IRUSR|S_IWUSR|S_IRGRP|S_IROTH);
+				fd = creat(cli-> target_fn, CREATE_MODE_FILE);
 				if(fd > 0) {
 					(void) write(fd, body_data, body_len);
 					(void) close(fd);
@@ -986,7 +987,7 @@ int obexftp_put_file(obexftp_client_t *cli, const char *filename, const char *re
 		object = build_object_from_file (cli->obexhandle, cli->connection_id, filename, remotename);
 	}
 	
-	cli->fd = open(filename, O_RDONLY, 0);
+	cli->fd = open(filename, O_RDONLY | O_BINARY, 0);
 	if(cli->fd < 0)
 		ret = -1;
 	else {
