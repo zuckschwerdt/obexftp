@@ -25,4 +25,5 @@ libobexftp_la_LIBADD =		../multicobex/libmulticobex.la \
 				../bfb/libbfb.la \
 				@OPENOBEX_LIBS@ \
 				@BLUETOOTH_LIBS@ \
+				@LTLIBICONV@ \
 				@EXTRA_LIBS@

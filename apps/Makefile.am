@@ -13,6 +13,7 @@ LDADD =				../obexftp/libobexftp.la \
 				../bfb/libbfb.la \
 	       			@OPENOBEX_LIBS@ \
 				@BLUETOOTH_LIBS@ \
+				@LTLIBICONV@ \
 				@EXTRA_LIBS@
 
 obexftp_SOURCES =		obexftp.c
