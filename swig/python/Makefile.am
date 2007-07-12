@@ -18,3 +18,4 @@ install-data-local:
 clean-local:
 	if test -x "$(PYTHON)"; then $(PYTHON) setup.py clean; fi
 	rm -rf build
+	if test $(top_srcdir) != $(top_builddir) ; then rm -f python_wrap.c ; fi

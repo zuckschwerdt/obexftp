@@ -97,10 +97,8 @@ You might want to try picking up compiler warnings too (and mail them to me)
 	make clean ; make
 Please mail me all warnings and errors, if any.
 
-The bindings use language-native installers with are missing the uninstall
-targets. You'll have to distcheck with
-	DISTCHECK_CONFIGURE_FLAGS="--disable-perl --disable-python \
-				   --disable-ruby" make distcheck
+The bindings use language-native installers which are missing the uninstall
+targets. Our distcheck will boldly ignore those files.
 
 
 Author and Contact
