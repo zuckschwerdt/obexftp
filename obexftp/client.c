@@ -87,18 +87,12 @@
 #include <common.h>
 
 
-#ifdef __GNUC__
-#define PACKED __attribute__ ((packed))
-#else
-#define PACKED
-#endif
-
 #pragma pack(1)
 typedef struct { /* fixed to 6 bytes for now */
 	uint8_t code;
 	uint8_t info_len;
 	uint8_t info[4];
-} PACKED apparam_t;
+} apparam_t;
 #pragma pack()
 
 #ifdef _WIN32

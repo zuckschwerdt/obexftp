@@ -37,12 +37,6 @@ typedef int fd_t;
 
 #define	BFB_LOG_DOMAIN	"bfb"
 
-#ifdef __GNUC__
-#define PACKED __attribute__ ((packed))
-#else
-#define PACKED
-#endif
-
 #pragma pack(1)
 typedef struct {
 	uint8_t type;
@@ -50,7 +44,7 @@ typedef struct {
         uint8_t chk;
         uint8_t payload[0]; /* ... up to 32 */
 	/* uint8_t xor; ? */
-} PACKED bfb_frame_t;
+} bfb_frame_t;
 #pragma pack()
 
 #pragma pack(1)
@@ -62,7 +56,7 @@ typedef struct {
 	uint8_t len1;
 	uint8_t data[0]; /* ... up to 518 ? */
 	/* uint16_t crc; */
-} PACKED bfb_data_t;
+} bfb_data_t;
 #pragma pack()
 
 
