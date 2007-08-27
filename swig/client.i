@@ -47,7 +47,24 @@ int obexftp_browse_bt(char *addr, int service);
 
 #if defined SWIGPERL
 #elif defined SWIGPYTHON
-/* http://www.swig.org/Doc1.1/HTML/Python.html#n11 */
+%typemap(in) (obexftp_info_cb_t infocb, void *user_data) {
+        if (!PyCallable_Check($input)) {
+                /* should raise an exception here */
+                $1 = NULL;
+                $2 = NULL;
+        } else {
+                Py_XINCREF($input);
+                $1 = proxy_info_cb;
+                $2 = $input;
+        }
+};
+%{
+static void proxy_info_cb (int evt, const char *buf, int len, void *data) {
+        PyObject *proc = (PyObject *)data;
+        /* PyObject *msg = PyString_FromStringAndSize(buf, len); */
+        PyObject_CallFunction(proc, "is", evt, buf);
+}
+%} 
 #elif defined SWIGRUBY
 %typemap(in) (obexftp_info_cb_t infocb, void *user_data) {
 	$1 = proxy_info_cb;
