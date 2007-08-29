@@ -1,7 +1,9 @@
-/*
- *  obexftp/client.h: ObexFTP client library
+/**
+ *  \file obexftp/client.h
+ *  ObexFTP client API.
+ *  ObexFTP library - language bindings for OBEX file transfer.
  *
- *  Copyright (c) 2002 Christian W. Zuckschwerdt <zany@triq.net>
+ *  Copyright (c) 2002-2007 Christian W. Zuckschwerdt <zany@triq.net>
  *
  *  This program is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the Free

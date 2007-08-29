@@ -1,7 +1,9 @@
-/*
- *  obexftp/cache.c: ObexFTP client library
+/**
+ *  \file obexftp/cache.c
+ *  ObexFTP client API caching layer.
+ *  ObexFTP library - language bindings for OBEX file transfer.
  *
- *  Copyright (c) 2002 Christian W. Zuckschwerdt <zany@triq.net>
+ *  Copyright (c) 2002-2007 Christian W. Zuckschwerdt <zany@triq.net>
  *
  *  This program is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the Free
@@ -52,10 +54,10 @@
 #include <common.h>
 
 
-/*
- * Normalize the path argument, add/remove leading/trailing slash
- * turns relative paths into (most likely wrong) absolute ones
- * wont expand "../" or "./"
+/**
+	Normalize the path argument, add/remove leading/trailing slash
+	turns relative paths into (most likely wrong) absolute ones
+	wont expand "../" or "./".
  */
 static /*@only@*/ char *normalize_dir_path(int quirks, const char *name)
 {
@@ -89,13 +91,14 @@ static /*@only@*/ char *normalize_dir_path(int quirks, const char *name)
 }
 
 
-/*
- * methods that need to invalidate cache lines:
- * setpath (when create is on)
- * put
- * put_file
- * del
- * rename
+/**
+	Purge all cache object at/below a given path.
+	Methods that need to invalidate cache lines:
+	- setpath (when create is on)
+	- put
+	- put_file
+	- del
+	- rename
  */
 void cache_purge(cache_object_t **root, const char *path)
 {
@@ -142,6 +145,9 @@ void cache_purge(cache_object_t **root, const char *path)
 	free(pathonly);
 }
 
+/**
+	Retrieve an object from the cache.
+ */
 int get_cache_object(const obexftp_client_t *cli, const char *name, char **object, int *size)
 {
 	cache_object_t *cache;
@@ -161,6 +167,9 @@ int get_cache_object(const obexftp_client_t *cli, const char *name, char **objec
 	return -1;
 }
 
+/**
+	Store an object in the cache.
+ */
 int put_cache_object(obexftp_client_t *cli, /*@only@*/ char *name, /*@only@*/ char *object, int size)
 {
 	cache_object_t *cache;
@@ -178,7 +187,9 @@ int put_cache_object(obexftp_client_t *cli, /*@only@*/ char *name, /*@only@*/ ch
 	return 0;
 }
 
-/* List a directory from cache, optionally loading it first. */
+/**
+	List a directory from cache, optionally loading it first.
+ */
 static char *obexftp_cache_list(obexftp_client_t *cli, const char *name)
 {
 	char *path, *listing;
@@ -215,6 +226,9 @@ static char *obexftp_cache_list(obexftp_client_t *cli, const char *name)
 
 /* simple xml parser */
 
+/**
+	Parse fixed format date string to time_t.
+ */
 static time_t atotime (const char *date)
 {
 	struct tm tm;
@@ -230,8 +244,11 @@ static time_t atotime (const char *date)
 	return mktime(&tm);
 }
 
-/* very limited - not multi-byte character save */
-/* it is actually "const char *xml" but can't be declared as such */
+/**
+	Parse an XML file to array of stat_entry_t's.
+	Very limited - not multi-byte character save.
+	It's actually "const char *xml" but can't be declared as such.
+ */
 static stat_entry_t *parse_directory(char *xml)
 {
         const char *line;
@@ -339,6 +356,9 @@ typedef struct {
 	/* stat_entry_t *head; -- so we can free this? */
 } dir_stream_t;
 
+/**
+	Prepare a directory for reading.
+ */
 void *obexftp_opendir(obexftp_client_t *cli, const char *name)
 {
 	cache_object_t *cache;
@@ -366,7 +386,10 @@ void *obexftp_opendir(obexftp_client_t *cli, const char *name)
 	return (void *)stream;
 }
 
-/* the stat entry is a cache object so we do nothing */
+/**
+	Close a directory after reading.
+	The stat entry is a cache object so we do nothing.
+ */
 int obexftp_closedir(void *dir) {
 	if (!dir)
 		return -1;
@@ -374,6 +397,9 @@ int obexftp_closedir(void *dir) {
 	return 0;
 }
 
+/**
+	Read the next entry from an open directory.
+ */
 stat_entry_t *obexftp_readdir(void *dir) {
 	dir_stream_t *stream;
 	
@@ -387,6 +413,9 @@ stat_entry_t *obexftp_readdir(void *dir) {
 	return stream->cur++;
 }
 	 
+/**
+	Stat a directory entry.
+ */
 stat_entry_t *obexftp_stat(obexftp_client_t *cli, const char *name)
 {
 	cache_object_t *cache;

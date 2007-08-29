@@ -1,7 +1,9 @@
-/*
- *  obexftp/client.c: ObexFTP client library
+/**
+ *  \file obexftp/client.c
+ *  ObexFTP client API.
+ *  ObexFTP library - language bindings for OBEX file transfer.
  *
- *  Copyright (c) 2002 Christian W. Zuckschwerdt <zany@triq.net>
+ *  Copyright (c) 2002-2007 Christian W. Zuckschwerdt <zany@triq.net>
  *
  *  This program is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the Free
@@ -95,6 +97,7 @@ typedef struct { /* fixed to 6 bytes for now */
 } apparam_t;
 #pragma pack()
 
+
 #ifdef _WIN32
 #ifdef HAVE_BLUETOOTH
 static int str2ba(const char *straddr, BTH_ADDR *btaddr)
@@ -116,16 +119,21 @@ static int str2ba(const char *straddr, BTH_ADDR *btaddr)
 #endif
 #endif
 
+
+/**
+	Empty callback used as default.
+ */
 static void dummy_info_cb(int UNUSED(event), const char *UNUSED(msg), int UNUSED(len), void *UNUSED(data))
 {
-	/* dummy */
+	/* do nothing */
 }
 
 
-/*
- * Normalize the path argument
- * wont turn relative paths into (most likely wrong) absolute ones
- * wont expand "../" or "./"
+/**
+	Normalize the path argument.
+	\note
+	wont turn relative paths into (most likely wrong) absolute ones.
+	wont expand "../" or "./".
  */
 /*
 static char *normalize_file_path(const char *name)
@@ -155,12 +163,15 @@ static char *normalize_file_path(const char *name)
 }
 */
 
-/*
- * Normalize the path argument and split into pathname and basename
- * wont turn relative paths into (most likely wrong) absolute ones
- * wont expand "../" or "./"
- * Will keep "telecom" prefix
- * Do not use this function if there is no slash in the argument!
+
+/**
+	Normalize the path argument and split into pathname and basename.
+	\note
+	Wont turn relative paths into (most likely wrong) absolute ones.
+	Wont expand "../" or "./".
+	Will keep "telecom" prefix.
+	\warning
+	Do not use this function if there is no slash in the argument!
  */
 static void split_file_path(const char *name, /*@only@*/ char **basepath, /*@only@*/ char **basename)
 {
@@ -212,7 +223,9 @@ static void split_file_path(const char *name, /*@only@*/ char **basepath, /*@onl
 }
 
 
-/* Add more data from memory to stream. */
+/**
+	Add more data from memory to stream.
+ */
 static int cli_fillstream_from_memory(obexftp_client_t *cli, obex_object_t *object)
 {
 	obex_headerdata_t hv;
@@ -246,7 +259,10 @@ static int cli_fillstream_from_memory(obexftp_client_t *cli, obex_object_t *obje
 	return actual;
 }
 
-/* Add more data from file to stream. */
+
+/**
+	Add more data from file to stream.
+ */
 static int cli_fillstream_from_file(obexftp_client_t *cli, obex_object_t *object)
 {
 	obex_headerdata_t hv;
@@ -285,7 +301,9 @@ static int cli_fillstream_from_file(obexftp_client_t *cli, obex_object_t *object
 }
 
 
-/* Save body from object or return application parameters */
+/**
+	Save body from object or return application parameters.
+ */
 static void client_done(obex_t *handle, obex_object_t *object, int UNUSED(obex_cmd), int UNUSED(obex_rsp))
 {
 	obex_headerdata_t hv;
@@ -391,7 +409,9 @@ static void client_done(obex_t *handle, obex_object_t *object, int UNUSED(obex_c
 }
 
 
-/* Incoming event from OpenOBEX. */
+/**
+	Handle incoming event from OpenOBEX.
+ */
 static void cli_obex_event(obex_t *handle, obex_object_t *object, int UNUSED(mode), int event, int obex_cmd, int obex_rsp)
 {
 	/*@temp@*/ obexftp_client_t *cli;
@@ -433,7 +453,9 @@ static void cli_obex_event(obex_t *handle, obex_object_t *object, int UNUSED(mod
 }
 
 
-/* Do an OBEX request sync. */
+/**
+	Wait for the OBEX client to finish.
+ */
 static int obexftp_sync(obexftp_client_t *cli)
 {
 	int ret;
@@ -456,7 +478,11 @@ static int obexftp_sync(obexftp_client_t *cli)
 	else
 		return -1;
 }
-	
+
+
+/**
+	Do an OBEX request synchronous.
+ */
 static int cli_sync_request(obexftp_client_t *cli, obex_object_t *object)
 {
 	DEBUG(3, "%s()\n", __func__);
@@ -468,9 +494,18 @@ static int cli_sync_request(obexftp_client_t *cli, obex_object_t *object)
 
 	return obexftp_sync (cli);
 }
-	
 
-/* Create an obexftp client */
+
+/**
+	Create an obexftp client.
+
+	\param transport the transport type that will be used
+	\param ctrans optional custom transport (don't use)
+	\param infocb optional info callback
+	\param infocb_data optional info callback data
+
+	\return a new allocated ObexFTP client instance, NULL on error
+ */
 obexftp_client_t *obexftp_open(int transport, /*const*/ obex_ctrans_t *ctrans, obexftp_info_cb_t infocb, void *infocb_data)
 {
 	obexftp_client_t *cli;
@@ -521,15 +556,18 @@ obexftp_client_t *obexftp_open(int transport, /*const*/ obex_ctrans_t *ctrans, o
 	}
 	return cli;
 }
-	
-/**
- * obexftp_close - Close an obexftp client and free the resources
- * @cli: the obexftp_client_t to be shut done and free'd.
- *
- * Close an obexftp client and free the resources.
- */
 
-/* Close an obexftp client and free the resources */
+
+/**
+	Close an obexftp client and free the resources.
+
+	\param cli
+		the obexftp_client_t to be shut done and free'd.
+		It's save to pass NULL here.
+
+	Closes the given obexftp client and frees the resources.
+	It's recommended to set the client reference to NULL afterwards.
+ */
 void obexftp_close(obexftp_client_t *cli)
 {
 	DEBUG(3, "%s()\n", __func__);
@@ -540,12 +578,41 @@ void obexftp_close(obexftp_client_t *cli)
 	free(cli);
 }
 
-/* Do connect as client */
+
+/**
+	Do simple connect as client.
+
+	\param cli an obexftp_client_t created by obexftp_open().
+	\param device the device address to connect to (transport specific)
+	\param port the port/channel for the device address
+	\param uuid UUID string for CONNECT (no default)
+	\param uuid_len length of the UUID string (excluding terminating zero)
+
+	\return the result of the CONNECT request, -1 on error
+
+	\note Wrapper function for obexftp_connect_src()
+	\warning Always use a UUID (except for OBEX PUSH)
+ */
 int obexftp_connect_uuid(obexftp_client_t *cli, const char *device, int port, const uint8_t uuid[], uint32_t uuid_len)
 {
 	return obexftp_connect_src(cli, NULL, device, port, uuid, uuid_len);
 }
 
+
+/**
+	Connect this ObexFTP client using a given source address by sending an OBEX CONNECT request.
+
+	\param cli an obexftp_client_t created by obexftp_open().
+	\param src optional local source interface address (transport specific)
+	\param device the device address to connect to (transport specific)
+	\param port the port/channel for the device address
+	\param uuid UUID string for CONNECT (no default)
+	\param uuid_len length of the UUID string (excluding terminating zero)
+
+	\return the result of the CONNECT request, -1 on error
+
+	\note Always use a UUID (except for OBEX PUSH)
+ */
 int obexftp_connect_src(obexftp_client_t *cli, const char *src, const char *device, int port, const uint8_t uuid[], uint32_t uuid_len)
 {
 	struct sockaddr_in peer;
@@ -710,7 +777,14 @@ int obexftp_connect_src(obexftp_client_t *cli, const char *src, const char *devi
 	return ret;
 }
 
-/* Do disconnect as client */
+
+/**
+	Disconnect this ObexFTP client by sending an OBEX DISCONNECT request.
+
+	\param cli an obexftp_client_t created by obexftp_open().
+
+	\return the result of the DISCONNECT request
+ */
 int obexftp_disconnect(obexftp_client_t *cli)
 {
 	obex_object_t *object;
@@ -740,7 +814,16 @@ int obexftp_disconnect(obexftp_client_t *cli)
 	return ret;
 }
 
-/* Do an OBEX GET with app info opcode. */
+
+/**
+	Send a custom Siemens OBEX app info opcode.
+
+	\param cli an obexftp_client_t created by obexftp_open().
+	\param opcode the info opcode,
+		0x01 to inquire installed memory, 0x02 to get free memory
+
+	\return the result of the app info request
+ */
 int obexftp_info(obexftp_client_t *cli, uint8_t opcode)
 {
 	obex_object_t *object = NULL;
@@ -766,8 +849,20 @@ int obexftp_info(obexftp_client_t *cli, uint8_t opcode)
 	return ret;
 }
 
-/* Do an OBEX GET with optional TYPE. localname and remotename may be null. */
-/* Directories will be changed into first if split path quirk is set. */
+
+/**
+	Send an OBEX GET with optional TYPE.
+	Directories will be changed into first if split path quirk is set.
+
+	\param cli an obexftp_client_t created by obexftp_open().
+	\param type OBEX TYPE of the request
+	\param localname optional file to write
+	\param remotename OBEX NAME to request
+
+	\return the result of GET request
+
+	\note \a localname and \a remotename may be null.
+ */
 int obexftp_get_type(obexftp_client_t *cli, const char *type, const char *localname, const char *remotename)
 {
 	obex_object_t *object = NULL;
@@ -819,7 +914,15 @@ int obexftp_get_type(obexftp_client_t *cli, const char *type, const char *localn
 }
 
 
-/* Do an OBEX rename. */
+/**
+	Send an custom Siemens OBEX rename request.
+
+	\param cli an obexftp_client_t created by obexftp_open().
+	\param sourcename remote filename to be renamed
+	\param targetname remote target filename
+
+	\return the result of Siemens rename request
+ */
 int obexftp_rename(obexftp_client_t *cli, const char *sourcename, const char *targetname)
 {
 	obex_object_t *object = NULL;
@@ -847,7 +950,14 @@ int obexftp_rename(obexftp_client_t *cli, const char *sourcename, const char *ta
 }
 
 
-/* Do an OBEX PUT with empty file (delete) */
+/**
+	Send an OBEX PUT with empty file name (delete).
+
+	\param cli an obexftp_client_t created by obexftp_open().
+	\param name the remote filename/foldername to be removed. 
+
+	\return the result of the empty OBEX PUT request
+ */
 int obexftp_del(obexftp_client_t *cli, const char *name)
 {
 	obex_object_t *object;
@@ -891,7 +1001,17 @@ int obexftp_del(obexftp_client_t *cli, const char *name)
 }
 
 
-/* Do OBEX SetPath -- handles NULL, "", "/" and everything else correctly */
+/**
+	Send OBEX SETPATH request (multiple requests if split path flag is set).
+
+	\param cli an obexftp_client_t created by obexftp_open().
+	\param name path to change into
+	\param create flag whether to create missing folders or fail
+
+	\return the result of the OBEX SETPATH request(s).
+
+	\note handles NULL, "", "/" and everything else correctly.
+ */
 int obexftp_setpath(obexftp_client_t *cli, const char *name, int create)
 {
 	obex_object_t *object;
@@ -948,8 +1068,18 @@ int obexftp_setpath(obexftp_client_t *cli, const char *name, int create)
 	return ret;
 }
 
-/* Do an OBEX PUT, optionally with (some) setpath. */
-/* put to filename's basename if remotename is NULL or ends with a slash*/
+
+/**
+	Send an OBEX PUT, optionally with (some) SETPATHs for a local file.
+
+	\param cli an obexftp_client_t created by obexftp_open().
+	\param filename local file to send
+	\param remotename remote name to write
+
+	\return the result of the OBEX PUT (and SETPATH) request(s).
+
+	\note Puts to filename's basename if remotename is NULL or ends with a slash.
+ */
 int obexftp_put_file(obexftp_client_t *cli, const char *filename, const char *remotename)
 {
 	obex_object_t *object;
@@ -1009,7 +1139,19 @@ int obexftp_put_file(obexftp_client_t *cli, const char *filename, const char *re
 	return ret;
 }
 
-/* Put memory data - a remotename must be given always! */
+
+/**
+	Send memory data by OBEX PUT, optionally with (some) SETPATHs.
+
+	\param cli an obexftp_client_t created by obexftp_open().
+	\param data data to send
+	\param size length of the data
+	\param remotename remote name to write
+
+	\return the result of the OBEX PUT (and SETPATH) request(s).
+
+	\note A remotename must be given always.
+ */
 int obexftp_put_data(obexftp_client_t *cli, const char *data, int size,
 		     const char *remotename)
 {
@@ -1059,8 +1201,10 @@ int obexftp_put_data(obexftp_client_t *cli, const char *data, int size,
 	return ret;
 }
 
-/* simple device discovery wrappers. USB and BT only */
 
+/**
+	Simple device discovery wrappers. USB and BT only.
+ */
 static char **discover_usb()
 {
 	char **res = NULL;
@@ -1091,6 +1235,16 @@ static char **discover_usb()
 	return res;
 }
 
+
+/**
+	Device discovery wrapper for a named transport.
+
+	\param transport a transport from the OBEX_TRANS_x enum.
+
+	\return the discovery results as array of strings.
+
+	\note USB and BT only for now.
+ */
 char **obexftp_discover(int transport)
 {
 	switch (transport)	{

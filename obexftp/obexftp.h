@@ -1,7 +1,9 @@
-/*
- *  obexftp/obexftp.h: Transfer from/to Siemens Mobile Equipment via OBEX
+/**
+ *  \file obexftp/obexftp.h
+ *  Data structures and general functions for OBEX clients and servers.
+ *  ObexFTP library - language bindings for OBEX file transfer.
  *
- *  Copyright (c) 2002 Christian W. Zuckschwerdt <zany@triq.net>
+ *  Copyright (c) 2002-2007 Christian W. Zuckschwerdt <zany@triq.net>
  *
  *  This program is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the Free
@@ -18,9 +20,6 @@
  *  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *     
  */
-/*
- * Created at:    Don, 17 Jan 2002 18:27:25 +0100
- */
 
 #ifndef OBEXFTP_H
 #define OBEXFTP_H
@@ -29,8 +28,10 @@
 extern "C" {
 #endif
 
+/** ObexFTP message callback prototype. */
 typedef void (*obexftp_info_cb_t) (int event, const char *buf, int len, void *data);
 
+/** ObexFTP message callback events */
 enum {
 	OBEXFTP_EV_ERRMSG,
 
@@ -51,7 +52,7 @@ enum {
 	OBEXFTP_EV_PROGRESS, /* approx. every 1KByte */
 };
 
-/* Number of bytes passed at one time to OBEX */
+/** Number of bytes passed at one time to OBEX. */
 #define STREAM_CHUNK 4096
 
 #ifdef __cplusplus

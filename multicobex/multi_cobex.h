@@ -1,7 +1,10 @@
-/*
- * multi_cobex.h
+/**
+ *  \file multicobex/multi_cobex.h
+ *  Detect, initiate and run OBEX over custom serial port protocols
+ *  (Siemens, Ericsson, New-Siemens, Motorola, Generic).
+ *  ObexFTP library - language bindings for OBEX file transfer.
  *
- *   Copyright (c) 2002-2005 Christian W. Zuckschwerdt <zany@triq.net>
+ *   Copyright (c) 2002-2007 Christian W. Zuckschwerdt <zany@triq.net>
  * 
  *   This program is free software; you can redistribute it and/or modify it
  *   under the terms of the GNU General Public License as published by the Free

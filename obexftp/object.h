@@ -1,5 +1,7 @@
-/*
- *  obexftp/object.h: ObexFTP library
+/**
+ *  \file obexftp/object.h
+ *  Collection of functions to build common OBEX request objects.
+ *  ObexFTP library - language bindings for OBEX file transfer.
  *
  *  Copyright (c) 2002 Christian W. Zuckschwerdt <zany@triq.net>
  *
@@ -29,16 +31,18 @@
 extern "C" {
 #endif
 
-/* Telecom/IrMC Synchronization Service */
+/** Telecom/IrMC Synchronization Service: Name Prefix. */
 #define IRMC_NAME_PREFIX "telecom/"
+/** Telecom/IrMC Synchronization Service: Object Profile file-type. */
 #define XOBEX_PROFILE "x-obex/object-profile"
+/** Telecom/IrMC Synchronization Service: Capability file-type. */
 #define XOBEX_CAPABILITY "x-obex/capability"
 
-/* Folder Browsing Service */
+/** Folder Browsing Service: Folder Listing file-type. */
 #define XOBEX_LISTING "x-obex/folder-listing"
 
-/* Siemens specific */
-/* parameter 0x01: mem installed, 0x02: free mem */
+/** Siemens specific: app. param. for memory info.
+ * parameter 0x01: mem installed, 0x02: free mem */
 #define APPARAM_INFO_CODE '2'
 
 

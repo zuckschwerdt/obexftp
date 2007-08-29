@@ -1,7 +1,10 @@
-/*
- * multi_cobex.c - Talk OBEX over a serial port (Siemens, Ericsson, New-Siemens)
+/**
+ *  \file multicobex/multi_cobex.c
+ *  Detect, initiate and run OBEX over custom serial port protocols
+ *  (Siemens, Ericsson, New-Siemens, Motorola, Generic).
+ *  ObexFTP library - language bindings for OBEX file transfer.
  *
- *   Copyright (c) 2002-2005 Christian W. Zuckschwerdt <zany@triq.net>
+ *   Copyright (c) 2002-2007 Christian W. Zuckschwerdt <zany@triq.net>
  *
  *   This program is free software; you can redistribute it and/or modify it
  *   under the terms of the GNU General Public License as published by the Free
@@ -17,10 +20,6 @@
  *   along with this program; if not, write to the Free Software
  *   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *     
- */
-/*
- *       Don, 17 Jan 2002 18:27:25 +0100
- * v0.6  Fre, 15 Feb 2002 15:41:10 +0100
  */
 
 #ifdef HAVE_CONFIG_H
@@ -89,6 +88,9 @@ static void cobex_cleanup(cobex_t *c, int force)
 #endif
 }
 
+/**
+	Called from OBEX-lib to set up a connection.
+ */
 int cobex_connect(obex_t *self, void *data)
 {
 	cobex_t *c;
@@ -132,6 +134,9 @@ int cobex_connect(obex_t *self, void *data)
 	return 1;
 }
 
+/**
+	Called from OBEX-lib to tear down a connection.
+ */
 int cobex_disconnect(obex_t *self, void *data)
 {
 	cobex_t *c;
@@ -144,7 +149,9 @@ int cobex_disconnect(obex_t *self, void *data)
 	return 1;
 }
 
-/* Called from OBEX-lib when data needs to be written */
+/**
+	Called from OBEX-lib when data needs to be written.
+ */
 int cobex_write(obex_t *self, void *data, uint8_t *buffer, int length)
 {
 	int written;
@@ -191,7 +198,9 @@ int cobex_write(obex_t *self, void *data, uint8_t *buffer, int length)
 	return written;
 }
 
-/* Called when input data is needed */
+/**
+	Called when input data is needed.
+ */
 int cobex_handleinput(obex_t *self, void *data, int timeout)
 {
 #ifdef _WIN32
@@ -297,6 +306,12 @@ static obex_ctrans_t _cobex_ctrans = {
 	handleinput: cobex_handleinput,
 };
 */
+
+/**
+	Create a new multi cobex instance for a given TTY.
+
+	\param tty the TTY to use. Defaults to the first serial TTY if NULL.
+ */
 obex_ctrans_t *cobex_ctrans (const char *tty) {
 	obex_ctrans_t *ctrans;
 	cobex_t *cobex;
@@ -317,7 +332,9 @@ obex_ctrans_t *cobex_ctrans (const char *tty) {
 	return ctrans;
 }
 
-
+/**
+	Free all data related to a multi cobex instance.
+ */
 void cobex_free (obex_ctrans_t *ctrans)
 {
 	cobex_t *cobex;

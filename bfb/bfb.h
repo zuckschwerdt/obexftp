@@ -1,7 +1,9 @@
-/*
- *  bfb/bfb.h
+/**
+ *  \file bfb/bfb.h
+ *  BFB transport encapsulation (used for Siemens mobile equipment).
+ *  ObexFTP library - language bindings for OBEX file transfer.
  *
- *  Copyright (c) 2002 Christian W. Zuckschwerdt <zany@triq.net>
+ *  Copyright (c) 2002-2007 Christian W. Zuckschwerdt <zany@triq.net>
  * 
  *  This program is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the Free
@@ -34,8 +36,6 @@ typedef HANDLE fd_t;
 #else
 typedef int fd_t;
 #endif
-
-#define	BFB_LOG_DOMAIN	"bfb"
 
 #pragma pack(1)
 typedef struct {
@@ -83,14 +83,8 @@ int	bfb_write_subcmd(fd_t fd, uint8_t type, uint8_t subtype);
 int	bfb_write_subcmd0(fd_t fd, uint8_t type, uint8_t subtype);
 int	bfb_write_subcmd8(fd_t fd, uint8_t type, uint8_t subtype, uint8_t p1);
 int	bfb_write_subcmd1(fd_t fd, uint8_t type, uint8_t subtype, uint16_t p1);
-
-/* send a cmd, subcmd packet, add chk (two word parameter) */
 int	bfb_write_subcmd2(fd_t fd, uint8_t type, uint8_t subtype, uint16_t p1, uint16_t p2);
-
-/* send a cmd, subcmd packet, add chk (three word parameter) */
 int	bfb_write_subcmd3(fd_t fd, uint8_t type, uint8_t subtype, uint16_t p1, uint16_t p2, uint16_t p3);
-
-/* send a cmd, subcmd packet, add long, word parameter */
 int	bfb_write_subcmd_lw(fd_t fd, uint8_t type, uint8_t subtype, uint32_t p1, uint16_t p2);
 
 int	bfb_stuff_data(/*@out@*/ uint8_t *buffer, uint8_t type, uint8_t *data, uint16_t len, uint8_t seq);

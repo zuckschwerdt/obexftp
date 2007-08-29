@@ -1,7 +1,9 @@
-/*
- *  bfb/bfb.c: BFB transport encapsulation (used for Siemens mobile equipment)
+/**
+ *  \file bfb/bfb.c
+ *  BFB transport encapsulation (used for Siemens mobile equipment).
+ *  ObexFTP library - language bindings for OBEX file transfer.
  *
- *  Copyright (c) 2002 Christian W. Zuckschwerdt <zany@triq.net>
+ *  Copyright (c) 2002-2007 Christian W. Zuckschwerdt <zany@triq.net>
  *
  *  This program is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the Free
@@ -17,10 +19,6 @@
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *     
- */
-/*
- *  v0.1:  Die,  5 Feb 2002 22:46:19 +0100
- *  v0.4:  Don, 25 Jul 2002 03:16:41 +0200
  */
 
 #ifdef HAVE_CONFIG_H
@@ -86,7 +84,10 @@
 
 #endif
 
-/* returns the whole buffer folded with xor. */
+
+/**
+	Returns the whole buffer folded with xor.
+ */
 uint8_t bfb_checksum(uint8_t *data, int len)
 {
 	int i;
@@ -98,12 +99,15 @@ uint8_t bfb_checksum(uint8_t *data, int len)
 	return chk;
 }
 
-/* stuff data frame into serial cable encapsulation */
-/* buffer needs to be of at leaset len+7 size */
-/* Type 0x01: "prepare" command. */
-/* Type 0x02: first transmission in a row. */
-/* Type 0x03: continued transmission. */
-/* seq needs to be incremented afterwards. */
+
+/**
+	Stuff data frame into serial cable encapsulation.
+	buffer needs to be of at leaset len+7 size
+	Type 0x01: "prepare" command.
+	Type 0x02: first transmission in a row.
+	Type 0x03: continued transmission.
+	seq needs to be incremented afterwards.
+ */
 int bfb_stuff_data(uint8_t *buffer, uint8_t type, uint8_t *data, uint16_t len, uint8_t seq)
 {
         int i;
@@ -153,7 +157,10 @@ int bfb_stuff_data(uint8_t *buffer, uint8_t type, uint8_t *data, uint16_t len, u
 	return len+7;
 }
 
-/* send a cmd, subcmd packet, add chk (no parameters) */
+
+/**
+	Send a cmd, subcmd packet, add chk (no parameters).
+ */
 int bfb_write_subcmd(fd_t fd, uint8_t type, uint8_t subtype)
 {
 	uint8_t buffer[2];
@@ -164,13 +171,19 @@ int bfb_write_subcmd(fd_t fd, uint8_t type, uint8_t subtype)
 	return bfb_write_packets(fd, type, buffer, 2);
 }
 
-/* send a cmd, subcmd packet */
+
+/**
+	Send a cmd, subcmd packet.
+ */
 int bfb_write_subcmd0(fd_t fd, uint8_t type, uint8_t subtype)
 {
 	return bfb_write_packets(fd, type, &subtype, 1);
 }
 
-/* send a cmd, subcmd, data packet */
+
+/**
+	Send a cmd, subcmd, data packet.
+ */
 int bfb_write_subcmd8(fd_t fd, uint8_t type, uint8_t subtype, uint8_t p1)
 {
 	uint8_t buffer[2];
@@ -181,7 +194,10 @@ int bfb_write_subcmd8(fd_t fd, uint8_t type, uint8_t subtype, uint8_t p1)
 	return bfb_write_packets(fd, type, buffer, 2);
 }
 
-/* send a cmd, subcmd packet, add chk (one word parameter) */
+
+/**
+	Send a cmd, subcmd packet, add chk (one word parameter).
+ */
 int bfb_write_subcmd1(fd_t fd, uint8_t type, uint8_t subtype, uint16_t p1)
 {
 	uint8_t buffer[4];
@@ -199,7 +215,10 @@ int bfb_write_subcmd1(fd_t fd, uint8_t type, uint8_t subtype, uint16_t p1)
 	return bfb_write_packets(fd, type, buffer, 4);
 }
 
-/* send a cmd, subcmd packet, add chk (two word parameter) */
+
+/**
+	Send a cmd, subcmd packet, add chk (two word parameter).
+ */
 int bfb_write_subcmd2(fd_t fd, uint8_t type, uint8_t subtype, uint16_t p1, uint16_t p2)
 {
 	uint8_t buffer[6];
@@ -221,7 +240,10 @@ int bfb_write_subcmd2(fd_t fd, uint8_t type, uint8_t subtype, uint16_t p1, uint1
 	return bfb_write_packets(fd, type, buffer, 6);
 }
 
-/* send a cmd, subcmd packet, add chk (three word parameter) */
+
+/**
+	Send a cmd, subcmd packet, add chk (three word parameter).
+ */
 int bfb_write_subcmd3(fd_t fd, uint8_t type, uint8_t subtype, uint16_t p1, uint16_t p2, uint16_t p3)
 {
 	uint8_t buffer[8];
@@ -246,7 +268,10 @@ int bfb_write_subcmd3(fd_t fd, uint8_t type, uint8_t subtype, uint16_t p1, uint1
 	return bfb_write_packets(fd, type, buffer, 8);
 }
 
-/* send a cmd, subcmd packet, add long, word parameter */
+
+/**
+	Send a cmd, subcmd packet, add long, word parameter.
+ */
 int bfb_write_subcmd_lw(fd_t fd, uint8_t type, uint8_t subtype, uint32_t p1, uint16_t p2)
 {
 	uint8_t buffer[8];
@@ -271,8 +296,10 @@ int bfb_write_subcmd_lw(fd_t fd, uint8_t type, uint8_t subtype, uint32_t p1, uin
 }
 
 
-/* send actual packets */
-/* patch from Jorge Ventura to handle EAGAIN from write */
+/**
+	Send actual packets.
+	Patch from Jorge Ventura to handle EAGAIN from write.
+ */
 int bfb_write_packets(fd_t fd, uint8_t type, uint8_t *buffer, int length)
 {
 	bfb_frame_t *frame;
@@ -347,6 +374,10 @@ int bfb_write_packets(fd_t fd, uint8_t type, uint8_t *buffer, int length)
 	return i / MAX_PACKET_DATA;
 }
 
+
+/**
+	Stuff data into packet buffers and send all packets.
+ */
 int bfb_send_data(fd_t fd, uint8_t type, uint8_t *data, uint16_t length, uint8_t seq)
 {
 	uint8_t *buffer;
@@ -368,7 +399,9 @@ int bfb_send_data(fd_t fd, uint8_t type, uint8_t *data, uint16_t length, uint8_t
 }
 
 
-/* retrieve actual packets */
+/**
+	Retrieve actual packets.
+ */
 /*@null@*/
 bfb_frame_t *bfb_read_packets(uint8_t *buffer, int *length)
 {
@@ -422,6 +455,10 @@ bfb_frame_t *bfb_read_packets(uint8_t *buffer, int *length)
 	return frame;
 }
 
+
+/**
+	Append BFB frame to a data buffer.
+ */
 int	bfb_assemble_data(bfb_data_t **data, int *size, int *len, bfb_frame_t *frame)
 {
 	bfb_data_t *tmp;
@@ -458,6 +495,10 @@ int	bfb_assemble_data(bfb_data_t **data, int *size, int *len, bfb_frame_t *frame
 	return 1;
 }
 
+
+/**
+	Check if data buffer is complete and valid.
+ */
 int bfb_check_data(bfb_data_t *data, int len)
 {
 	int i;

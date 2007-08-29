@@ -1,0 +1,122 @@
+/**
+	\mainpage
+
+	\section intro_sec Introduction
+
+ObexFTP implements the Object Exchange (OBEX) file transfer feature for
+clients and servers.
+
+The standard is defined in more detail in section K12.5 (Profiles: OBEX FTP)
+in Bluetooth V1.1 Profile Specifications.
+
+ObexFTP works out-of-the-box with all transports supported by OpenOBEX.
+Currently there is IrDA, Bluetooth, USB and network (TCP) transport support.
+ObexFTP also comes with ready to use custom transport support for many mobile
+phones serial cables.
+
+It's well tested with Siemens and Sony/Ericsson mobile phones. But then most
+Motorola and Sharp (generic) as well as Samsung phones will work too, please
+contact the author if not.
+
+This ObexFTP distribution contains libraries as well as some applications.
+
+Applications to access e.g. Flex. Memory and Multimedia- /Secure Digital Card
+memory on mobile equipment:
+
+ - obexftp    - all in one client application (heavy on options)
+ - Symlinks to obexftp for default operations:
+   - obexls   - list the mobiles contents
+   - obexget  - copy files(s) to mobile
+   - obexput  - copy files(s) from mobile
+   - obexrm   - remove files on the mobile
+ - obexftpd   - obex ftp server application (experimental)
+
+Applications to hack Siemens mobile equipment using datalink cable
+
+ - bfb_keysim - simulate key presses on the mobile
+ - bfb_eeprom - list and examine the user eeprom on the mobile
+
+Library parts to be used in other applications
+
+ - obexftp     - high level abstraction of OBEX FTP (SYNC, PUSH also) protocol
+ - multicobex  - cable OBEX support for many phones (i.e. Siemens BFB and BFC
+                 Sony/Ericsson, Motorola and generic (Sharp) modes)
+ - bfb         - Siemens mobile datalink cable protocol layer
+
+
+	\section install_sec Short Installation Instructions
+
+To compile and install:
+		\verbatim
+	# ./configure
+	# make
+	# make install (as superuser)
+		\endverbatim
+
+If you plan to use a Siemens x45 or x55 series (e.g. S45 or C55,
+not S65) use
+		\verbatim
+	CFLAGS="$CFLAGS -DCOMPAT_S45" ./configure
+		\endverbatim
+instead
+
+Consider using pedantic error checking:
+		\verbatim
+	CFLAGS="$CFLAGS -Werror" ./configure
+		\endverbatim
+
+If compiling doesn't work, try to disable some of the language bindings on
+configure.
+		\verbatim
+	--disable-perl --disable-python --disable-ruby --disable-tcl
+		\endverbatim
+
+
+	\section development_sec Further Development
+
+If this tool lacks support for your phone or just won't work quite right
+please let me know. Development will focus on your needs.
+
+This package lacks advanced examples using the bindings. There are some 3rd
+party GUIs and other projects like a obex file system though. Please see the
+OpenOBEX / ObexFTP web site for details.
+
+Developers are free to use the bindings as well as obexftp, multicobex and
+bfb libraries. Please join the mailing list and keep in touch - You'll
+recieve pre-releases and support. That way your application can benefit from
+the newest library features and further development can focus on your needs.
+
+
+	\section debugging_sec Debugging
+
+remove all ObexFTP installations from your system. Build using
+		\verbatim
+	CFLAGS="-DOBEXFTP_DEBUG=5" ./configure
+	make clean ; make
+		\endverbatim
+Start debugging using
+		\verbatim
+	./apps/obexftp [...]
+		\endverbatim
+
+You might want to try picking up compiler warnings too (and mail them to me)
+		\verbatim
+	CFLAGS="$CFLAGS -g -Wall -Wmissing-declarations -Wmissing-prototypes \
+		-Werror" ./configure
+	make clean ; make
+		\endverbatim
+Please mail me all warnings and errors, if any.
+
+The bindings use language-native installers which are missing the uninstall
+targets. Our distcheck will boldly ignore those files.
+
+
+	\section contact_sec Author and Contact
+
+Author: Christian W. Zuckschwerdt <zany@triq.net>
+ -   http://dev.zuckschwerdt.org/openobex/
+ -   http://openobex.sourceforge.net/
+ -   http://sourceforge.net/tracker/?group_id=8960
+ -   http://sourceforge.net/forum/?group_id=8960
+ 
+ */

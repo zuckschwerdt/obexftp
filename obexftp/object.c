@@ -1,5 +1,7 @@
-/*
- *  obexftp/object.c: ObexFTP library
+/**
+ *  \file obexftp/object.c
+ *  Collection of functions to build common OBEX request objects.
+ *  ObexFTP library - language bindings for OBEX file transfer.
  *
  *  Copyright (c) 2002 Christian W. Zuckschwerdt <zany@triq.net>
  *
@@ -25,6 +27,15 @@
 
 #include "object.h"
 
+/**
+	Build an INFO request object (Siemens only).
+
+	\param obex reference to an OpenOBEX instance.
+	\param conn optional connection id number
+	\param opcode select if you want to read
+	 mem installed (0x01) or free mem (0x02)
+	\return a new obex object if successful, NULL otherwise
+ */
 obex_object_t *obexftp_build_info (obex_t obex, uint32_t conn, uint8_t opcode)
 {
 	obex_object_t *object;
@@ -48,7 +59,17 @@ obex_object_t *obexftp_build_info (obex_t obex, uint32_t conn, uint8_t opcode)
 }
 
 
-/* name and type musn't both be null */
+/**
+	Build a GET request object.
+
+	\param obex reference to an OpenOBEX instance.
+	\param conn optional connection id number
+	\param name name of the requested file
+	\param type type of the requested file
+	\return a new obex object if successful, NULL otherwise
+
+	\note \a name and \a type musn't both be NULL
+ */
 obex_object_t *obexftp_build_get (obex_t obex, uint32_t conn, const char *name, const char *type)
 {
 	obex_object_t *object;
@@ -90,7 +111,17 @@ obex_object_t *obexftp_build_get (obex_t obex, uint32_t conn, const char *name, 
 }
 
 
-/* neither filename may be null */
+/**
+	Build a RENAME request object (Siemens only).
+
+	\param obex reference to an OpenOBEX instance.
+	\param conn optional connection id number
+	\param from original name of the requested file
+	\param to new name of the requested file
+	\return a new obex object if successful, NULL otherwise
+
+	\note neither filename may be NULL
+ */
 obex_object_t *obexftp_build_rename (obex_t obex, uint32_t conn, const char *from, const char *to)
 {
 	obex_object_t *object;
@@ -145,7 +176,16 @@ obex_object_t *obexftp_build_rename (obex_t obex, uint32_t conn, const char *fro
 }
 
 
-/* name may not be null */
+/**
+	Build a DELETE request object.
+
+	\param obex reference to an OpenOBEX instance.
+	\param conn optional connection id number
+	\param name name of the file to be deleted
+	\return a new obex object if successful, NULL otherwise
+
+	\note \a name may not be NULL
+ */
 obex_object_t *obexftp_build_del (obex_t obex, uint32_t conn, const char *name)
 {
 	obex_object_t *object;
@@ -182,8 +222,19 @@ obex_object_t *obexftp_build_del (obex_t obex, uint32_t conn, const char *name)
 }
 
 
-/* if name is null ascend one directory */
-/* if name is empty change to top/default directory */
+/**
+	Build a SETPATH request object.
+
+	\param obex reference to an OpenOBEX instance.
+	\param conn optional connection id number
+	\param name name of the file to be deleted
+	\param create create the folder if neccessary
+	\return a new obex object if successful, NULL otherwise
+
+	\note 
+	 if \a name is NULL ascend one directory 
+	 if \a name is empty change to top/default directory
+ */
 obex_object_t *obexftp_build_setpath (obex_t obex, uint32_t conn, const char *name, int create)
 {
 	obex_object_t *object;
@@ -234,7 +285,17 @@ obex_object_t *obexftp_build_setpath (obex_t obex, uint32_t conn, const char *na
 }
 
 
-/* use build_object_from_file() instead */
+/**
+	Build a PUT request object.
+
+	\param obex reference to an OpenOBEX instance.
+	\param conn optional connection id number
+	\param name name of the target file
+	\param size size hint for the target file
+	\return a new obex object if successful, NULL otherwise
+
+	\note use build_object_from_file() instead
+ */
 obex_object_t *obexftp_build_put (obex_t obex, uint32_t conn, const char *name, const int size)
 {
 	obex_object_t *object;

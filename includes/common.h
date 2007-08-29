@@ -1,5 +1,7 @@
-/*
- * ObexFTP common Macros
+/**
+	\file includes/common.h
+	ObexFTP common macros and debugging.
+	ObexFTP library - language bindings for OBEX file transfer.
  */
 
 #ifndef _OBEXFTP_COMMON_H

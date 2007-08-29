@@ -3,8 +3,11 @@ SUBDIRS =			bfb multicobex obexftp apps doc contrib swig
 EXTRA_DIST =			obexftp.spec.in \
 				obexftp.spec \
 				includes/common.h \
+				Doxyfile \
+				Doxyfile.developer \
+				Doxyfile.coverpage \
 				config.rpath \
-				tcl.m4
+				tcl.m4 
 
 # no uninstall for perl -- ignore it
 distuninstallcheck_listfiles =	find . -type f \
