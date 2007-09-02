@@ -1,28 +1,25 @@
-/*
- *  apps/obexftpd.c: OBEX server
- *
- *  Copyright (c) 2003-2006 Christian W. Zuckschwerdt <zany@triq.net>
- *                          Alan Zhang <vibra@tom.com>
- *                          Hendrik Sattler <post@hendrik-sattler.de>
- *                          Frode Isaksen <fisaksen@bewan.com>
- *
- *  This program is free software; you can redistribute it and/or modify it
- *  under the terms of the GNU General Public License as published by the Free
- *  Software Foundation; either version 2 of the License, or (at your option)
- *  any later version.
- *
- *  This program is distributed in the hope that it will be useful, but
- *  WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
- *  or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
- *  for more details.
- *
- *  You should have received a copy of the GNU General Public License
- *  along with this program; if not, write to the Free Software
- *  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
- *     
- */
-/*
- * Created at:    Don, 2 Okt 2003
+/**
+	\file apps/obexftpd.c
+	OBEX file server.
+	ObexFTP library - language bindings for OBEX file transfer.
+
+	Copyright (c) 2003-2006 Christian W. Zuckschwerdt <zany@triq.net>
+				Alan Zhang <vibra@tom.com>
+				Hendrik Sattler <post@hendrik-sattler.de>
+				Frode Isaksen <fisaksen@bewan.com>
+
+	ObexFTP is free software; you can redistribute it and/or modify
+	it under the terms of the GNU General Public License as
+	published by the Free Software Foundation; either version 2 of
+	the License, or (at your option) any later version.
+
+	This program is distributed in the hope that it will be useful,
+	but WITHOUT ANY WARRANTY; without even the implied warranty of
+	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+	GNU General Public License for more details.
+
+	You should have received a copy of the GNU General Public
+	License along with ObexFTP. If not, see <http://www.gnu.org/>.
  */
 
 #ifdef HAVE_CONFIG_H

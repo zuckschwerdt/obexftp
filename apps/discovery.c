@@ -1,26 +1,22 @@
-/*
- *  apps/discovery.c: Discover mobile and detect its class (Siemens, Ericsson)
- *
- *  Copyright (c) 2002 Christian W. Zuckschwerdt <zany@triq.net>
- *
- *  This program is free software; you can redistribute it and/or modify it
- *  under the terms of the GNU General Public License as published by the Free
- *  Software Foundation; either version 2 of the License, or (at your option)
- *  any later version.
- *
- *  This program is distributed in the hope that it will be useful, but
- *  WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
- *  or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
- *  for more details.
- *
- *  You should have received a copy of the GNU General Public License
- *  along with this program; if not, write to the Free Software
- *  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
- *     
- */
-/*
- *  v0.1:  Die, 30 Jul 2002 14:38:56 +0200
- *  FIXME: win32 not done yet
+/**
+	\file apps/discovery.c
+	Discover mobile and detect its class (Siemens, Ericsson).
+	ObexFTP library - language bindings for OBEX file transfer.
+
+	Copyright (c) 2002 Christian W. Zuckschwerdt <zany@triq.net>
+
+	ObexFTP is free software; you can redistribute it and/or modify
+	it under the terms of the GNU Lesser General Public License as
+	published by the Free Software Foundation; either version 2 of
+	the License, or (at your option) any later version.
+
+	This program is distributed in the hope that it will be useful,
+	but WITHOUT ANY WARRANTY; without even the implied warranty of
+	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+	GNU Lesser General Public License for more details.
+
+	You should have received a copy of the GNU Lesser General Public
+	License along with ObexFTP. If not, see <http://www.gnu.org/>.
  */
 
 #define _GNU_SOURCE
