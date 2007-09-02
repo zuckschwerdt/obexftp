@@ -28,14 +28,19 @@ AC_PATH_WIN32
 
 # Checks for libraries.
 PKG_CHECK_MODULES(OPENOBEX,openobex)
+REQUIRES="openobex"
 
 AM_ICONV
 dnl IRDA_CHECK
 BLUETOOTH_CHECK
 if test "${bluez_found}" = "yes"; then
+	REQUIRES="$REQUIRES bluez"
 	SDPLIB_CHECK
 fi
 USB_CHECK
+if test "${am_cv_usb_found}" = "yes"; then
+	REQUIRES="$REQUIRES libusb"
+fi
 
 # check for optional swig rebuild
 AC_ARG_ENABLE([swig],
@@ -136,6 +141,7 @@ AC_SUBST(VERSION)
 AC_SUBST(OBEXFTP_VERSION)
 AC_SUBST(MULTICOBEX_VERSION)
 AC_SUBST(BFB_VERSION)
+AC_SUBST(REQUIRES)
 
 # should use AC_CONFIG_FILES
 AC_OUTPUT([
@@ -154,4 +160,5 @@ bfb/Makefile
 multicobex/Makefile
 obexftp/Makefile
 obexftp.spec
+obexftp.pc
 ])

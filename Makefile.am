@@ -9,6 +9,10 @@ EXTRA_DIST =			obexftp.spec.in \
 				config.rpath \
 				tcl.m4 
 
+pkgconfigdir =			$(libdir)/pkgconfig
+
+pkgconfig_DATA =		obexftp.pc
+
 # no uninstall for perl -- ignore it
 distuninstallcheck_listfiles =	find . -type f \
 				-not -path \*/site_perl/\*/OBEXFTP\* \
