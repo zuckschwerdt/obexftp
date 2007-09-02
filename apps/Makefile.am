@@ -1,9 +1,3 @@
-EXTRA_DIST = 			perl_example.pl \
-				python_example.py \
-				ruby_example.rb \
-				tcl_example.tcl \
-				ruby_obexftp.rb
-
 INCLUDES =			@OPENOBEX_CFLAGS@ \
 				-I$(top_srcdir) \
 				-I$(top_srcdir)/includes

@@ -1,4 +1,4 @@
-SUBDIRS =			bfb multicobex obexftp apps doc contrib swig
+SUBDIRS =			bfb multicobex obexftp apps doc examples swig
 
 EXTRA_DIST =			obexftp.spec.in \
 				obexftp.spec \
