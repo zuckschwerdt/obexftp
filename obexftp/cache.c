@@ -61,7 +61,7 @@ static /*@only@*/ char *normalize_dir_path(int quirks, const char *name)
 {
 	char *copy, *p;
 
-	return_val_if_fail(name != NULL, strdup(""));
+	if (!name) name = "";
 
 	p = copy = malloc(strlen(name) + 2); /* at most add two slashes */
 
@@ -444,18 +444,20 @@ stat_entry_t *obexftp_stat(obexftp_client_t *cli, const char *name)
 	abs = normalize_dir_path(cli->quirks, path);
 	for (cache = cli->cache; cache && strcmp(cache->name, abs); cache = cache->next);
 	free(abs);
-	if (!cache)
+	if (!cache) {
+		free(path);
 		return NULL;
+	}
 	DEBUG(2, "%s() found '%s'\n", __func__, cache->name);
 		 
 	/* read dir */
 	if (!cache->stats)
 		cache->stats = parse_directory(cache->content);
 	DEBUG(2, "%s() got dir '%s'\n", __func__, path);
-	free(path);
 	
 	/* then lookup the basename */
 	for (entry = cache->stats; entry && *entry->name && strcmp(entry->name, basename); entry++);
+	free(path);
 	if (!entry || !(*entry->name))
 		return NULL;
 
