@@ -585,7 +585,8 @@ int main(int argc, char *argv[])
 					stat_entry_t *st;
 					st = obexftp_stat(cli, ent->name);
 					if (!st) continue;
-					printf("%d %s (%d)\n", st->size, ent->name, ent->mode);
+					printf("%d %s%s\n", st->size, ent->name,
+						ent->mode&S_IFDIR?"/":"");
 				}
 				obexftp_closedir(dir);
 			}

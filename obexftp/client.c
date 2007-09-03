@@ -572,6 +572,11 @@ void obexftp_close(obexftp_client_t *cli)
 	return_if_fail(cli != NULL);
 
 	OBEX_Cleanup(cli->obexhandle);
+	if (cli->buf_data) {
+		DEBUG(1, "%s: Warning: purging left-over buffer.\n", __func__);
+		free(cli->buf_data);
+	}
+	cache_purge(&cli->cache, NULL);
 	free(cli->stream_chunk);
 	free(cli);
 }

@@ -109,6 +109,8 @@ void cache_purge(cache_object_t **root, const char *path)
 				free(node->name); \
 			if (node->content) \
 				free(node->content); \
+			if (node->stats) \
+				free(node->stats); \
 			free(node); \
 			} while(0)
 
@@ -246,6 +248,7 @@ static time_t atotime (const char *date)
 	Parse an XML file to array of stat_entry_t's.
 	Very limited - not multi-byte character save.
 	It's actually "const char *xml" but can't be declared as such.
+	\return a new allocated array of stat_entry_t's.
  */
 static stat_entry_t *parse_directory(char *xml)
 {
@@ -273,7 +276,7 @@ static stat_entry_t *parse_directory(char *xml)
 	utf8 = iconv_open (nl_langinfo(CODESET), "UTF-8");
 	ni = strlen(xml);
 	no = ni;
-	xml_latin1 = xml_end = malloc(no);
+	xml_latin1 = xml_end = malloc(no+1);
 	p = xml;
 	if (xml_latin1) {
 		nrc = iconv (utf8, (char* *)&p, &ni, &xml_end, &no);
@@ -428,8 +431,10 @@ stat_entry_t *obexftp_stat(obexftp_client_t *cli, const char *name)
 	if (p) {
 		*p++ = '\0';
 		basename = p;
-	} else
+	} else {
+		*path = '\0';
 		basename = name;
+	}
 	DEBUG(2, "%s() stating '%s' / '%s'\n", __func__, path, basename);
 
 	/* fetch dir if needed */
@@ -447,6 +452,7 @@ stat_entry_t *obexftp_stat(obexftp_client_t *cli, const char *name)
 	if (!cache->stats)
 		cache->stats = parse_directory(cache->content);
 	DEBUG(2, "%s() got dir '%s'\n", __func__, path);
+	free(path);
 	
 	/* then lookup the basename */
 	for (entry = cache->stats; entry && *entry->name && strcmp(entry->name, basename); entry++);
