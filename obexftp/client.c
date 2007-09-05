@@ -1202,7 +1202,7 @@ char **obexftp_discover_bt_src(const char *src)
 	return btkit_discover(src);
 #else
 	return NULL;
-#endif HAVE_BLUETOOTH
+#endif /* HAVE_BLUETOOTH */
 }
 
 
@@ -1212,7 +1212,7 @@ char *obexftp_bt_name_src(const char *addr, const char *src)
 	return btkit_getname(src, addr);
 #else
 	return NULL;
-#endif HAVE_BLUETOOTH
+#endif /* HAVE_BLUETOOTH */
 }
 
 
@@ -1222,7 +1222,27 @@ int obexftp_browse_bt_src(const char *src, const char *addr, int svclass)
 	return btkit_browse(src, addr, svclass);
 #else
 	return 0;
-#endif HAVE_BLUETOOTH
+#endif /* HAVE_BLUETOOTH */
+}
+
+
+int obexftp_sdp_register(int svclass, int channel)
+{
+#ifdef HAVE_BLUETOOTH
+	return btkit_register_obex(svclass, channel);
+#else
+	return 0;
+#endif /* HAVE_BLUETOOTH */
+}
+
+
+int obexftp_sdp_unregister(int svclass)
+{
+#ifdef HAVE_BLUETOOTH
+	return btkit_unregister_service(svclass);
+#else
+	return 0;
+#endif /* HAVE_BLUETOOTH */
 }
 
 

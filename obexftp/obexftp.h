@@ -26,6 +26,7 @@
 extern "C" {
 #endif
 
+
 /** ObexFTP message callback prototype. */
 typedef void (*obexftp_info_cb_t) (int event, const char *buf, int len, void *data);
 
@@ -52,6 +53,48 @@ enum {
 
 /** Number of bytes passed at one time to OBEX. */
 #define STREAM_CHUNK 4096
+
+/* bt svclass */
+#define OBEX_SYNC_SERVICE	0x1104
+#define OBEX_PUSH_SERVICE	0x1105
+#define OBEX_FTP_SERVICE	0x1106
+
+/* server and client helpers for bt */
+
+char **obexftp_discover(int transport);
+char **obexftp_discover_bt_src(const char *src); /* HCI no. or address */
+#define	obexftp_discover_bt() \
+	obexftp_discover_bt_src(NULL)
+
+char *obexftp_bt_name_src(const char *addr, const char *src);
+#define	obexftp_bt_name(addr) \
+	obexftp_bt_name_src(addr, NULL)
+
+int obexftp_browse_bt_src(const char *src, const char *addr, int svclass);
+#define	obexftp_browse_bt(device, service) \
+	obexftp_browse_bt_src(NULL, device, service)
+#define	obexftp_browse_bt_ftp(device) \
+	obexftp_browse_bt_src(NULL, device, OBEX_FTP_SERVICE)
+#define	obexftp_browse_bt_push(device) \
+	obexftp_browse_bt_src(NULL, device, OBEX_PUSH_SERVICE)
+#define	obexftp_browse_bt_sync(device) \
+	obexftp_browse_bt_src(NULL, device, OBEX_SYNC_SERVICE)
+
+int obexftp_sdp_register(int svclass, int channel);
+#define	obexftp_sdp_register_ftp(channel) \
+	obexftp_sdp_register(OBEX_FTP_SERVICE, channel)
+#define	obexftp_sdp_register_push(channel) \
+	obexftp_sdp_register(OBEX_PUSH_SERVICE, channel)
+#define	obexftp_sdp_register_sync(channel) \
+	obexftp_sdp_register(OBEX_SYNC_SERVICE, channel)
+int obexftp_sdp_unregister(int svclass);
+#define	obexftp_sdp_unregister_ftp() \
+	obexftp_sdp_unregister(OBEX_FTP_SERVICE)
+#define	obexftp_sdp_unregister_push() \
+	obexftp_sdp_unregister(OBEX_PUSH_SERVICE)
+#define	obexftp_sdp_unregister_sync() \
+	obexftp_sdp_unregister(OBEX_SYNC_SERVICE)
+
 
 #ifdef __cplusplus
 }

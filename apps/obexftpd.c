@@ -67,8 +67,6 @@
 #include <obexftp/object.h>
 #include <common.h>
 
-#include "obexftp_sdp.h"
-
 /* define this to "", "\r\n" or "\n" */
 #define EOLCHARS "\n"
 
@@ -856,7 +854,7 @@ static void start_server(int transport)
 		exit(0);
 	}
 
-       	if (transport==OBEX_TRANS_BLUETOOTH && 0 > obexftp_sdp_register(channel))
+       	if (transport==OBEX_TRANS_BLUETOOTH && 0 > obexftp_sdp_register_ftp(channel))
        	{
        		//OBEX_Cleanup(handle);
        		fprintf(stderr, "register to SDP Server failed.\n");
@@ -932,7 +930,7 @@ reset:
 	if (use_sdp)
 	{
 		fprintf(stderr, "sdp unregister\n");
-		obexftp_sdp_unregister();
+		obexftp_sdp_unregister_ftp();
 	}
 
 }

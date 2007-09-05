@@ -12,7 +12,7 @@ LDADD =				../obexftp/libobexftp.la \
 
 obexftp_SOURCES =		obexftp.c
 
-obexftpd_SOURCES =		obexftpd.c obexftp_sdp.c obexftp_sdp.h
+obexftpd_SOURCES =		obexftpd.c
 stress_SOURCES =		stress.c
 discovery_SOURCES =		discovery.c
 
