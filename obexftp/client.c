@@ -39,8 +39,6 @@
 #include <time.h>
 
 #ifdef _WIN32
-#include <winsock2.h>
-#define ESOCKTNOSUPPORT WSAESOCKTNOSUPPORT
 #define O_BINARY (_O_BINARY)
 #define CREATE_MODE_FILE (S_IRUSR|S_IWUSR)
 #else
@@ -52,26 +50,7 @@
 #endif /* _WIN32 */
 
 #ifdef HAVE_BLUETOOTH
-#ifdef _WIN32
-#include <ws2bth.h>
-#define bdaddr_t	BTH_ADDR
-#define BDADDR_ANY	(&(BTH_ADDR) {BTH_ADDR_NULL})
-#define bacpy(dst,src)	memcpy((dst),(src),sizeof(BTH_ADDR))
-#else /* _WIN32 */
-
-#ifdef __FreeBSD__
-#include <sys/types.h>
-#include <bluetooth.h>
-#define BDADDR_ANY	(&(bdaddr_t) {{0, 0, 0, 0, 0, 0}})
-
-#else /* Linux */
-#include <bluetooth/bluetooth.h>
-#include <bluetooth/rfcomm.h>
-#include <bluetooth/hci.h>
-#include <bluetooth/hci_lib.h>
-#endif /* __FreeBSD__ */
-
-#endif /* _WIN32 */
+#include "bt_kit.h"
 #endif /* HAVE_BLUETOOTH */
 
 #include <openobex/obex.h>
@@ -94,28 +73,6 @@ typedef struct { /* fixed to 6 bytes for now */
 	uint8_t info[4];
 } apparam_t;
 #pragma pack()
-
-
-#ifdef _WIN32
-#ifdef HAVE_BLUETOOTH
-static int str2ba(const char *straddr, BTH_ADDR *btaddr)
-{
-	int i;
-	unsigned int aaddr[6];
-	BTH_ADDR tmpaddr = 0;
-
-	if (sscanf(straddr, "%02x:%02x:%02x:%02x:%02x:%02x",
-		   &aaddr[0], &aaddr[1], &aaddr[2], &aaddr[3], &aaddr[4], &aaddr[5]) != 6)
-		return 1;
-	*btaddr = 0;
-	for (i = 0; i < 6; i++) {
-		tmpaddr = (BTH_ADDR) (aaddr[i] & 0xff);
-		*btaddr = ((*btaddr) << 8) + tmpaddr;
-	}
-	return 0;
-}
-#endif
-#endif
 
 
 /**
@@ -1236,6 +1193,36 @@ static char **discover_usb()
 	OBEX_Cleanup(handle);
 #endif /* HAVE_USB */
 	return res;
+}
+
+
+char **obexftp_discover_bt_src(const char *src)
+{
+#ifdef HAVE_BLUETOOTH
+	return btkit_discover(src);
+#else
+	return NULL;
+#endif HAVE_BLUETOOTH
+}
+
+
+char *obexftp_bt_name_src(const char *addr, const char *src)
+{
+#ifdef HAVE_BLUETOOTH
+	return btkit_getname(src, addr);
+#else
+	return NULL;
+#endif HAVE_BLUETOOTH
+}
+
+
+int obexftp_browse_bt_src(const char *src, const char *addr, int svclass)
+{
+#ifdef HAVE_BLUETOOTH
+	return btkit_browse(src, addr, svclass);
+#else
+	return 0;
+#endif HAVE_BLUETOOTH
 }
 
 

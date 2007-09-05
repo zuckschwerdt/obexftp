@@ -128,6 +128,10 @@ char **obexftp_discover_bt_src(const char *src); /* HCI no. or address */
 #define	obexftp_discover_bt() \
 	obexftp_discover_bt_src(NULL)
 
+char *obexftp_bt_name_src(const char *addr, const char *src);
+#define	obexftp_bt_name(addr) \
+	obexftp_bt_name_src(addr, NULL)
+
 int obexftp_browse_bt_src(const char *src, const char *addr, int svclass);
 #define	obexftp_browse_bt(device, service) \
 	obexftp_browse_bt_src(NULL, device, service)
