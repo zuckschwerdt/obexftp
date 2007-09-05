@@ -234,6 +234,3 @@ AC_DEFUN([SWIG_ENABLE_CXX],[
         SWIG="$SWIG -c++"
 ])
 
-### test test test
-builtin(include,tcl.m4)
-

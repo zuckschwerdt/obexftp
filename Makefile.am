@@ -1,13 +1,14 @@
 SUBDIRS =			bfb multicobex obexftp apps doc examples swig
 
+ACLOCAL_AMFLAGS =		-I m4
+
 EXTRA_DIST =			obexftp.spec.in \
 				obexftp.spec \
 				includes/common.h \
 				Doxyfile \
 				Doxyfile.developer \
 				Doxyfile.coverpage \
-				config.rpath \
-				tcl.m4 
+				config.rpath
 
 pkgconfigdir =			$(libdir)/pkgconfig
 
