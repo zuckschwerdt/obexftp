@@ -110,16 +110,16 @@ char **discover() {
 	return obexftp_discover(self->transport);
 }
 
-int connect(char *device, int port) {
-	return obexftp_connect_uuid(self, device, port, UUID_FBS, sizeof(UUID_FBS));
+int connect(char *device, int port, char *src=NULL) {
+	return obexftp_connect_src(self, src, device, port, UUID_FBS, sizeof(UUID_FBS));
 }
-int connectpush(char *device, int port) {
+int connectpush(char *device, int port, char *src=NULL) {
 	self->quirks &= ~OBEXFTP_SPLIT_SETPATH;
-	return obexftp_connect_uuid(self, device, port, NULL, 0);
+	return obexftp_connect_src(self, src, device, port, NULL, 0);
 }
-int connectsync(char *device, int port) {
+int connectsync(char *device, int port, char *src=NULL) {
 	self->quirks &= ~OBEXFTP_SPLIT_SETPATH;
-	return obexftp_connect_uuid(self, device, port, UUID_IRMC, sizeof(UUID_IRMC));
+	return obexftp_connect_src(self, src, device, port, UUID_IRMC, sizeof(UUID_IRMC));
 }
 int disconnect() {
 	return obexftp_disconnect(self);
