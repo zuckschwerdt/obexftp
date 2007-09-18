@@ -281,8 +281,12 @@ void bfb_io_close(fd_t fd, int force)
 		/* Send a break to get out of OBEX-mode */
 #ifdef _WIN32
 		if(SetCommBreak(fd) != TRUE)	{
+#elif defined(TCSBRKP)
+		if(ioctl(fd, TCSBRKP, 0) < 0) {
+#elif defined(TCSBRK)
+		if(ioctl(fd, TCSBRK, 0) < 0) {
 #else
-		if(ioctl(fd, TIOCSBRK, 0) < 0)	{
+		if(tcsendbreak(fd, 0) < 0) {
 #endif
 			DEBUG(1, "Unable to send break!\n");
 		}
