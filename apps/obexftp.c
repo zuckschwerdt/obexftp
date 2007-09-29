@@ -246,7 +246,7 @@ static int use_path=1;
 /* connect with given uuid. re-connect every time */
 static int cli_connect_uuid(const char *uuid, int uuid_len)
 {
-	int retry;
+	int ret, retry;
 
 	if (cli == NULL) {
 
@@ -267,8 +267,32 @@ static int cli_connect_uuid(const char *uuid, int uuid_len)
 	for (retry = 0; retry < 3; retry++) {
 
 		/* Connect */
-		if (obexftp_connect_src (cli, src_dev, device, channel, uuid, uuid_len) >= 0)
+		ret = obexftp_connect_src(cli, src_dev, device, channel, uuid, uuid_len);
+		if (ret >= 0)
        			return TRUE;
+		switch (errno) {
+		
+		case ETIMEDOUT:
+			perror("The device may have moved out of range");
+			break; /* retry */
+
+		case ECONNREFUSED:
+			perror("The user may have rejected the transfer");
+			return FALSE;
+
+		case EHOSTDOWN:
+			perror("The device may be out of range or turned off");
+			break; /* retry */
+
+		case EINPROGRESS:
+			perror("Interupted/bad reception or the device moved out of range");
+			break; /* retry */
+
+		default:
+			perror("error on connect()");
+			break;
+		} 
+
 		fprintf(stderr, "Still trying to connect\n");
 	}
 
