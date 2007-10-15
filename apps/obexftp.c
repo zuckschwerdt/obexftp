@@ -33,14 +33,12 @@
 #include <obexftp/client.h>
 #include <obexftp/uuid.h>
 
-#ifdef _WIN32_FIXME
-/* OpenOBEX won't define a handler on win32 */
-void DEBUG(unsigned int n, ...) { }
-void DUMPBUFFER(unsigned int n, char *label, char *msg) { }
-#endif /* _WIN32 */
-
 #ifdef _WIN32
 #define strcasestr strstr
+#define ETIMEDOUT	WSAETIMEDOUT
+#define ECONNREFUSED	WSAECONNREFUSED
+#define EHOSTDOWN	WSAEHOSTDOWN
+#define EINPROGRESS	WSAEINPROGRESS
 #endif /* _WIN32 */
 
 #include <common.h>

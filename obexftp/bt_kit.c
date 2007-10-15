@@ -27,27 +27,17 @@
 #include <stdlib.h>
 #include <unistd.h>
 
+#ifndef _WIN32
 #include <netinet/in.h>
 #include <sys/types.h>
 #include <sys/socket.h>
+#endif /* _WIN32 */
 
 #include "bt_kit.h"
 
 #include <common.h>
  
 #ifdef HAVE_BLUETOOTH
-#ifdef HAVE_SDPLIB /* should switch on OS here */
-
-/**
-	Nokia OBEX PC Suite Services.
-	binary representation of 00005005-0000-1000-8000-0002ee000001
-	\note prefer this over FTP on Series 60 devices
- */
-#define __SVC_UUID_PCSUITE_bytes \
-{ 0x00, 0x00, 0x50, 0x05, \
-  0x00, 0x00, 0x10, 0x00, 0x80, 0x00, \
-  0x00, 0x02, 0xee, 0x00, 0x00, 0x01 }
-#define SVC_UUID_PCSUITE ((const uint8_t []) __SVC_UUID_PCSUITE_bytes)
 
 #ifdef _WIN32
 /**
@@ -70,7 +60,20 @@ int str2ba(const char *straddr, BTH_ADDR *btaddr)
 	}
 	return 0;
 }
-#endif
+#endif /* _WIN32 */
+
+#ifdef HAVE_SDPLIB /* should switch on OS here */
+
+/**
+	Nokia OBEX PC Suite Services.
+	binary representation of 00005005-0000-1000-8000-0002ee000001
+	\note prefer this over FTP on Series 60 devices
+ */
+#define __SVC_UUID_PCSUITE_bytes \
+{ 0x00, 0x00, 0x50, 0x05, \
+  0x00, 0x00, 0x10, 0x00, 0x80, 0x00, \
+  0x00, 0x02, 0xee, 0x00, 0x00, 0x01 }
+#define SVC_UUID_PCSUITE ((const uint8_t []) __SVC_UUID_PCSUITE_bytes)
 
 
 /**
@@ -419,7 +422,7 @@ int btkit_register_obex(int service, int channel)
 
 
 #else
-#warning "no bluetooth support for this platform"
+#warning "no bluetooth sdp support for this platform"
 
 char **btkit_discover(const char *UNUSED(src))
 {
@@ -442,6 +445,7 @@ int btkit_register_obex(int UNUSED(svclass), int UNUSED(channel))
 
 int btkit_unregister_service(int UNUSED(svclass))
 {
+	return -1;
 }
 
 #endif /* HAVE_SDPLIB */

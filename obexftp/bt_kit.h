@@ -41,7 +41,11 @@
 #include <ws2bth.h>
 //#include <Bthsdpdef.h>
 //#include <BluetoothAPIs.h>
-#define ESOCKTNOSUPPORT WSAESOCKTNOSUPPORT
+#define ESOCKTNOSUPPORT	WSAESOCKTNOSUPPORT
+#define ETIMEDOUT	WSAETIMEDOUT
+#define ECONNREFUSED	WSAECONNREFUSED
+#define EHOSTDOWN	WSAEHOSTDOWN
+#define EINPROGRESS	WSAEINPROGRESS
 #define bdaddr_t	BTH_ADDR
 #define sockaddr_rc	_SOCKADDR_BTH
 #define rc_family	addressFamily
