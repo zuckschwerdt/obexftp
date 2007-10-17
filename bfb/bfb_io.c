@@ -108,8 +108,9 @@ int bfb_io_read(fd_t fd, uint8_t *buffer, int length, int timeout)
 
 	if(select(fd+1, &fdset, NULL, NULL, &time)) {
 		actual = read(fd, buffer, length);
-		if(actual < 0)
+		if (actual < 0) {
 			DEBUG(2, "%s() Read error: %d\n", __func__, actual);
+		}
 		return actual;
 	}
 	else {
@@ -124,8 +125,9 @@ int bfb_io_init(fd_t fd)
 {
 	int actual;
 	int tries=3;
-	bfb_frame_t *frame;
+	bfb_frame_t *frame = NULL;
 	uint8_t rspbuf[200];
+	int rsplen;
 
 	uint8_t init_magic = BFB_CONNECT_HELLO;
 	uint8_t init_magic2 = BFB_CONNECT_HELLO_ACK;
@@ -140,7 +142,7 @@ int bfb_io_init(fd_t fd)
         return_val_if_fail (fd > 0, FALSE);
 #endif
 
-	while (tries-- > 0) {
+	while (!frame && tries-- > 0) {
 		actual = bfb_write_packets (fd, BFB_FRAME_CONNECT, &init_magic, sizeof(init_magic));
 		DEBUG(2, "%s() Wrote %d packets\n", __func__, actual);
 
@@ -149,19 +151,23 @@ int bfb_io_init(fd_t fd)
 			return FALSE;
 		}
 
-		actual = bfb_io_read(fd, rspbuf, sizeof(rspbuf), 1);
-		DEBUG(2, "%s() Read %d bytes\n", __func__, actual);
+		rsplen = 0;
+		while (!frame && actual > 0) {
+			actual = bfb_io_read(fd, &rspbuf[rsplen], sizeof(rspbuf)-rsplen, 2);
+			DEBUG(2, "%s() Read %d bytes\n", __func__, actual);
 
-		if (actual < 1) {
-			DEBUG(1, "BFB read error\n");
-			return FALSE;
+			if (actual < 0) {
+				DEBUG(1, "BFB read error\n");
+				return FALSE;
+			}
+			if (actual == 0) {
+				DEBUG(1, "BFB read timeout\n");
+			}
+
+			rsplen += actual;
+			frame = bfb_read_packets(rspbuf, &rsplen);
+			DEBUG(2, "%s() Unstuffed, %d bytes remaining\n", __func__, rsplen);
 		}
-
-		frame = bfb_read_packets(rspbuf, &actual);
-		DEBUG(2, "%s() Unstuffed, %d bytes remaining\n", __func__, actual);
-
-		if (frame != NULL)
-			break;
 	}
 		
 	if (frame == NULL) {
@@ -183,8 +189,15 @@ int bfb_io_init(fd_t fd)
 	return FALSE;
 }
 
-/* Send an AT-command an expect 1 line back as answer */
-/* Ericsson may choose to answer one line, blank one line and then send OK */
+/**
+	Send an AT-command and expect an answer of one or more lines.
+
+	\note Start your command with "AT" and terminate it with "\r" (CR).
+
+	\note The expected lines are the the echo,
+		one optional information response and
+		a final result code of "OK" or "ERROR".
+ */
 int do_at_cmd(fd_t fd, const char *cmd, char *rspbuf, int rspbuflen)
 {
 #ifdef _WIN32
@@ -194,12 +207,10 @@ int do_at_cmd(fd_t fd, const char *cmd, char *rspbuf, int rspbuflen)
 #endif
 
 	char *answer = NULL;
-	char *answer_end = NULL;
 	int answer_size;
 
 	char tmpbuf[100] = {0,};
 	int total = 0;
-	int done = 0;
 	int cmdlen;
 
         return_val_if_fail (cmd != NULL, -1);
@@ -210,52 +221,53 @@ int do_at_cmd(fd_t fd, const char *cmd, char *rspbuf, int rspbuflen)
 	DEBUG(3, "%s() Sending %d: %s\n", __func__, cmdlen, cmd);
 
 	/* Write command */
-	if(bfb_io_write(fd, cmd, cmdlen) < cmdlen)
+	if (bfb_io_write(fd, cmd, cmdlen) < cmdlen)
 		return -1;
 
-	while(!done)	{
+	actual = 1;
+	while (actual > 0)	{
 		actual = bfb_io_read(fd, &tmpbuf[total], sizeof(tmpbuf) - total, 2);
-		/* error checking */
-       		if(actual < 0)
+       		if (actual < 0) /* error checking */
        			return actual;
-
-		if(actual == 0)
-			/* Anser didn't come in time. Cancel */
-			return -1;
 		
        		total += actual;
+       		tmpbuf[total] = '\0'; /* terminate the string, always */
 
        		DEBUG(3, "%s() tmpbuf=%d: %s\n", __func__, total, tmpbuf);
 
        		/* Answer not found within 100 bytes. Cancel */
-       		if(total == sizeof(tmpbuf))
+       		if (total >= sizeof(tmpbuf))
        			return -1;
 
-       		if( (answer = strchr(tmpbuf, '\n')) )	{
-			while((*answer == '\r') || (*answer == '\n'))
+		/* Remove first line (echo), then search final result code */
+		for (answer = tmpbuf; answer && *answer ; ) {
+			while ((*answer != '\r') && (*answer != '\n') && (*answer != '\0'))
 				answer++;
-       			/* Remove first line (echo) */
-       			if( (answer_end = strchr(answer+1, '\n')) )	{
-       				/* Found end of answer */
-       				done = 1;
+			while ((*answer == '\r') || (*answer == '\n'))
+				answer++;
+       			if (!strncmp(answer, "OK\r", 3) || !strncmp(answer, "ERROR\r", 6) ||
+			    !strncmp(answer, "OK\n", 3) || !strncmp(answer, "ERROR\n", 6)) {
+       				actual = 0; /* we are done */
        			}
        		}
 	}
-	/* try hard to discard remaing lines */
-	actual = bfb_io_read(fd, &tmpbuf[total], sizeof(tmpbuf) - total, 2);
+	/* try hard to discard remaing CR/LF */
+	if (total > 0 && tmpbuf[total-1] != '\n')
+		actual = bfb_io_read(fd, &tmpbuf[total], sizeof(tmpbuf) - total, 2);
 
-/* 	DEBUG(3, "%s() buf:%08lx answer:%08lx end:%08lx\n", __func__, tmpbuf, answer, answer_end); */
+	/* Remove echo and trailing CRs */
+	answer = strchr(tmpbuf, '\r');
+	if (!answer) /* no echo found */
+       		return -1;
 
-	DEBUG(3, "%s() Answer: %s\n", __func__, answer);
+	while (*answer == '\r' || *answer == '\n')
+		answer++;
+	answer_size = 0;
+	while (answer[answer_size] != '\0' &&
+		answer[answer_size] != '\r' && answer[answer_size] != '\n')
+	answer_size++;
 
-	/* Remove heading and trailing \r */
-	while((*answer_end == '\r') || (*answer_end == '\n'))
-		answer_end--;
-	DEBUG(3, "%s() Answer: %s\n", __func__, answer);
-
-	answer_size = (answer_end) - answer +1;
-
-	DEBUG(2, "%s() Answer size=%d\n", __func__, answer_size);
+	DEBUG(3, "%s() Answer (size=%d): %s\n", __func__, answer_size, answer);
 	if( (answer_size) >= rspbuflen )
 		return -1;
 
@@ -380,7 +392,7 @@ fd_t bfb_io_open(const char *ttyname, enum trans_type *typeinfo)
 	//	goto bfbmode;
 	//}
 
-	if(do_at_cmd(ttyfd, "ATZ\r\n", rspbuf, sizeof(rspbuf)) < 0) {
+	if(do_at_cmd(ttyfd, "ATZ\r", rspbuf, sizeof(rspbuf)) < 0) {
 		DEBUG(1, "Comm-error or already in BFB mode\n");
 #ifdef _WIN32
 		goto bfbmode;
@@ -388,7 +400,7 @@ fd_t bfb_io_open(const char *ttyname, enum trans_type *typeinfo)
 		newtio.c_cflag = B19200 | CS8 | CREAD;
 		(void) tcflush(ttyfd, TCIFLUSH);
 		(void) tcsetattr(ttyfd, TCSANOW, &newtio);
-		if(do_at_cmd(ttyfd, "ATZ\r\n", rspbuf, sizeof(rspbuf)) < 0) {
+		if(do_at_cmd(ttyfd, "ATZ\r", rspbuf, sizeof(rspbuf)) < 0) {
 			DEBUG(1, "Comm-error or already in BFB mode\n");
 			goto bfbmode;
 		}
@@ -399,7 +411,7 @@ fd_t bfb_io_open(const char *ttyname, enum trans_type *typeinfo)
 		goto err;
 	}
 
-	if(do_at_cmd(ttyfd, "AT+GMI\r\n", rspbuf, sizeof(rspbuf)) < 0)	{
+	if(do_at_cmd(ttyfd, "AT+GMI\r", rspbuf, sizeof(rspbuf)) < 0)	{
 		DEBUG(1, "Comm-error\n");
 		goto err;
 	}
@@ -420,7 +432,7 @@ fd_t bfb_io_open(const char *ttyname, enum trans_type *typeinfo)
 		goto generic;
 	}
 
-	if(do_at_cmd(ttyfd, "AT^SIFS\r\n", rspbuf, sizeof(rspbuf)) < 0)	{
+	if(do_at_cmd(ttyfd, "AT^SIFS\r", rspbuf, sizeof(rspbuf)) < 0)	{
 		DEBUG(1, "Comm-error\n");
 		goto err;
 	}
@@ -432,7 +444,7 @@ fd_t bfb_io_open(const char *ttyname, enum trans_type *typeinfo)
 	}
 
 	/* prefer connection without BFB */
-	if(do_at_cmd(ttyfd, "AT^SBFB=?\r\n", rspbuf, sizeof(rspbuf)) < 0)	{
+	if(do_at_cmd(ttyfd, "AT^SBFB=?\r", rspbuf, sizeof(rspbuf)) < 0)	{
 		DEBUG(1, "Comm-error\n");
 		goto err;
 	}
@@ -442,7 +454,7 @@ fd_t bfb_io_open(const char *ttyname, enum trans_type *typeinfo)
 	}
        	DEBUG(1, "Old BFB Siemens protocol. (%s)\n", rspbuf);
 	
-	if(do_at_cmd(ttyfd, "AT^SBFB=1\r\n", rspbuf, sizeof(rspbuf)) < 0)	{
+	if(do_at_cmd(ttyfd, "AT^SBFB=1\r", rspbuf, sizeof(rspbuf)) < 0)	{
 		DEBUG(1, "Comm-error\n");
 		goto err;
 	}
@@ -472,7 +484,7 @@ fd_t bfb_io_open(const char *ttyname, enum trans_type *typeinfo)
 	return ttyfd;
 
  ericsson:
-	if(do_at_cmd(ttyfd, "AT*EOBEX\r\n", rspbuf, sizeof(rspbuf)) < 0) {
+	if(do_at_cmd(ttyfd, "AT*EOBEX\r", rspbuf, sizeof(rspbuf)) < 0) {
 		DEBUG(1, "Comm-error\n");
 		goto err;
 	}
@@ -485,7 +497,7 @@ fd_t bfb_io_open(const char *ttyname, enum trans_type *typeinfo)
 	return ttyfd;
 
  motorola:
-	if(do_at_cmd(ttyfd, "AT+MODE=22\r\n", rspbuf, sizeof(rspbuf)) < 0) {
+	if(do_at_cmd(ttyfd, "AT+MODE=22\r", rspbuf, sizeof(rspbuf)) < 0) {
 		DEBUG(1, "Comm-error\n");
 		goto err;
 	}
@@ -503,12 +515,12 @@ fd_t bfb_io_open(const char *ttyname, enum trans_type *typeinfo)
 	 * but the phone may be in GIPSY(2) mode. 
 	 * No need to implement BFC(1) mode if we only want to run OBEX.
 	 */ 
-	if(do_at_cmd(ttyfd, "AT^SQWE?\r\n", rspbuf, sizeof(rspbuf)) < 0) { 
+	if(do_at_cmd(ttyfd, "AT^SQWE?\r", rspbuf, sizeof(rspbuf)) < 0) { 
 		DEBUG(1, "Comm-error\n"); 
 		goto err; 
 	} 
 	if (strcasecmp("^SQWE:0",rspbuf) != 0) { 
-		if(do_at_cmd(ttyfd, "AT^SQWE=0\r\n", rspbuf, sizeof(rspbuf)) < 0) { 
+		if(do_at_cmd(ttyfd, "AT^SQWE=0\r", rspbuf, sizeof(rspbuf)) < 0) { 
 			DEBUG(1, "Comm-error\n"); 
 			goto err; 
 		} 
@@ -518,7 +530,7 @@ fd_t bfb_io_open(const char *ttyname, enum trans_type *typeinfo)
 		} 
 		sleep(1); 
 	} 
-	if(do_at_cmd(ttyfd, "AT^SQWE=3\r\n", rspbuf, sizeof(rspbuf)) < 0) {
+	if(do_at_cmd(ttyfd, "AT^SQWE=3\r", rspbuf, sizeof(rspbuf)) < 0) {
 		DEBUG(1, "Comm-error\n");
 		goto err;
 	}
@@ -532,7 +544,7 @@ fd_t bfb_io_open(const char *ttyname, enum trans_type *typeinfo)
 	return ttyfd;
 
  generic:
-	if(do_at_cmd(ttyfd, "AT+CPROT=0\r\n", rspbuf, sizeof(rspbuf)) < 0) {
+	if(do_at_cmd(ttyfd, "AT+CPROT=0\r", rspbuf, sizeof(rspbuf)) < 0) {
 		DEBUG(1, "Comm-error\n");
 		goto err;
 	}

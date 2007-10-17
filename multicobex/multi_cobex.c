@@ -71,11 +71,11 @@ static void cobex_cleanup(cobex_t *c, int force)
 		 * DCA-540 needs cable replug, probably problem 
 		 * with the linux driver (linux-2.6.17.13) 
 		 */
-		bfb_write_at(c->fd, "at^sbfb=0\r");
+		bfb_write_at(c->fd, "AT^SBFB=0\r");
 		sleep(1);
 		bfb_io_write(c->fd, "+++", 3);
 		sleep(1);
-		bfb_io_write(c->fd,"\r",1);
+		bfb_io_write(c->fd,"\r", 1);
 	}
        	bfb_io_close(c->fd, force);
 
