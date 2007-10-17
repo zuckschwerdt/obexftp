@@ -120,6 +120,21 @@ int bfb_io_read(fd_t fd, uint8_t *buffer, int length, int timeout)
 #endif
 }
 
+/**
+	Read (repeatedly) from fd until a timeout or an error is encountered.
+ */
+static int bfb_io_read_all(int fd, uint8_t *buffer, int length, int timeout)
+{
+	int actual;
+	int pos = 0;
+	for (;;) {
+		actual = bfb_io_read(fd, &buffer[pos], length - pos, timeout);
+		if (actual < 0) return actual;
+		if (actual == 0) return pos;
+		pos += actual;
+	}
+}
+
 /* Send an BFB init command an check for a valid answer frame */
 int bfb_io_init(fd_t fd)
 {
@@ -316,6 +331,7 @@ void bfb_io_close(fd_t fd, int force)
 fd_t bfb_io_open(const char *ttyname, enum trans_type *typeinfo)
 {
 	char rspbuf[200];
+	int actual;
 #ifdef _WIN32
 	HANDLE ttyfd;
 	DCB dcb;
@@ -391,6 +407,25 @@ fd_t bfb_io_open(const char *ttyname, enum trans_type *typeinfo)
 	//	DEBUG(1, "Already in BFB mode.\n");
 	//	goto bfbmode;
 	//}
+
+	/* check if we are in transparent OBEX or AT mode:	*/
+	/* send an ABORT (0xFF) with cleverly embedded AT command.	*/
+	/* look for valid OBEX frame (OK=0xA0, BADREQ=0xC0, or alike)	*/
+	DEBUG(1, "Checking for transparent OBEX mode\n");
+	actual = bfb_io_write(ttyfd, "\xFF\x00\x08\xCBATZ\r", 8);
+	if (actual == 8) {
+		DEBUG(3, "Write ok, reading back\n");
+		actual = bfb_io_read_all(ttyfd, rspbuf, sizeof(rspbuf), 2);
+		if (actual >= 3 && rspbuf[actual-1] == actual) {
+			DEBUG(3, "Received %02X OBEX frame\n", (uint8_t)rspbuf[0]);
+			DEBUG(1, "Transparent OBEX\n");
+			*typeinfo = TT_GENERIC;
+			return ttyfd;
+		}
+		else if (actual >= 3 && !strncmp(rspbuf, "ATZ", 3)) {
+			DEBUG(1, "AT mode\n");
+		}
+	}
 
 	if(do_at_cmd(ttyfd, "ATZ\r", rspbuf, sizeof(rspbuf)) < 0) {
 		DEBUG(1, "Comm-error or already in BFB mode\n");
