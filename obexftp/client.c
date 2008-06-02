@@ -340,7 +340,7 @@ static void client_done(obex_t *handle, obex_object_t *object, int UNUSED(obex_c
 				/* simple body writer */
 				int fd;
 				//fd = open_safe("", cli-> target_fn);
-				fd = creat(cli-> target_fn, CREATE_MODE_FILE);
+				fd = open(cli-> target_fn, O_WRONLY | O_CREAT | O_TRUNC | O_BINARY, CREATE_MODE_FILE);
 				if(fd > 0) {
 					(void) write(fd, body_data, body_len);
 					(void) close(fd);
