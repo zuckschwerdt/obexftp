@@ -15,7 +15,7 @@ WriteMakefile(
     'LIBS'      =>	q[-L@top_builddir@/obexftp/.libs -lobexftp
     			  -L@top_builddir@/multicobex/.libs -lmulticobex
 			  -L@top_builddir@/bfb/.libs -lbfb
-			  @OPENOBEX_LIBS@ @BLUETOOTH_LIBS@ @LIBS@],
+			  @OPENOBEX_LIBS@],
     'OBJECT'	=>	'perl_wrap.o', # $(OBJ_EXT)
     'NAME'      =>	'OBEXFTP',
     'FIRST_MAKEFILE'      =>	'Makefile.perl',

@@ -125,7 +125,6 @@ if test "$ac_cv_prog_gcc" = "yes"; then
 fi
        
 AC_SUBST(CFLAGS)
-AC_SUBST(CPPFLAGS)
 AC_SUBST(LDFLAGS)
 
 CFLAGS="$CFLAGS -Wall"

@@ -22,7 +22,6 @@ end
 
 dir_config('obexftp')
 if have_library('openobex', 'OBEX_Init') and
-   have_library('bluetooth', 'str2ba') and
    find_library('bfb', 'bfb_io_open', '../../bfb/.libs') and
    find_library('multicobex', 'cobex_ctrans', '../../multicobex/.libs') and
    find_library('obexftp', 'obexftp_open', '../../obexftp/.libs')
