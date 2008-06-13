@@ -17,8 +17,9 @@ pkgconfig_DATA =		obexftp.pc
 # no uninstall for perl -- ignore it
 distuninstallcheck_listfiles =	find . -type f \
 				-not -path \*/site_perl/\*/OBEXFTP\* \
+				-not -path \*/perl/\*/auto/OBEXFTP\* \
 				-not -name perllocal.pod \
-				-not -path \*site-packages/obexftp/\* \
+				-not -path \*site-packages/obexftp\* \
 				-not -path \*/site_ruby/\* \
 				-print
 
