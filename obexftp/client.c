@@ -730,7 +730,7 @@ int obexftp_connect_src(obexftp_client_t *cli, const char *src, const char *devi
 #endif
 
 	if(ret < 0)
-		cli->infocb(OBEXFTP_EV_ERR, "FBS UUID", 0, cli->infocb_data);
+		cli->infocb(OBEXFTP_EV_ERR, "send UUID", 0, cli->infocb_data);
 	else
 		cli->infocb(OBEXFTP_EV_OK, "", 0, cli->infocb_data);
 
