@@ -11,6 +11,7 @@ libobexftp_la_SOURCES =		object.c object.h \
 				obexftp_io.c obexftp_io.h \
 				cache.c cache.h \
 				uuid.h obexftp.h \
+				unicode.c unicode.h \
 				bt_kit.c bt_kit.h
 
 obexftpinclude_HEADERS =	obexftp.h \

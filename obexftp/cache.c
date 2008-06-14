@@ -36,17 +36,12 @@
 #define S_IFREG	__S_IFREG
 #endif
 
-#ifdef HAVE_ICONV
-#include <iconv.h>
-#include <locale.h>
-#include <langinfo.h>
-#endif
-
 #include <openobex/obex.h>
 
 #include "obexftp.h"
 #include "client.h"
 #include "object.h"
+#include "unicode.h"
 #include "cache.h"
 
 #include <common.h>
@@ -260,34 +255,19 @@ static stat_entry_t *parse_directory(char *xml)
         char size[201]; // int would be ok too.
 
 	stat_entry_t *dir_start, *dir;
-	int i;
-#ifdef HAVE_ICONV
-	iconv_t utf8;
-	char *xml_latin1, *xml_end;
-	size_t ni, no, nrc;
-	int ret;
-#endif
+	int ret, n, i;
+	char *xml_conv;
 		
 	if (!xml)
 		return NULL;
-#ifdef HAVE_ICONV
-	setlocale(LC_CTYPE, "");
-	DEBUG(2, "Iconv to %s\n", nl_langinfo(CODESET));
-	utf8 = iconv_open (nl_langinfo(CODESET), "UTF-8");
-	ni = strlen(xml);
-	no = ni;
-	xml_latin1 = xml_end = malloc(no+1);
-	p = xml;
-	if (xml_latin1) {
-		nrc = iconv (utf8, (char* *)&p, &ni, &xml_end, &no);
-		ret = iconv_close (utf8);
-		if (nrc != (size_t)(-1)) {
-			xml = xml_latin1;
-		} else {
-			DEBUG(1, "Iconv conversion error: '%s'\n", p);
-		}
-	}
-#endif
+	n = strlen(xml) + 1;
+	xml_conv = malloc(n);
+	ret = Utf8ToChar(xml_conv, xml, n);
+       	if (ret > 0) {
+       		xml = xml_conv;
+       	} else {
+       		DEBUG(1, "UTF-8 conversion error\n");
+       	}
 	
 	DEBUG(4, "Converted cache xml: '%s'\n", xml);
 	/* prepare a cache to hold this dir */
@@ -342,10 +322,9 @@ static stat_entry_t *parse_directory(char *xml)
 
 	dir->name[0] = '\0';
 
-#ifdef HAVE_ICONV
-	if (xml_latin1)
-		free (xml_latin1);
-#endif
+	if (xml_conv)
+		free (xml_conv);
+
         return dir_start;
 }
 

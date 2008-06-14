@@ -31,6 +31,7 @@ PKG_CHECK_MODULES(OPENOBEX,openobex)
 REQUIRES="openobex"
 
 AM_ICONV
+AC_CHECK_HEADERS([langinfo.h])
 dnl IRDA_CHECK
 BLUETOOTH_CHECK
 if test "${bluez_found}" = "yes"; then

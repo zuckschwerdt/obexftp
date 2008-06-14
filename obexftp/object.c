@@ -3,7 +3,7 @@
 	Collection of functions to build common OBEX request objects.
 	ObexFTP library - language bindings for OBEX file transfer.
 
-	Copyright (c) 2002 Christian W. Zuckschwerdt <zany@triq.net>
+	Copyright (c) 2002-2007 Christian W. Zuckschwerdt <zany@triq.net>
 
 	ObexFTP is free software; you can redistribute it and/or modify
 	it under the terms of the GNU Lesser General Public License as
@@ -23,7 +23,9 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "unicode.h"
 #include "object.h"
+
 
 /**
 	Build an INFO request object (Siemens only).
@@ -98,7 +100,7 @@ obex_object_t *obexftp_build_get (obex_t obex, uint32_t conn, const char *name, 
 		        return NULL;
 		}
 
-		ucname_len = OBEX_CharToUnicode(ucname, (uint8_t*)name, ucname_len);
+		ucname_len = CharToUnicode(ucname, (uint8_t*)name, ucname_len);
 
 		hv.bs = (const uint8_t *) ucname;
 		(void) OBEX_ObjectAddHeader(obex, object, OBEX_HDR_NAME, hv, ucname_len, OBEX_FL_FIT_ONE_PACKET);
@@ -158,12 +160,12 @@ obex_object_t *obexftp_build_rename (obex_t obex, uint32_t conn, const char *fro
 	appstr_p += sizeof(opname);
 
 	*appstr_p++ = 0x35;
-        ucname_len = OBEX_CharToUnicode(appstr_p + 1, (uint8_t*)from, strlen(from)*2 + 2);
+        ucname_len = CharToUnicode(appstr_p + 1, (uint8_t*)from, strlen(from)*2 + 2);
 	*appstr_p = ucname_len - 2; /* no trailing 0 */
 	appstr_p += ucname_len - 1;
 
 	*appstr_p++ = 0x36;
-        ucname_len = OBEX_CharToUnicode(appstr_p + 1, (uint8_t*)to, strlen(to)*2 + 2);
+        ucname_len = CharToUnicode(appstr_p + 1, (uint8_t*)to, strlen(to)*2 + 2);
 	*appstr_p = ucname_len - 2; /* no trailing 0 */
 	
         hv.bs = (const uint8_t *) appstr;
@@ -210,7 +212,7 @@ obex_object_t *obexftp_build_del (obex_t obex, uint32_t conn, const char *name)
 	        return NULL;
 	}
 
-        ucname_len = OBEX_CharToUnicode(ucname, (uint8_t*)name, ucname_len);
+        ucname_len = CharToUnicode(ucname, (uint8_t*)name, ucname_len);
 
         hv.bs = (const uint8_t *) ucname;
         (void) OBEX_ObjectAddHeader(obex, object, OBEX_HDR_NAME, hv, ucname_len, OBEX_FL_FIT_ONE_PACKET);
@@ -263,7 +265,7 @@ obex_object_t *obexftp_build_setpath (obex_t obex, uint32_t conn, const char *na
 			(void) OBEX_ObjectDelete(obex, object);
 			return NULL;
 		}
-		ucname_len = OBEX_CharToUnicode(ucname, (uint8_t*)name, ucname_len);
+		ucname_len = CharToUnicode(ucname, (uint8_t*)name, ucname_len);
 
 		/* apparently the empty name header is meant to be really empty... */
 		if (ucname_len == 2)
@@ -317,7 +319,7 @@ obex_object_t *obexftp_build_put (obex_t obex, uint32_t conn, const char *name, 
 		return NULL;
 	}
 
-	ucname_len = OBEX_CharToUnicode(ucname, (uint8_t*)name, ucname_len);
+	ucname_len = CharToUnicode(ucname, (uint8_t*)name, ucname_len);
 
        	hv.bs = (const uint8_t *) ucname;
 	(void ) OBEX_ObjectAddHeader(obex, object, OBEX_HDR_NAME, hv, ucname_len, 0);
