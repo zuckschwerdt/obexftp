@@ -1,34 +1,15 @@
 ObexFTP to do list
 ==================
 
-* get perl and ruby to distcheck (only python and tcl distcheck ok)
+* verify memory alloc's with bindings
 
-* transport select patch by Hendrik Sattler
+* cancel (async?) support for bindings
 
-* OBEX-Push-only mode (no UUID) suggested by Antti Hayrynen
+* obexftp.is_connected() perhaps?
 
-* UUID issue (FBS or S45 first?), autodetect phone and re-connect?
+* get perl and ruby to uninstall for distcheck (only python and tcl distcheck clean)
 
 * put to specified file (-p file.vcf -f telecom/pb.vcf)
 
 * Discover port and protocol to use (i.e. Bt, IrDA, TTY)
-
-
-later...
-
-* AT-Kommandos
-
-* "Something went wrong" -- help texts
-
-* Verify unified cable support.
-
-* Tear down BFB connection cleanly - no more cable cycling.
-
-* Document the general vs Siemens specific features
-
-* Path parsing issues (some phones dont know about paths others insist on them)
-
-* Error handling on missing files (either TA or M)
-
-* Use the TAC (Type Approval Code) perhaps. (http://www.nobbi.com/glossar.htm#imei)
 

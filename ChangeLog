@@ -1,51 +1,50 @@
-2007-06-02  Christian W. Zuckschwerdt  <zany@triq.net>
+ObexFTP 0.22 (released 2008-06-15)
+----------------------------------
 
+	* added proper unicode support
+	* added support for transparent OBEX-over-AT mode
+	* rewritten at-command function
+	* added specific error messages
+	* refactored to flexible bt_kit layer
+	* fixed cache root duplicates
+	* fixed off-by-one and unfreed mem in cache layer
+	* added pkg-config file
+	* added example code
+	* switched to doxygen
+	* added python binding callbacks 
+	* portable packed structs 
+	* enabled linux hci dev names for source selection
+	* Python binding uses distutils now, tested by Adam Williamson
+	* removed exit from bt discovery
+	* Better autodetection for possible language bindings
+	* reworked win32 support
 	* Motorola SLVR L2 cobex fix by Andrey Rahmatullin
-
-2007-06-01  Christian W. Zuckschwerdt  <zany@triq.net>
-
+	* now using AC_HELP_STRING for compat with autoconf <=2.57
 	* added hci selection support, drafted by Manuel Naranjo
-
-2007-05-27  Christian W. Zuckschwerdt  <zany@triq.net>
-
-	* prefer PCSUITE over FTP, req. by Martin Storsjö for Series 60 2nd Ed.
 	* switched obexftp cli to new discovery api 
-
-2007-05-26  Christian W. Zuckschwerdt  <zany@triq.net>
-
+	* prefer PCSUITE over FTP, req. by Martin Storsjö for Series 60 2nd Ed.
 	* fixed compile error with >=swig-1.3.28
-
-2007-05-21  Christian W. Zuckschwerdt  <zany@triq.net>
-
 	* renamed sdp browse function
-
-2007-05-02  Christian W. Zuckschwerdt  <zany@triq.net>
-
 	* fixed month/day swapping in atotime, spotted by Dr. Johannes Zellner
-
-2006-09-19  Christian W. Zuckschwerdt  <zany@triq.net>
-
+	* added BFC compatibility for newer Siemens phones
+	* added PCSOFTWARE uuid support for SHARP phones
+	* added motorola support
+	* end bfb mode properly
+	* added CPROT=0 support from 3GPP 27.007 
+	* fixed ericsson init
 	* fixed invalid conn_id in disconnect rep. by Alan J. McFarlane
-
-2006-08-03  Christian W. Zuckschwerdt  <zany@triq.net>
-
 	* better create flag handling in setpath
-
-2006-07-31  Christian W. Zuckschwerdt  <zany@triq.net>
-
 	* Changed LDADD to LIBADD sug. by Sergey Vlasov <vsu@altlinux.ru>
-
-2006-06-28  Christian W. Zuckschwerdt  <zany@triq.net>
-
 	* obexftpd clean up by Hendrik Sattler
 	* 64-bit fixes by Hendrik Sattler
 	* Removed all (dangerous) obex_headerdata_t casts
-
-2006-05-28  Christian W. Zuckschwerdt  <zany@triq.net>
-
 	* Reorganized all swig-dependant Makefiles
 	* Applied cobex write patch from Simon Ruggier <Simon80@gmail.com>
 	* Applied   from Frode Isaksen <fisaksen@bewan.com>
+
+
+ObexFTP 0.21 (released 2006-06-27)
+----------------------------------
 
 2006-05-26  Christian W. Zuckschwerdt  <zany@triq.net>
 
@@ -55,6 +54,10 @@
 
 	* Added ruby binding
 	* Added preliminary discovery function
+
+
+ObexFTP 0.20 (released 2006-05-16)
+----------------------------------
 
 2006-05-16  Christian W. Zuckschwerdt  <zany@triq.net>
 
@@ -74,6 +77,10 @@
 
 	* device/channel code cleanup
 
+
+ObexFTP 0.19 (released 2006-02-08)
+----------------------------------
+
 2006-02-08  Christian W. Zuckschwerdt  <zany@triq.net>
 
 	* Updated for OpenOBEX 1.1 (pkg-config)
@@ -85,6 +92,10 @@
 2006-01-21  Christian W. Zuckschwerdt  <zany@triq.net>
 
 	* Simplified the swig/perl/Makefile.am.
+
+
+ObexFTP 0.18 (released 2006-01-18)
+----------------------------------
 
 2006-01-11  Christian W. Zuckschwerdt  <zany@triq.net>
 
@@ -140,15 +151,19 @@
 
 	* GCC 2.96 compat fixes by Paul Boddie <paul@boddie.org.uk>
 
-2004-01-15  Christian W. Zuckschwerdt  <zany@triq.net>
+2005-01-15  Christian W. Zuckschwerdt  <zany@triq.net>
 
 	* Documentation updated by Hendrik Sattler <debian@hendrik-sattler.de>
 
-2004-01-10  Christian W. Zuckschwerdt  <zany@triq.net>
+2005-01-10  Christian W. Zuckschwerdt  <zany@triq.net>
 
 	* Typo fix to setpath by Olivier Berger <oberger@ouvaton.org>
 	* Removed some BT ifdefs by Hendrik Sattler
 	* Use VERSION macro suggested by Andrej Kacian
+
+
+ObexFTP 0.17 (released 2004-12-17)
+----------------------------------
 
 2004-12-17  Christian W. Zuckschwerdt  <zany@triq.net>
 
@@ -162,6 +177,10 @@
 
 	* Bluetooth device and channel auto-discovery
 
+
+ObexFTP 0.16 (released 2004-11-23)
+----------------------------------
+
 2004-11-20  Christian W. Zuckschwerdt  <zany@triq.net>
 
 	* FreeBSD patch by Bruce Simpson <bms@spc.org>
@@ -170,6 +189,10 @@
 
 	* Bug fixes (for Sony-Ericsson) by David Haslam <dhaslam@ntlworld.com>
 
+
+ObexFTP 0.15 (released 2004-11-13)
+----------------------------------
+
 2004-11-12  Christian W. Zuckschwerdt  <zany@triq.net>
 
 	* Don't send S45 UUID first (broke other phones too, sorry S45 users)
@@ -177,6 +200,10 @@
 2004-11-10  Christian W. Zuckschwerdt  <zany@triq.net>
 
 	* Fixed linebreaks in contributed backup script.
+
+
+ObexFTP 0.14 (released 2004-09-26)
+----------------------------------
 
 2004-09-26  Christian W. Zuckschwerdt  <zany@triq.net>
 
@@ -233,10 +260,18 @@
 
 	* fixed a Makefile bug reported by Carwyn Edwards
 
+
+ObexFTP 0.13 (released 2003-04-11)
+----------------------------------
+
 2003-04-11  Christian W. Zuckschwerdt  <zany@triq.net>
 
 	* all but data output goes to stderr now (suggested by Heiko)
 	* The environment variable OBEXFTP_PORT is used as a default.
+
+
+ObexFTP 0.12 (released 2003-02-17)
+----------------------------------
 
 2003-02-17  Christian W. Zuckschwerdt  <zany@triq.net>
 
@@ -246,15 +281,23 @@
 
 	* Added UUID fallback for C55 (suggested by Hristo Todorov)
 
-2002-01-26  Christian W. Zuckschwerdt  <zany@triq.net>
+
+ObexFTP 0.11 (released 2003-01-26)
+----------------------------------
+
+2003-01-26  Christian W. Zuckschwerdt  <zany@triq.net>
 
 	* Unified BFB and PE;
 
-2002-01-19  Christian W. Zuckschwerdt  <zany@triq.net>
+2003-01-19  Christian W. Zuckschwerdt  <zany@triq.net>
 
 	* C++ compatible header files (suggested Carsten Pfeiffer)
 
-2002-01-09  Christian W. Zuckschwerdt  <zany@triq.net>
+
+ObexFTP 0.10 (released 2003-01-10)
+----------------------------------
+
+2003-01-09  Christian W. Zuckschwerdt  <zany@triq.net>
 
 	* Big file transmission problem solved
 
@@ -286,13 +329,41 @@
 	* Try harder to connect. IRDA needs patience.
 	* Wrote a man page. Should really be a docbook refentry.
 
+
+ObexFTP 0.9 (released 2002-02-18)
+---------------------------------
+
+
+ObexFTP 0.8 (released 2002-02-14)
+---------------------------------
+
+
+ObexFTP 0.7 (released 2002-02-13)
+---------------------------------
+
+
+ObexFTP 0.6 (released 2002-02-12)
+---------------------------------
+
+
+ObexFTP 0.5 (released 2002-02-11)
+---------------------------------
+
 2002-02-11  Christian W. Zuckschwerdt  <zany@triq.net>
 
 	* cobex now capable of asynch operation
 
+
+ObexFTP 0.4 (released 2002-02-09)
+---------------------------------
+
 2002-02-09  Christian W. Zuckschwerdt  <zany@triq.net>
 
 	* Rewrote main using getopt.
+
+
+ObexFTP 0.3 (released 2002-02-08)
+---------------------------------
 
 2002-02-08  Christian W. Zuckschwerdt  <zany@triq.net>
 
@@ -302,9 +373,17 @@
 
 	* Implemented BFB protocol.
 
+
+ObexFTP 0.2 (released 2002-01-19)
+---------------------------------
+
 2002-01-19  Christian W. Zuckschwerdt  <zany@triq.net>
 
 	* Implemented delete and rename.
+
+
+ObexFTP 0.1 (released 2002-01-18)
+---------------------------------
 
 2002-01-18  Christian W. Zuckschwerdt  <zany@triq.net>
 

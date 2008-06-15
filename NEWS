@@ -1,19 +1,24 @@
 ObexFTP recent NEWS
 ===================
 
+* proper unicode support
+* support for transparent OBEX-over-AT mode
+* working win32 support (again)
+* full Series 60 support
+* Newer Siemens phones (BFC support)
+* Sharp support (PCSOFTWARE uuid)
+* added motorola support
+* 3GPP 27.007 cable support (CPROT=0)
+* 64-bit clean
+* obexftpd daemon application
+
 * Motorola support, tested with models v710/e815
-
 * be sure to give ObexFS a spin!
-
 * object caching and directory parsing (for things like ObexFS)
 
-
 * Nokia support via IrDA and Bluetooth
-
 * Siemens S65 support
-
 * Everything but data goes to stderr for more simple redirection.
-
 * VMO converter (gsm and wav) split into seperate package.
-
 * Ericsson and Siemens cable support unified (still testing).
+

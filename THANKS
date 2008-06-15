@@ -24,3 +24,23 @@ Philip Kovacs <kovacsp3@comcast.net> - connection id support
 
 Alan Zhang <vibra@tom.com> - daemon application
 
+Frode Isaksen <fisaksen@bewan.com> - obexftpd improvements
+
+Simon Ruggier <Simon80@gmail.com> - cobex write patch
+
+Hendrik Sattler - various cleanups and hints
+
+Sergey Vlasov <vsu@altlinux.ru> sugg. LDADD to LIBADD
+
+Alan J. McFarlane - rep. invalid conn_id in disconnect
+
+Dr. Johannes Zellner - spotted month/day swapping in atotime
+
+Martin Storsjö - PCSUITE over FTP sugg. for Series 60 2nd Ed.
+
+Manuel Naranjo - hci selection draft
+
+Andrey Rahmatullin - Motorola SLVR L2 cobex fix
+
+Adam Williamson - Python distutils testing
+
