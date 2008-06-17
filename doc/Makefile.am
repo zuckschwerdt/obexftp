@@ -1,31 +1,25 @@
 # only maintainer needs to build doc
-# perl's pod2man, pod2html and pod2text needed
+# asciidoc, docbook2X needed
 
 EXTRA_DIST =		$(man_MANS) $(noinst_DATA)
 
-man_MANS =		obexftp.1 obexftpd.1
+man_MANS =			obexftp.1 obexftpd.1
 
-noinst_DATA =		obexftp.pod obexftp.1.txt obexftp.1.html \
-			obexftpd.pod obexftpd.1.txt obexftpd.1.html
+noinst_DATA =		obexftp.1.txt obexftp.1.html \
+					obexftpd.1.txt obexftpd.1.html
 
 if BUILD_DOCS
 
-SUFFIXES = .1 .pod .1.html .1.txt
+SUFFIXES = .1 .1.txt .1.html
 
-.pod.1:
-	pod2man --center "ObexFTP" --release `stat --format=%y $< | cut -f 1 -d " "` --section 1 $< $@
-#	txt2man -v "ObexFTP" -t "obexftp" -s 1 -r `date -I` \
-#	-I ObexFTP -I gObexFtp -I vfs-obexftp $< > $@
-## and this one for BSD I guess...
-##	pod2man --center "ObexFTP" --release `stat -f %m $< | cut -f 1 -d " "` --section 1 $< $@
+.1.txt.1:
+	asciidoc --doctype=manpage --backend=docbook $<
+	docbook2man $*.1.xml
 
-.pod.1.html:
-	pod2html --title "ObexFTP" --infile=$< --outfile=$@
+.1.txt.1.html:
+	asciidoc --doctype=manpage --backend=xhtml11 $<
 
-.pod.1.txt:
-	pod2text $< $@
-
-#clean-local:
-#	rm -f *.1
+CLEANFILES =		obexftp.1.xml obexftp.1 obexftp.1.html \
+					obexftpd.1.xml obexftpd.1 obexftpd.1.html
 
 endif

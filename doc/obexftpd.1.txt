@@ -1,60 +1,88 @@
-NAME
-    obexftpd - Mobile Equipment file transfer server
+= OBEXFTPD(1)
 
-SYNOPSIS
-    obexftpd [*OPTIONS*] [*TRANSPORT*]
+== NAME
 
-DESCRIPTION
-    With obexftpd you can set up an obex server on any computers using IrDA,
-    Bluetooth or TCP/IP. Use e.g. obexftp or the ObexFS to access the files
-    on this server.
+obexftpd - Mobile Equipment file transfer server
 
-OPTIONS
-    The ordering of options is important. The first transport option will
-    start the server. Use basedir and verbose options prior to any
-    transport. See EXAMPLES
+== SYNOPSIS
 
-  Transport Options
-    -i, --irda
-        Acceopt connections using the IrDA protocol.
+*obexftpd* [_OPTIONS_] [_TRANSPORT_]
 
-    -b, --bluetooth
-        Accept connections via bluetooth.
+== DESCRIPTION
 
-    -t *device*, --tty *device*
-        Accept connections from this tty device. NOT WORKING!
+With *obexftpd* you can set up an obex server on any
+computers using *IrDA*, *Bluetooth* or *TCP/IP*.
+Use e.g. *obexftp* or the *ObexFS* to access the files on this server.
 
-    -n *host*, --network *host*
-        Accept connections from the network to this port.
+== OPTIONS
 
-  Setting The File Path
-    -c *folder*, --chdir *folder*
-        Set the base directory for the server.
+The ordering of options is important. The first transport option will
+start the server. Use basedir and verbose options prior to any transport.
+See *EXAMPLES*
 
-  Version Information And Help
-    -v, --verbose
-        Be verbose and give some additional infos.
 
-    -V, --version
-        Print version string and exit.
+=== Transport Options
 
-    -h, --help, --usage
-        Print short usage instructions.
+*-i*, *--irda*::
 
-EXAMPLES
-    Start listening for bluetooth connections and use a safe basedir:
-        obexftpd -c /tmp/inbox -b
+Acceopt connections using the IrDA protocol.
 
-SEE ALSO
-    obexftp(1), openobex(3), obexftp(3), multicobex(3), libbfb(3).
+*-b*, *--bluetooth*::
 
-BUGS
-    Bugs ? Features !
+Accept connections via bluetooth.
 
-NOTES
-    The software has been tested and reported working on at least Siemens,
-    Ericsson, and Nokia phones.
+*-t* _device_, *--tty* _device_::
 
-AUTHOR
-    Christian W. Zuckschwerdt <zany@triq.net> Alan Zhang <vibra@tom.com>
+Accept connections from this tty device. NOT WORKING!
+
+*-n* _host_, *--network* _host_::
+
+Accept connections from the network to this port.
+
+
+=== Setting The File Path
+
+*-c* _folder_, *--chdir* _folder_::
+
+Set the base directory for the server.
+
+
+=== Version Information And Help
+
+*-v*, *--verbose*::
+
+Be verbose and give some additional infos.
+
+*-V*, *--version*::
+
+Print version string and exit.
+
+*-h*, *--help*, *--usage*::
+
+Print short usage instructions.
+
+
+== EXAMPLES
+
+Start listening for bluetooth connections and use a safe basedir:::
+
+*obexftpd -c /tmp/inbox -b*
+
+
+== SEE ALSO
+
+obexftp(1), openobex(3), obexftp(3), multicobex(3), libbfb(3).
+
+== BUGS
+
+Bugs ? Features !
+
+== NOTES
+
+The software has been tested and reported working on at least Siemens, Ericsson, and Nokia phones.
+
+== AUTHOR
+
+Christian W. Zuckschwerdt <zany@triq.net>
+Alan Zhang <vibra@tom.com>
 

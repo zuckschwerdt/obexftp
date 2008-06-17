@@ -1,145 +1,204 @@
-NAME
-    obexftp - Mobile Equipment file transfer tool
+= OBEXFTP(1)
 
-SYNOPSIS
-    obexftp [*OPTION*] [*COMMANDS*]
+== NAME
 
-DESCRIPTION
-    obexftp is used to access files on mobile equipment, i.e. cell phones.
-    With obexftpd you can transfer files between any computers using IrDA,
-    Bluetooth and TCP/IP.
+obexftp - Mobile Equipment file transfer tool
 
-    This tool lets you access the ObexFTP library by the means of a command
-    line interface. You might consider using the other means available. E.g.
-    the ObexFS filesystem for Linux.
+== SYNOPSIS
 
-OPTIONS
-    The ordering of options is important. Every command will use the most
-    recent device set. Every file without command switch will apply to the
-    command given most recent. See EXAMPLES
+*obexftp* [_OPTION_] [_COMMANDS_]
 
-  Transport Options
-    -i, --irda
-        Connect using the IrDA protocol. This is the default.
+== DESCRIPTION
 
-    -b *device*, --bluetooth *device*
-        Connect to this bluetooth device. If the device is not given the
-        first device found will be used.
+*obexftp* is used to access files on mobile equipment,
+i.e. cell phones. With *obexftpd* you can transfer files between any
+computers using *IrDA*, *Bluetooth* and *TCP/IP*.
 
-    -B *number*, --channel *number*
-        Use this bluetooth channel when connecting. The channel will be
-        discoverd automatically if this option is not used.
+This tool lets you access the *ObexFTP* library by the means of
+a command line interface.
+You might consider using the other means available.
+E.g. the *ObexFS* filesystem for Linux.
 
-    -d *no/address*, --hci *no/address*
-        Use the bluetooth device referenced by number or address as source
-        device for the connection.
+== OPTIONS
 
-    -u *intf no*, --usb *intf no*
-        Connect to this usb interface or list all available usb interfaces.
+The ordering of options is important. Every command will use the most
+recent device set. Every file without command switch will apply to the
+command given most recent. See *EXAMPLES*
 
-    -t *device*, --tty *device*
-        Connect to this tty device.
+=== Transport Options
 
-    -n *host*, --network *host*
-        Connect to this network host.
+*-i*, *--irda*::
+Connect using the IrDA protocol. This is the default.
 
-  Compatibility Options
-    -U *uuid*, --uuid *uuid*
-        Select the UUID to connect with. Recognized values are currently
-        "none" needed by some Nokia mobile devices, "FBS" (default) for the
-        normal file browsing service, "IRMC" for IRMC synchronisation and
-        "S45" when connecting to a Siemens Mobile phone via cable or "SHARP"
-        for PCSOFTWARE UUID with Sharp devices.
+*-b* _device_, *--bluetooth* _device_::
+Connect to this bluetooth device. If the device is not given the first
+device found will be used.
 
-    -H, --noconn
-        Suppress connection IDs (i.e. send no connection header to the
-        mobile).
+*-B* _number_, *--channel* _number_::
 
-    -S, --nopath
-        Don't use "setpath" commands (i.e. send the whole path as filename
-        to the mobile). Can be used together with --noconn and --uuid none
-        to send an OBEX-PUSH.
+Use this bluetooth channel when connecting.
+The channel will be discoverd automatically if this option is not used.
 
-  Setting The File Path
-    -c *folder*, --chdir *folder*
-        Set the mobiles current working directory.
+*-d* _no/address_, *--hci* _no/address_::
 
-    -C *folder*, --mkdir *folder*
-        Set the mobiles current working directory. The folder will be
-        created if it doesn't exist.
+Use the bluetooth device referenced by number or address as
+source device for the connection.
 
-    -l *folder*, --list *folder*
-        List a folder.
+*-u* _intf no_, *--usb* _intf no_::
 
-  Sending And Retrieving Files
-    -o *path*, --output *path*
-        Specify the target file name, overriding the implicit local name
-        from --get or the implicit remote name from --put
+Connect to this usb interface or list all available usb interfaces.
 
-    -g *source*, --get *source*
-        Retrieve files from mobile.
+*-t* _device_, *--tty* _device_::
 
-    -G *source*, --getdelete *source*
-        Retrieve files from mobile and delete them on the mobile
+Connect to this tty device.
 
-    -p *source*, --put *source*
-        Send files to the mobile.
+*-n* _host_, *--network* _host_::
 
-    -k *source*, --delete *source*
-        Delete files from the mobile.
+Connect to this network host.
 
-  Experimental Extras
-    -X, --capability
-        Retrieve the capability object from the mobile (if available).
 
-        Probe and report device characteristics
+=== Compatibility Options
 
-    -x, --info
-        Retrieve misc infos from mobile. I.e. memory size and free memory.
-        Siemens specific for now.
 
-    -m *src* *dest*, --move *src* *dest*
-        Move (rename) files on the mobile. Siemens specific for now.
+*-U* _uuid_, *--uuid* _uuid_::
 
-  Version Information And Help
-    -v, --verbose
-        Be verbose and give some additional infos.
+Select the UUID to connect with. Recognized values are currently
+"none" needed by some Nokia mobile devices,
+"FBS" (default) for the normal file browsing service,
+"IRMC" for IRMC synchronisation and
+"S45" when connecting to a Siemens Mobile phone via cable or
+"SHARP" for PCSOFTWARE UUID with Sharp devices.
 
-    -V, --version
-        Print version string and exit.
+*-H*, *--noconn*::
 
-    -h, --help, --usage
-        Print short usage instructions.
+Suppress connection IDs (i.e. send no connection header to the mobile).
 
-EXAMPLES
-    To get the directory listing from the first irda device:
-        obexftp -i -l or just obexftp -l as IrDA is the default.
+*-S*, *--nopath*::
 
-    To get the file bar from directory foo from the first bluetooth device:
-        obexftp -b -c foo -g bar
+Don't use "setpath" commands (i.e. send the whole path as filename to the
+mobile).
+Can be used together with *--noconn* and *--uuid none* to send an OBEX-PUSH.
 
-    To send the file bar to directory foo with device on first serial port:
-        obexftp -t /dev/ttyS0 -c foo -p bar
 
-    It is possible to use RfComm (serial port over bluetooth):
-        obexftp -t /dev/rfcomm0 -c foo -p bar
+=== Setting The File Path
 
-    And also IrComm (serial port over IrDA):
-        obexftp -t /dev/ircomm0 -c foo -p bar
 
-    To send the file bar using plain OBEX PUSH:
-        obexftp --bluetooth --nopath --noconn --uuid none --put bar
+*-c* _folder_, *--chdir* _folder_::
 
-SEE ALSO
-    obexftpd(1), openobex(3), obexftp(3), multicobex(3), libbfb(3).
+Set the mobiles current working directory.
 
-BUGS
-    Bugs ? Features !
+*-C* _folder_, *--mkdir* _folder_::
 
-NOTES
-    The software has been tested and reported working on at least Siemens,
-    Ericsson, and Nokia phones.
+Set the mobiles current working directory.
+The folder will be created if it doesn't exist.
 
-AUTHOR
-    Christian W. Zuckschwerdt <zany@triq.net>
+*-l* _folder_, *--list* _folder_::
+
+List a folder.
+
+
+=== Sending And Retrieving Files
+
+*-o* _path_, *--output* _path_::
+
+Specify the target file name, overriding the implicit local name from *--get*
+or the implicit remote name from *--put*
+
+*-g* _source_, *--get* _source_::
+
+Retrieve files from mobile.
+
+*-G* _source_, *--getdelete* _source_::
+
+Retrieve files from mobile and delete them on the mobile
+
+*-p* _source_, *--put* _source_::
+
+Send files to the mobile.
+
+*-k* _source_, *--delete* _source_::
+
+Delete files from the mobile.
+
+
+=== Experimental Extras
+
+*-X*, *--capability*::
+
+Retrieve the capability object from the mobile (if available).
+
+*-Y*, *--probe*::
+
+Probe and report device characteristics
+
+*-x*, *--info*::
+
+Retrieve misc infos from mobile. I.e. memory size and free memory.
+Siemens specific for now.
+
+*-m* _src_ _dest_, *--move* _src_ _dest_::
+
+Move (rename) files on the mobile. Siemens specific for now.
+
+
+=== Version Information And Help
+
+*-v*, *--verbose*::
+
+Be verbose and give some additional infos.
+
+*-V*, *--version*::
+
+Print version string and exit.
+
+*-h*, *--help*, *--usage*::
+
+Print short usage instructions.
+
+
+== EXAMPLES
+
+To get the directory listing from the first irda device::
+
+*obexftp -i -l*
+or just
+*obexftp -l*
+as IrDA is the default.
+
+To get the file bar from directory foo from the first bluetooth device::
+
+*obexftp -b -c foo -g bar*
+
+To send the file bar to directory foo with device on first serial port::
+
+*obexftp -t /dev/ttyS0 -c foo -p bar*
+
+It is possible to use RfComm (serial port over bluetooth)::
+
+*obexftp -t /dev/rfcomm0 -c foo -p bar*
+
+And also IrComm (serial port over IrDA)::
+
+*obexftp -t /dev/ircomm0 -c foo -p bar*
+
+To send the file bar using plain OBEX PUSH::
+
+*obexftp --bluetooth --nopath --noconn --uuid none --put bar*
+
+
+== SEE ALSO
+
+obexftpd(1), openobex(3), obexftp(3), multicobex(3), libbfb(3).
+
+== BUGS
+
+Bugs ? Features !
+
+== NOTES
+
+The software has been tested and reported working on at least Siemens, Ericsson, and Nokia phones.
+
+== AUTHOR
+
+Christian W. Zuckschwerdt <zany@triq.net>
 
