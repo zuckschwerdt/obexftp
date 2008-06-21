@@ -15,7 +15,7 @@ obexftp.so: ruby_wrap.c Makefile.ruby
 	$(MAKE) -fMakefile.ruby
 
 install-data-local: Makefile.ruby
-	$(MAKE) -fMakefile.ruby install
+	$(MAKE) -j1 -fMakefile.ruby install
 
 #uninstall
 #./lib/ruby/site_ruby/1.8/i686-linux/obexftp.so
