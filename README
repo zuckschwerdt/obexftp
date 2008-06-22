@@ -66,6 +66,24 @@ configure.
 	--disable-perl --disable-python --disable-ruby --disable-tcl
 
 
+Building from CVS/SVN/GIT
+-------------------------
+
+Prepare the source tree with:
+	# autoreconf --install --force
+
+If that doesn't work or you want to control the individual steps run:
+
+	# aclocal --force -I m4
+	# libtoolize --copy --force	||	glibtoolize --copy --force
+	# autoconf --force
+	# autoheader --force
+	# automake --add-missing --copy --force-missing
+
+Then do a full configure and make:
+	# ./configure --enable-swig --enable-builddocs && make
+
+
 Further Development
 -------------------
 

@@ -1,0 +1,8 @@
+#!/bin/sh
+
+test -f config.status && make maintainer-clean
+
+autoreconf --verbose --force --install
+
+./configure ${@:- --enable-swig --enable-tcl --enable-builddocs --prefix=/usr}
+
