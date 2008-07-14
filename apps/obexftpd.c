@@ -40,10 +40,6 @@
 #include <fcntl.h>
 #ifdef _WIN32
 #include <winsock2.h>
-#ifdef HAVE_BLUETOOTH
-#include <ws2bth.h>
-#define bdaddr_t	BTH_ADDR
-#endif
 #define S_IRGRP 0
 #define S_IROTH 0
 #define S_IWGRP 0
@@ -77,9 +73,6 @@
 #define CUR_DIR				"./"
 
 
-#ifdef HAVE_BLUETOOTH
-static bdaddr_t *bt_src = NULL;
-#endif
 static char *device = NULL;
 static int channel = 10; /* OBEX_PUSH_HANDLE */
 
@@ -888,7 +881,7 @@ reset:
 	       	break;
 #ifdef HAVE_BLUETOOTH
        	case OBEX_TRANS_BLUETOOTH:
-		if (0 > BtOBEX_ServerRegister(handle, bt_src, channel)) {
+		if (0 > BtOBEX_ServerRegister(handle, /*bdaddr_t *bt_src*/NULL, channel)) {
        			perror("failed to register bluetooth server");
 	       		exit(-1);
 		}

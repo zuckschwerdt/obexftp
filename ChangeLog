@@ -1,3 +1,9 @@
+ObexFTP 0.23 (unreleased)
+----------------------------------
+
+	* removing bdaddr_t reference from obexftpd.c
+
+
 ObexFTP 0.22 (released 2008-06-15)
 ----------------------------------
 
