@@ -213,7 +213,7 @@ inline static void FL_XML_BODY_FILENAME(struct rawdata_stream *stream, char *nam
 
 inline static void FL_XML_BODY_SIZE(struct rawdata_stream *stream, unsigned int size)	
 {
-	const char* format = "size=\"%d\" ";
+	const char format[] = "size=\"%d\" ";
 	char str_size[sizeof(format)+14];
 
 	snprintf(str_size,sizeof(str_size), format, size);
@@ -222,7 +222,7 @@ inline static void FL_XML_BODY_SIZE(struct rawdata_stream *stream, unsigned int 
 
 inline static void FL_XML_BODY_PERM(struct rawdata_stream *stream, mode_t file, mode_t dir)	
 {
-	const char* format = "user-perm=\"%s%s%s\" ";
+	const char format[] = "user-perm=\"%s%s%s\" ";
 	char str_perm[sizeof(format)];
 
 	snprintf(str_perm,sizeof(str_perm),format,
