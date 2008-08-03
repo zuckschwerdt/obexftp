@@ -51,6 +51,8 @@
 
 #ifdef HAVE_BLUETOOTH
 #include "bt_kit.h"
+#else
+#define ESOCKTNOSUPPORT	WSAESOCKTNOSUPPORT
 #endif /* HAVE_BLUETOOTH */
 
 #include <openobex/obex.h>
