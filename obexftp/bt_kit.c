@@ -27,7 +27,12 @@
 #include <stdlib.h>
 #include <unistd.h>
 
-#ifndef _WIN32
+#ifdef _WIN32
+#include <winsock2.h>
+#include <ws2bth.h>
+#define WSA_VER_MAJOR 2
+#define WSA_VER_MINOR 2
+#else
 #include <netinet/in.h>
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -36,33 +41,7 @@
 #include "bt_kit.h"
 
 #include <common.h>
- 
-#ifdef HAVE_BLUETOOTH
 
-#ifdef _WIN32
-/**
-	Implementation of str2ba for winsock2.
- */
-int str2ba(const char *straddr, BTH_ADDR *btaddr)
-{
-	int i;
-	unsigned int aaddr[6];
-	BTH_ADDR tmpaddr = 0;
-
-	if (sscanf(straddr, "%02x:%02x:%02x:%02x:%02x:%02x",
-			&aaddr[0], &aaddr[1], &aaddr[2],
-			&aaddr[3], &aaddr[4], &aaddr[5]) != 6)
-		return 1;
-	*btaddr = 0;
-	for (i = 0; i < 6; i++) {
-		tmpaddr = (BTH_ADDR) (aaddr[i] & 0xff);
-		*btaddr = ((*btaddr) << 8) + tmpaddr;
-	}
-	return 0;
-}
-#endif /* _WIN32 */
-
-#ifdef HAVE_SDPLIB /* should switch on OS here */
 
 /**
 	Nokia OBEX PC Suite Services.
@@ -77,12 +56,247 @@ int str2ba(const char *straddr, BTH_ADDR *btaddr)
 
 
 /**
+	Allocate and setup the network stack.
+
+	\note Needed for win32 winsock compatibility.
+ */
+int btkit_init()
+{
+#ifdef _WIN32
+	WORD wVersionRequired = MAKEWORD(WSA_VER_MAJOR,WSA_VER_MINOR);
+	WSADATA lpWSAData;
+	if (WSAStartup(wVersionRequired, &lpWSAData) != 0) {
+		DEBUG(2, "%s: WSAStartup failed (%d)\n", __func__, WSAGetLastError());
+		return -1;
+	}
+	if (LOBYTE(lpWSAData.wVersion) != WSA_VER_MAJOR ||
+	    HIBYTE(lpWSAData.wVersion) != WSA_VER_MINOR) {
+		DEBUG(2, "%s: WSA version mismatch\n", __func__);
+		WSACleanup();
+		return -1;
+	}
+#endif /* _WIN32 */
+	return 0;
+}
+
+
+/**
+	Tear-down and free the network stack.
+
+	\note Needed for win32 winsock compatibility.
+ */
+int btkit_exit()
+{
+#ifdef _WIN32
+	if (WSACleanup() != 0) {
+		DEBUG(2, "%s: WSACleanup failed (%d)\n", __func__, WSAGetLastError());
+		return -1;
+	}
+#endif /* _WIN32 */
+	return 0;
+}
+
+ 
+#ifdef HAVE_BLUETOOTH
+
+#ifdef _WIN32
+//void baswap(bdaddr_t *dst, const bdaddr_t *src)
+//bdaddr_t *strtoba(const char *str)
+//char *batostr(const bdaddr_t *ba)
+
+/**
+	Implementation of ba2str for winsock2.
+ */
+int ba2str(const bdaddr_t *btaddr, char *straddr)
+{
+	/* WSAAddressToString() is not useful, it adds parentheses */
+        unsigned char *b = btaddr;
+        return sprintf(straddr, "%2.2X:%2.2X:%2.2X:%2.2X:%2.2X:%2.2X",
+                b[7], b[6], b[5], b[4], b[3], b[2]);
+
+}
+
+
+/**
+	Implementation of str2ba for winsock2.
+ */
+int str2ba(const char *straddr, bdaddr_t *btaddr)
+{
+	int i;
+	unsigned int aaddr[6];
+	bdaddr_t tmpaddr = 0;
+
+	if (sscanf(straddr, "%02x:%02x:%02x:%02x:%02x:%02x",
+			&aaddr[0], &aaddr[1], &aaddr[2],
+			&aaddr[3], &aaddr[4], &aaddr[5]) != 6)
+		return 1;
+	*btaddr = 0;
+	for (i = 0; i < 6; i++) {
+		tmpaddr = (bdaddr_t) (aaddr[i] & 0xff);
+		*btaddr = ((*btaddr) << 8) + tmpaddr;
+	}
+	return 0;
+}
+
+
+char **btkit_discover(const char *src)
+{
+	unsigned int ret;
+	WSAQUERYSET querySet;
+	char addressAsString[18];
+	char **res, **p;
+
+	memset(&querySet, 0, sizeof(querySet));
+	querySet.dwSize = sizeof(querySet);
+	querySet.dwNameSpace = NS_BTH;
+
+	HANDLE hLookup;
+	DWORD flags = LUP_CONTAINERS | LUP_FLUSHCACHE | LUP_RETURN_ADDR | LUP_RES_SERVICE;
+
+	ret = WSALookupServiceBegin(&querySet, flags, &hLookup);
+	if (ret != 0) {
+		DEBUG(2, "%s: WSALookupServiceBegin failed (%d)\n", __func__, WSAGetLastError());
+	}
+
+	p = res = calloc(15 + 1, sizeof(char *));
+	for (;;) {
+
+		BYTE buffer[1000];
+		DWORD bufferLength = sizeof(buffer);
+		WSAQUERYSET *pResults = (WSAQUERYSET*)&buffer;
+
+		ret = WSALookupServiceNext(hLookup, flags, &bufferLength, pResults);
+		if (GetLastError() == WSA_E_NO_MORE) {
+			break;
+		}
+		if (ret != 0) {
+			DEBUG(2, "%s: WSALookupServiceNext failed (%d)\n", __func__, WSAGetLastError());
+		}
+
+		ba2str(pResults->lpcsaBuffer->RemoteAddr.lpSockaddr, addressAsString);
+		DEBUG(3, "%s: Found\t%s\n", __func__, addressAsString);
+		*p++ = strdup(addressAsString);
+	}
+
+	ret = WSALookupServiceEnd(hLookup);
+	if (ret != 0) {
+		DEBUG(2, "%s: WSALookupServiceEnd failed (%d)\n", __func__, WSAGetLastError());
+	}
+	return res;
+}
+
+
+char *btkit_getname(const char *src, const char *addr)
+{
+	unsigned int ret;
+	WSAQUERYSET querySet;
+	char addressAsString[18];
+	char *res = NULL;
+
+	memset(&querySet, 0, sizeof(querySet));
+	querySet.dwSize = sizeof(querySet);
+	querySet.dwNameSpace = NS_BTH;
+
+	HANDLE hLookup;
+	DWORD flags = LUP_CONTAINERS | LUP_FLUSHCACHE | LUP_RETURN_ADDR | LUP_RES_SERVICE;
+
+	ret = WSALookupServiceBegin(&querySet, flags, &hLookup);
+	if (ret != 0) {
+		DEBUG(2, "%s: WSALookupServiceBegin failed (%d)\n", __func__, WSAGetLastError());
+	}
+
+	for (;;) {
+
+		BYTE buffer[1000];
+		DWORD bufferLength = sizeof(buffer);
+		WSAQUERYSET *pResults = (WSAQUERYSET*)&buffer;
+
+		ret = WSALookupServiceNext(hLookup, flags | LUP_RETURN_NAME, &bufferLength, pResults);
+		if (GetLastError() == WSA_E_NO_MORE) {
+			break;
+		}
+		if (ret != 0) {
+			DEBUG(2, "%s: WSALookupServiceNext failed (%d)\n", __func__, WSAGetLastError());
+		}
+
+		ba2str(pResults->lpcsaBuffer->RemoteAddr.lpSockaddr, addressAsString);
+		if (!strcmp(addressAsString, addr)) {
+			DEBUG(3, "%s: Found\t%s\n", __func__, pResults->lpszServiceInstanceName);
+			res = pResults->lpszServiceInstanceName;
+			break;
+		}
+		DEBUG(3, "%s: Skipping\t%s\n", __func__, pResults->lpszServiceInstanceName);
+	}
+
+	ret = WSALookupServiceEnd(hLookup);
+	if (ret != 0) {
+		DEBUG(2, "%s: WSALookupServiceEnd failed (%d)\n", __func__, WSAGetLastError());
+	}
+	return res;
+}
+
+
+// http://msdn2.microsoft.com/en-us/library/aa362914.aspx
+int btkit_browse(const char *src, const char *addr, int svclass)
+{
+	unsigned int ret;
+	WSAQUERYSET querySet;
+	char addressAsString[20];
+	DWORD addressSize = sizeof(addressAsString);
+
+	memset(&querySet, 0, sizeof(querySet));
+	querySet.dwSize = sizeof(querySet);
+	querySet.dwNameSpace = NS_BTH;
+//	querySet.lpServiceClassId = RFCOMM;
+	querySet.lpszContext = addressAsString;
+
+	if (0 == WSAAddressToString(lpSockaddr, sizeof(bdaddr_t), NULL, addressAsString, &addressSize)) {
+		printf("search address: %s\n", addressAsString);
+	}
+
+	HANDLE hLookup;
+	DWORD flags = LUP_NOCONTAINERS | LUP_FLUSHCACHE | LUP_RETURN_ADDR | LUP_RES_SERVICE
+	    | LUP_RETURN_NAME | LUP_RETURN_TYPE | LUP_RETURN_BLOB;
+
+	ret = WSALookupServiceBegin(&querySet, flags, &hLookup);
+	if (ret != 0) {
+		DEBUG(2, "%s: WSALookupServiceBegin failed (%d)\n", __func__, WSAGetLastError());
+	}
+
+	for (;;) {
+
+		BYTE buffer[1000];
+		DWORD bufferLength = sizeof(buffer);
+		WSAQUERYSET *pResults = (WSAQUERYSET*)&buffer;
+
+		ret = WSALookupServiceNext(hLookup, flags, &bufferLength, pResults);
+		if (GetLastError() == WSA_E_NO_MORE) {
+			break;
+		}
+		if (ret != 0) {
+			DEBUG(2, "%s: WSALookupServiceNext failed (%d)\n", __func__, WSAGetLastError());
+		}
+
+		DEBUG(3, "%s: Found\t%s\n", __func__, pResults->lpszServiceInstanceName);
+	}
+
+	ret = WSALookupServiceEnd(hLookup);
+	if (ret != 0) {
+		DEBUG(2, "%s: WSALookupServiceEnd failed (%d)\n", __func__, WSAGetLastError());
+	}
+	return 0;
+}
+
+#else /* _WIN32 */
+
+#ifdef HAVE_SDPLIB /* should switch on OS here */
+
+
+/**
 	Discover all bluetooth devices in range.
 	\param src optional source interface address (HCI or MAC)
 	\return an array of device addresses
  */
-// Win32 note: WSALookupServiceBegin for Device Inquiry
-// see http://msdn2.microsoft.com/en-us/library/aa362913.aspx
 char **btkit_discover(const char *src)
 {
 	char **res;
@@ -215,11 +429,9 @@ static int browse_sdp_uuid(sdp_session_t *sess, uuid_t *uuid)
 	\return the channel on which the service runs
  */
 // Win32 note:
-// WSALookupServiceBegin for Service Discovery
-// see http://msdn2.microsoft.com/en-us/library/aa362914.aspx
 // WSALookupServiceBegin( WSAQUERYSET with
-//  lpServiceClassId = RFCOMM
 //  dwNameSpace = NS_BTH
+//  lpServiceClassId = RFCOMM
 //  lpszContext = WSAAddressToString  )
 // WSALookupServiceNext
 // WSALookupServiceEnd
@@ -449,6 +661,7 @@ int btkit_unregister_service(int UNUSED(svclass))
 }
 
 #endif /* HAVE_SDPLIB */
+#endif /* _WIN32 */
 
 #else
 #warning "bluetooth not available"

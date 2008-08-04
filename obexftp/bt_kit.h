@@ -57,6 +57,7 @@
 #define BDADDR_ANY	(&(BTH_ADDR){BTH_ADDR_NULL})
 #define bacpy(dst,src)	memcpy((dst),(src),sizeof(BTH_ADDR))
 #define bacmp(a,b)	memcmp((a),(b),sizeof(BTH_ADDR))
+BTKITSYM int ba2str(const bdaddr_t *btaddr, char *straddr);
 BTKITSYM int str2ba(const char *straddr, BTH_ADDR *btaddr);
 
 /* FreeBSD 5 and up */
@@ -90,6 +91,11 @@ BTKITSYM int str2ba(const char *straddr, BTH_ADDR *btaddr);
 #include <bluetooth/sdp_lib.h>
 
 #endif /* _WIN32 */
+
+/* library setup/teardown functions (needed for win32) */
+
+BTKITSYM int btkit_init();
+BTKITSYM int btkit_exit();
 
 /* additional functions */
 
