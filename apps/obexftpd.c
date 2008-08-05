@@ -923,7 +923,10 @@ reset:
 	if (use_sdp)
 	{
 		fprintf(stderr, "sdp unregister\n");
-		obexftp_sdp_unregister_ftp();
+		if (0 > obexftp_sdp_unregister_ftp())
+		{
+       			fprintf(stderr, "unregister from SDP Server failed.\n");
+		}
 	}
 
 }
