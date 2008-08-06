@@ -29,6 +29,10 @@
 
 #include <sys/types.h>
 
+#ifdef HAVE_SYS_TIMES_H
+#include <sys/times.h>
+#endif
+
 #include <obexftp/obexftp.h>
 #include <obexftp/client.h>
 #include <obexftp/uuid.h>
@@ -245,6 +249,9 @@ static int use_path=1;
 static int cli_connect_uuid(const char *uuid, int uuid_len)
 {
 	int ret, retry;
+#ifdef HAVE_SYS_TIMES_H
+	clock_t clock;
+#endif
 
 	if (cli == NULL) {
 
@@ -265,7 +272,14 @@ static int cli_connect_uuid(const char *uuid, int uuid_len)
 	for (retry = 0; retry < 3; retry++) {
 
 		/* Connect */
+#ifdef HAVE_SYS_TIMES_H
+		clock = times(NULL);
+#endif
 		ret = obexftp_connect_src(cli, src_dev, device, channel, uuid, uuid_len);
+#ifdef HAVE_SYS_TIMES_H
+		clock = times(NULL)-clock;
+		fprintf(stderr, "Tried to connect for %ldms\n", clock);
+#endif
 		if (ret >= 0)
        			return TRUE;
 		switch (errno) {
