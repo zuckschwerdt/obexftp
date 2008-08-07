@@ -32,7 +32,7 @@ typedef void (*obexftp_info_cb_t) (int event, const char *buf, int len, void *da
 
 /** ObexFTP message callback events */
 enum {
-	OBEXFTP_EV_ERRMSG,
+	OBEXFTP_EV_ERRMSG, /* not used / internal error */
 
 	OBEXFTP_EV_OK,
 	OBEXFTP_EV_ERR,

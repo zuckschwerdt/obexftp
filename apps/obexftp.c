@@ -74,6 +74,7 @@ static void info_cb(int event, const char *msg, int len, void *UNUSED(data))
 		break;
 
 	case OBEXFTP_EV_ERR:
+		// OBEX_EV_REQDONE: obex_rsp=43  (SE user reject)
 		fprintf(stderr, "failed: %s\n", msg);
 		break;
 	case OBEXFTP_EV_OK:
@@ -260,7 +261,7 @@ static int cli_connect_uuid(const char *uuid, int uuid_len)
 		if(cli == NULL) {
 			fprintf(stderr, "Error opening obexftp-client\n");
 			exit(1);
-			//return FALSE;
+			//return -1;
 		}
 		if (!use_conn) {
 			cli->quirks &= ~OBEXFTP_CONN_HEADER;
@@ -281,7 +282,7 @@ static int cli_connect_uuid(const char *uuid, int uuid_len)
 		fprintf(stderr, "Tried to connect for %ldms\n", clock);
 #endif
 		if (ret >= 0)
-       			return TRUE;
+       			return ret;
 		switch (errno) {
 		
 		case ETIMEDOUT:
@@ -290,7 +291,7 @@ static int cli_connect_uuid(const char *uuid, int uuid_len)
 
 		case ECONNREFUSED:
 			perror("The user may have rejected the transfer");
-			return FALSE;
+			return -errno;
 
 		case EHOSTDOWN:
 			perror("The device may be out of range or turned off");
@@ -310,14 +311,14 @@ static int cli_connect_uuid(const char *uuid, int uuid_len)
 
 	obexftp_close(cli);
 	cli = NULL;
-	return FALSE;
+	return ret;
 }
 
 /* connect, possibly without fbs uuid. won't re-connect */
 static int cli_connect()
 {
 	if (cli != NULL) {
-		return TRUE;
+		return 0;
 	}
 
 	/* complete bt address if necessary */
@@ -325,10 +326,10 @@ static int cli_connect()
 		find_bt(device, &device, &channel);
 		// we should free() the find_bt result at some point
 	}
-	if (!cli_connect_uuid(use_uuid, use_uuid_len))
+	if (cli_connect_uuid(use_uuid, use_uuid_len) < 0)
 		exit(1);
 
-	return TRUE;
+	return 0;
 }
 
 static void cli_disconnect()
@@ -346,7 +347,7 @@ static void probe_device_uuid(const char *uuid, int uuid_len)
 {
 	int rsp[10];
 	
-	if (!cli_connect_uuid(uuid, uuid_len)) {
+	if (cli_connect_uuid(uuid, uuid_len) < 0) {
 		printf("couldn't connect.\n");
 		return;
 	}
@@ -436,10 +437,11 @@ static void probe_device()
 
 int main(int argc, char *argv[])
 {
-	int verbose=0;
+	int verbose = 0;
 	int most_recent_cmd = 0;
 	char *output_file = NULL;
 	char *move_src = NULL;
+	int ret = 0;
 
 	/* preset mode of operation depending on our name */
 	if (strstr(argv[0], "ls") != NULL)	most_recent_cmd = 'l';
@@ -613,7 +615,7 @@ int main(int argc, char *argv[])
 				optarg = argv[optind];
 				optind++;
 			}
-			if(cli_connect ()) {
+			if (cli_connect() >= 0) {
 				/* List folder */
 				stat_entry_t *ent;
 				void *dir = obexftp_opendir(cli, optarg);
@@ -635,25 +637,25 @@ int main(int argc, char *argv[])
 				optarg = argv[optind];
 				optind++;
 			}
-			if(cli_connect ()) {
+			if (cli_connect() >= 0) {
 				/* List folder */
-				(void) obexftp_list(cli, NULL, optarg);
+				ret = obexftp_list(cli, NULL, optarg);
 			}
 			most_recent_cmd = c;
 			break;
 
 		case 'c':
-			if(cli_connect ()) {
+			if (cli_connect() >= 0) {
 				/* Change dir */
-				(void) obexftp_setpath(cli, optarg, 0);
+				ret = obexftp_setpath(cli, optarg, 0);
 			}
 			most_recent_cmd = c;
 			break;
 
 		case 'C':
-			if(cli_connect ()) {
+			if (cli_connect() >= 0) {
 				/* Change or Make dir */
-				(void) obexftp_setpath(cli, optarg, 1);
+				ret = obexftp_setpath(cli, optarg, 1);
 			}
 			most_recent_cmd = c;
 			break;
@@ -664,44 +666,44 @@ int main(int argc, char *argv[])
 
 		case 'g':
 		case 'G':
-			if(cli_connect ()) {
+			if (cli_connect() >= 0) {
 				char *p; /* basename or output_file */
 				if ((p = strrchr(optarg, '/')) != NULL) p++;
 				else p = optarg;
 				if (output_file) p = output_file;
 				/* Get file */
 				if (obexftp_get(cli, p, optarg) && c == 'G')
-					(void) obexftp_del(cli, optarg);
+					ret = obexftp_del(cli, optarg);
 				output_file = NULL;
 			}
 			most_recent_cmd = c;
 			break;
 
 		case 'p':
-			if(cli_connect ()) {
+			if (cli_connect() >= 0) {
 				char *p; /* basename or output_file */
 				if ((p = strrchr(optarg, '/')) != NULL) p++;
 				else p = optarg;
 				if (output_file) p = output_file;
 				/* Send file */
-				(void) obexftp_put_file(cli, optarg, p);
+				ret = obexftp_put_file(cli, optarg, p);
 				output_file = NULL;
 			}
 			most_recent_cmd = c;
 			break;
 
 		case 'k':
-			if(cli_connect ()) {
+			if (cli_connect() >= 0) {
 				/* Delete file */
-				(void) obexftp_del(cli, optarg);
+				ret = obexftp_del(cli, optarg);
 			}
 			most_recent_cmd = c;
 			break;
 
 		case 'X':
-			if(cli_connect ()) {
+			if (cli_connect() >= 0) {
 				/* Get capabilities */
-				(void) obexftp_get_capability(cli, optarg, 0);
+				ret = obexftp_get_capability(cli, optarg, 0);
 			}
 			most_recent_cmd = 'h'; // not really
 			break;
@@ -715,7 +717,7 @@ int main(int argc, char *argv[])
 			break;
 
 		case 'x':
-			if(cli_connect ()) {
+			if (cli_connect() >= 0) {
 				/* for S65 */
 				(void) obexftp_disconnect (cli);
 				(void) obexftp_connect_uuid (cli, device, channel, UUID_S45, sizeof(UUID_S45));
@@ -733,9 +735,9 @@ int main(int argc, char *argv[])
 				move_src = optarg;
 				break;
 			}
-			if(cli_connect ()) {
+			if (cli_connect() >= 0) {
 				/* Rename a file */
-				(void) obexftp_rename(cli, move_src, optarg);
+				ret = obexftp_rename(cli, move_src, optarg);
 			}
 			move_src = NULL;
 			break;
@@ -796,6 +798,8 @@ int main(int argc, char *argv[])
 			printf("Try `%s --help' for more information.\n",
 				 argv[0]);
 		}
+		if (ret < 0)
+			printf("The operation failed with return code %d\n", -ret);
 	}
 
 	if (most_recent_cmd == 0)
@@ -810,6 +814,6 @@ int main(int argc, char *argv[])
 
 	cli_disconnect ();
 
-	exit (0);
+	exit (-ret);
 
 }

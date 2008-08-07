@@ -394,6 +394,7 @@ static void cli_obex_event(obex_t *handle, obex_object_t *object, int UNUSED(mod
 	case OBEX_EV_LINKERR:
 		cli->finished = TRUE;
 		cli->success = FALSE;
+		DEBUG(2, "%s() OBEX_EV_LINKERR\n", __func__);
 		break;
 	
 	case OBEX_EV_STREAMEMPTY:
@@ -433,7 +434,7 @@ static int obexftp_sync(obexftp_client_t *cli)
 	if(cli->success)
 		return 1;
 	else
-		return -1;
+		return - cli->obex_rsp;
 }
 
 
