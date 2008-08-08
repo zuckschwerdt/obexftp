@@ -425,8 +425,10 @@ static int obexftp_sync(obexftp_client_t *cli)
 		ret = OBEX_HandleInput(cli->obexhandle, 20);
 		DEBUG(3, "%s() OBEX_HandleInput = %d\n", __func__, ret);
 
-		if (ret <= 0)
+		if (ret <= 0) {
+			DEBUG(2, "%s() OBEX_HandleInput error: %d\n", __func__, errno);
 			return -1;
+		}
 	}
 
 	DEBUG(3, "%s() Done success=%d\n", __func__, cli->success);
