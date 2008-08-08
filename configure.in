@@ -1,6 +1,6 @@
 ## Process this file with autoconf to produce a configure script.
 # try CFLAGS="$CFLAGS -g -Wall -Wmissing-declarations -Wmissing-prototypes -Werror"
-AC_INIT(ObexFTP, 0.22, zany@triq.net)
+AC_INIT(ObexFTP, 0.23, zany@triq.net)
 #AC_CONFIG_SRCDIR(src/foo.c)
 AM_INIT_AUTOMAKE(dist-bzip2)
 AM_CONFIG_HEADER(config.h)
@@ -132,9 +132,9 @@ CFLAGS="$CFLAGS -Wall"
 
 # Project-specific settings
 # VERSION="..." already set my AM_INIT_AUTOMAKE above
-# libtool uses current:release:age to produce .c-a.a.r
+# libtool uses current:revision:age to produce .c-a.a.r
 # http://www.gnu.org/software/libtool/manual.html#Updating-version-info
-OBEXFTP_VERSION="2\:0\:2"
+OBEXFTP_VERSION="3\:0\:3"
 MULTICOBEX_VERSION="1\:1\:0"
 BFB_VERSION="0\:5\:0"
 AC_SUBST(VERSION)

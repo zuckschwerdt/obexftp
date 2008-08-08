@@ -127,6 +127,11 @@ int obexftp_connect_src(obexftp_client_t *cli,
 				/*@null@*/ const char *device, /* for INET, BLUETOOTH */
 				int port, /* INET(?), BLUETOOTH, USB*/
 				/*@null@*/ const uint8_t uuid[], uint32_t uuid_len);
+int obexftp_connect_service(obexftp_client_t *cli,
+				/*@null@*/ const char *src, /* HCI no. or address */
+				/*@null@*/ const char *device, /* for INET, BLUETOOTH */
+				int port, /* INET(?), BLUETOOTH, USB*/
+				int service);
 
 //int obexftp_connect_service(obexftp_client_t *cli,
 //				/*@null@*/ const char *service,

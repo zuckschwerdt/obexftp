@@ -564,6 +564,24 @@ int obexftp_connect_uuid(obexftp_client_t *cli, const char *device, int port, co
 }
 
 
+int obexftp_connect_service(obexftp_client_t *cli, const char *src, const char *device, int port, int service)
+{
+	uint8_t *uuid = NULL;
+	uint32_t uuid_len = 0;
+	if (service == OBEX_FTP_SERVICE) {
+		uuid = UUID_FBS;
+		uuid_len = sizeof(UUID_FBS);
+	}
+	if (service == OBEX_SYNC_SERVICE) {
+		uuid = UUID_IRMC;
+		uuid_len = sizeof(UUID_IRMC);
+	}
+	// otherwiese default to OBEX_PUSH_SERVICE
+	return obexftp_connect_src(cli, src, device, port, uuid, uuid_len);
+}
+
+
+
 /**
 	Connect this ObexFTP client using a given source address by sending an OBEX CONNECT request.
 
