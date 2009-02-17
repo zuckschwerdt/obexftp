@@ -665,6 +665,9 @@ int obexftp_connect_src(obexftp_client_t *cli, const char *src, const char *devi
 		else if (!strncmp(src, "hci", 3)) {
 			hci_devba(atoi(src + 3), &src_addr);
 		}
+		else if (atoi(src) != 0) {
+			hci_devba(atoi(src), &src_addr);
+		}
 #endif
 		else {
 			str2ba(src, &src_addr);
