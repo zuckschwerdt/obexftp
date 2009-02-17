@@ -1,7 +1,21 @@
-ObexFTP 0.23 (unreleased)
+ObexFTP 0.23 (released 2009-02-17)
 ----------------------------------
 
+	* allow win32 to use hci src names
+	* adding a simpler connect wrapper
+	* show OBEX_HandleInput errors
+	* catch errors and let the user know
+	* print timeout stats if available
+	* sdp unregister more verbose
+	* upgrading btkit
+	* fix for win32 without bt
+	* replacing deprecated automake vars
+	* sizeof() fixes
 	* removing bdaddr_t reference from obexftpd.c
+	* adding bootstrap helper
+	* concurrency bug in extconf.rb generated Makefile (fix by Alin Năstac)
+	* switching from POD to asciidoc
+	* clearing gnu-style implicit rules
 
 
 ObexFTP 0.22 (released 2008-06-15)
