@@ -28,7 +28,7 @@
 #include <string.h>
 
 #ifdef _WIN32 /* no need for iconv */
-#include <Windows.h> /* pulls in Winnls.h */
+#include <windows.h> /* pulls in Winnls.h */
 #else
 #ifdef HAVE_ICONV
 #include <iconv.h>

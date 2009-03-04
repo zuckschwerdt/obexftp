@@ -241,18 +241,21 @@ int btkit_browse(const char *src, const char *addr, int svclass)
 {
 	unsigned int ret;
 	WSAQUERYSET querySet;
-	char addressAsString[20];
+	char addressAsString[20]; // "(XX:XX:XX:XX:XX:XX)"
 	DWORD addressSize = sizeof(addressAsString);
+	snprintf(addressAsString, 20, "(%s)", addr);
+
+	/*
+	if (0 == WSAAddressToString(lpSockaddr, sizeof(bdaddr_t), NULL, addressAsString, &addressSize)) {
+		printf("search address: %s\n", addressAsString);
+	}
+	*/
 
 	memset(&querySet, 0, sizeof(querySet));
 	querySet.dwSize = sizeof(querySet);
 	querySet.dwNameSpace = NS_BTH;
 //	querySet.lpServiceClassId = RFCOMM;
 	querySet.lpszContext = addressAsString;
-
-	if (0 == WSAAddressToString(lpSockaddr, sizeof(bdaddr_t), NULL, addressAsString, &addressSize)) {
-		printf("search address: %s\n", addressAsString);
-	}
 
 	HANDLE hLookup;
 	DWORD flags = LUP_NOCONTAINERS | LUP_FLUSHCACHE | LUP_RETURN_ADDR | LUP_RES_SERVICE
@@ -285,6 +288,20 @@ int btkit_browse(const char *src, const char *addr, int svclass)
 		DEBUG(2, "%s: WSALookupServiceEnd failed (%d)\n", __func__, WSAGetLastError());
 	}
 	return 0;
+}
+
+
+int btkit_register_obex(int UNUSED(svclass), int UNUSED(channel))
+{
+	DEBUG(1, "Implement this stub.");
+	return -1;
+}
+
+
+int btkit_unregister_service(int UNUSED(svclass))
+{
+	DEBUG(1, "Implement this stub.");
+	return -1;
 }
 
 #else /* _WIN32 */
@@ -428,13 +445,6 @@ static int browse_sdp_uuid(sdp_session_t *sess, uuid_t *uuid)
 	\param addr the bluetooth address of the device to query
 	\return the channel on which the service runs
  */
-// Win32 note:
-// WSALookupServiceBegin( WSAQUERYSET with
-//  dwNameSpace = NS_BTH
-//  lpServiceClassId = RFCOMM
-//  lpszContext = WSAAddressToString  )
-// WSALookupServiceNext
-// WSALookupServiceEnd
 int btkit_browse(const char *src, const char *addr, int svclass)
 {
 	int res = -1;
