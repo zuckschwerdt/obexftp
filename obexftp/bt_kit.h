@@ -29,6 +29,18 @@
 
 #ifdef HAVE_BLUETOOTH
 
+/* Service Class UUIDs for bt browse. */
+/* Only Service Class UUID-16s are accepted (0x1000-0x12FF). Esp. not Protocol UUIDs. */
+/* Also SYNCML UUID-16s (0x0001-0x0004) are translated to correct UUID-128s. */
+#define BTKIT_SPP_SERVICE	(0x1101)	/* aka SerialPortServiceClassID_UUID16 */
+#define BTKIT_SYNC_SERVICE	(0x1104)	/* aka IrMCSyncServiceClassID_UUID16 */
+#define BTKIT_PUSH_SERVICE	(0x1105)	/* aka OBEXObjectPushServiceClassID_UUID16 */
+#define BTKIT_FTP_SERVICE	(0x1106)	/* aka OBEXFileTransferServiceClassID_UUID16 */
+#define BTKIT_SYNCML_SERVER	(0x0001)	/* aka SyncMLServer_UUID */
+#define BTKIT_SYNCML_CLIENT	(0x0002)	/* aka SyncMLClient_UUID */
+#define BTKIT_SYNCML_DM_SERVER	(0x0003)	/* aka SyncMLDMServer_UUID */
+#define BTKIT_SYNCML_DM_CLIENT	(0x0004)	/* aka SyncMLDMClient_UUID */
+
 //#ifndef _WIN32
 //#include <sys/socket.h>
 //#include <arpa/inet.h>

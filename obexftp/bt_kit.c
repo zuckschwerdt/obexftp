@@ -54,6 +54,22 @@
   0x00, 0x02, 0xee, 0x00, 0x00, 0x01 }
 #define SVC_UUID_PCSUITE ((const uint8_t []) __SVC_UUID_PCSUITE_bytes)
 
+//Nokia SyncML Server UUID 128: 00005601-0000-1000-8000-0002ee000001
+
+/* well known services 0x1000 to 0x12FF */
+#define __SVC_UUID_BASE_bytes \
+{ 0x00, 0x00, 0x00, 0x00, \
+  0x00, 0x00, 0x10, 0x00, 0x80, 0x00, \
+  0x00, 0x80, 0x5F, 0x9B, 0x34, 0xFB } 
+#define SVC_UUID_BASE ((const uint8_t []) __SVC_UUID_BASE_bytes)
+
+/* 0x0001: server; 0x0002: client; 0x0003: DM server; 0x0004: DM client */
+#define __SVC_UUID_SYNCML_bytes \
+{ 0x00, 0x00, 0x00, 0x00, \
+  0x00, 0x00, 0x10, 0x00, 0x80, 0x00, \
+  0x00, 0x02, 0xEE, 0x00, 0x00, 0x02 } 
+#define SVC_UUID_SYNCML ((const uint8_t []) __SVC_UUID_SYNCML_bytes)
+
 
 /**
 	Allocate and setup the network stack.
@@ -236,39 +252,63 @@ char *btkit_getname(const char *src, const char *addr)
 }
 
 
-// http://msdn2.microsoft.com/en-us/library/aa362914.aspx
 int btkit_browse(const char *src, const char *addr, int svclass)
 {
 	unsigned int ret;
+	int port = 0;
 	WSAQUERYSET querySet;
 	char addressAsString[20]; // "(XX:XX:XX:XX:XX:XX)"
-	DWORD addressSize = sizeof(addressAsString);
 	snprintf(addressAsString, 20, "(%s)", addr);
 
-	/*
-	if (0 == WSAAddressToString(lpSockaddr, sizeof(bdaddr_t), NULL, addressAsString, &addressSize)) {
-		printf("search address: %s\n", addressAsString);
+	if (!addr || strlen(addr) != 17) {
+		DEBUG(1, "%s: bad address\n", __func__);
+		return -1;
 	}
-	*/
+
+	if ((svclass<0x0001 || svclass>0x0004)
+	 && (svclass<0x1000 || svclass>0x12FF)) {
+		DEBUG(1, "%s: bad service class\n", __func__);
+		return -1;
+	}
+
+	GUID baseServiceClassId = {
+		0x00000000,
+		0x0000, 
+		0x1000, 
+		{ 0x80, 0x00, 0x00, 0x80, 0x5F, 0x9B, 0x34, 0xFB } 
+	}; // Bluetooth_Base_UUID
+	baseServiceClassId.Data1 = svclass;
+	
+	GUID syncmlClassId = {
+		0x00000000,
+		0x0000, 
+		0x1000, 
+		{ 0x80, 0x00, 0x00, 0x02, 0xEE, 0x00, 0x00, 0x02 } 
+	}; // common UUID for SyncML Client/Server
+	syncmlClassId.Data1 = svclass;
 
 	memset(&querySet, 0, sizeof(querySet));
 	querySet.dwSize = sizeof(querySet);
 	querySet.dwNameSpace = NS_BTH;
-//	querySet.lpServiceClassId = RFCOMM;
+	if (svclass>=0x0001 && svclass<=0x0004)
+		querySet.lpServiceClassId = &syncmlClassId;
+	else
+		querySet.lpServiceClassId = &baseServiceClassId;
 	querySet.lpszContext = addressAsString;
 
 	HANDLE hLookup;
 	DWORD flags = LUP_NOCONTAINERS | LUP_FLUSHCACHE | LUP_RETURN_ADDR | LUP_RES_SERVICE
-	    | LUP_RETURN_NAME | LUP_RETURN_TYPE | LUP_RETURN_BLOB;
+	    | LUP_RETURN_NAME;
 
 	ret = WSALookupServiceBegin(&querySet, flags, &hLookup);
 	if (ret != 0) {
 		DEBUG(2, "%s: WSALookupServiceBegin failed (%d)\n", __func__, WSAGetLastError());
+		return -1;
 	}
 
 	for (;;) {
 
-		BYTE buffer[1000];
+		BYTE buffer[4000];
 		DWORD bufferLength = sizeof(buffer);
 		WSAQUERYSET *pResults = (WSAQUERYSET*)&buffer;
 
@@ -278,16 +318,19 @@ int btkit_browse(const char *src, const char *addr, int svclass)
 		}
 		if (ret != 0) {
 			DEBUG(2, "%s: WSALookupServiceNext failed (%d)\n", __func__, WSAGetLastError());
+			break;
 		}
 
-		DEBUG(3, "%s: Found\t%s\n", __func__, pResults->lpszServiceInstanceName);
+		port = ((SOCKADDR_BTH*)pResults->lpcsaBuffer->RemoteAddr.lpSockaddr)->port;
+		DEBUG(3, "%s: Found\t%s\t%li\n", __func__, pResults->lpszServiceInstanceName, port);
 	}
 
 	ret = WSALookupServiceEnd(hLookup);
 	if (ret != 0) {
 		DEBUG(2, "%s: WSALookupServiceEnd failed (%d)\n", __func__, WSAGetLastError());
+		return -1;
 	}
-	return 0;
+	return port;
 }
 
 
@@ -476,19 +519,29 @@ int btkit_browse(const char *src, const char *addr, int svclass)
 //	*res_bdaddr = batostr(&bdswap);
 //	fprintf(stderr, "Browsing %s ...\n", *res_bdaddr);
 
+	/* special case: SyncML */
+	if (svclass >= 0x0001 && svclass <= 0x0004) {
+		unsigned short data1 = svclass;
+		sdp_uuid128_create(&root_uuid, &SVC_UUID_SYNCML);
+		memcpy(&root_uuid->value.uuid128.data[2], &data1, 2);
+		res = browse_sdp_uuid(sess, &root_uuid);
+		sdp_close(sess);
+		return res;	
+	}
+
 	/* determine the service class we're looking for */
-	if ((svclass != IRMC_SYNC_SVCLASS_ID) &&
-			(svclass != OBEX_OBJPUSH_SVCLASS_ID) &&
-			(svclass != OBEX_FILETRANS_SVCLASS_ID)) {
+	if (svclass < 0x1000 || svclass > 0x12FF) {
 		svclass = OBEX_FILETRANS_SVCLASS_ID;
-		/* or OBEX_FILETRANS_PROFILE_ID? */
 	}
 
 	/* prefer PCSUITE over FTP */
 	if (svclass == OBEX_FILETRANS_SVCLASS_ID) {
 		sdp_uuid128_create(&root_uuid, &SVC_UUID_PCSUITE);
 		res = browse_sdp_uuid(sess, &root_uuid);
-		if (res > 0) return res;
+		if (res > 0) {
+			sdp_close(sess);
+			return res;	
+		}
 	}
 
 	/* browse for the service class */
