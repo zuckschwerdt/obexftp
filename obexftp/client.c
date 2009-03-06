@@ -677,7 +677,7 @@ int obexftp_connect_src(obexftp_client_t *cli, const char *src, const char *devi
 			break;
 		}
 		if (port < 1) {
-			port = obexftp_browse_bt(device, 0);
+			port = obexftp_browse_bt(device, OBEX_FTP_SERVICE);
 		}
 		/* transform some chars to colons */
 		devicedup = devicep = strdup(device);

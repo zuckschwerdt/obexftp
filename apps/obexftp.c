@@ -269,7 +269,14 @@ static int cli_connect_uuid(const char *uuid, int uuid_len)
 		if (!use_path) {
 			cli->quirks &= ~OBEXFTP_SPLIT_SETPATH;
 		}
-	}	
+	}
+
+	/* complete bt address if necessary */
+	if (transport == OBEX_TRANS_BLUETOOTH) {
+		find_bt(device, &device, &channel);
+		// we should free() the find_bt result at some point
+	}
+
 	for (retry = 0; retry < 3; retry++) {
 
 		/* Connect */
@@ -321,11 +328,6 @@ static int cli_connect()
 		return 0;
 	}
 
-	/* complete bt address if necessary */
-	if (transport == OBEX_TRANS_BLUETOOTH) {
-		find_bt(device, &device, &channel);
-		// we should free() the find_bt result at some point
-	}
 	if (cli_connect_uuid(use_uuid, use_uuid_len) < 0)
 		exit(1);
 
