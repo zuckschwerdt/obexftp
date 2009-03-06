@@ -523,7 +523,7 @@ int btkit_browse(const char *src, const char *addr, int svclass)
 	if (svclass >= 0x0001 && svclass <= 0x0004) {
 		unsigned short data1 = svclass;
 		sdp_uuid128_create(&root_uuid, &SVC_UUID_SYNCML);
-		memcpy(&root_uuid->value.uuid128.data[2], &data1, 2);
+		memcpy(&root_uuid.value.uuid128.data[2], &data1, 2);
 		res = browse_sdp_uuid(sess, &root_uuid);
 		sdp_close(sess);
 		return res;	
