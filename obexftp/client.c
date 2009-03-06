@@ -422,7 +422,7 @@ static int obexftp_sync(obexftp_client_t *cli)
 	/* cli->finished = FALSE; */
 
 	while(cli->finished == FALSE) {
-		ret = OBEX_HandleInput(cli->obexhandle, 20);
+		ret = OBEX_HandleInput(cli->obexhandle, cli->accept_timeout);
 		DEBUG(3, "%s() OBEX_HandleInput = %d\n", __func__, ret);
 
 		if (ret <= 0) {
@@ -476,7 +476,8 @@ obexftp_client_t *obexftp_open(int transport, /*const*/ obex_ctrans_t *ctrans, o
 		return NULL;
 
 	cli->finished = TRUE;
-
+	cli->accept_timeout = 20; /* 20 seconds accept/reject timeout, default value */
+	
 	if (infocb)
 		cli->infocb = infocb;
 	else
@@ -514,6 +515,7 @@ obexftp_client_t *obexftp_open(int transport, /*const*/ obex_ctrans_t *ctrans, o
 		free(cli);
 		return NULL;
 	}
+
 	return cli;
 }
 

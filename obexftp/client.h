@@ -106,6 +106,7 @@ typedef struct {
 	cache_object_t *cache;
 	int cache_timeout;
 	int cache_maxsize;
+	int accept_timeout; /* accept/reject timeout in seconds */
 } obexftp_client_t;
 
 

@@ -244,6 +244,7 @@ static const char *use_uuid = (const char *)UUID_FBS;
 static int use_uuid_len = sizeof(UUID_FBS);
 static int use_conn=1;
 static int use_path=1;
+static int timeout = 20; /* default accept/reject timeout of 20 seconds */
 
 
 /* connect with given uuid. re-connect every time */
@@ -269,6 +270,7 @@ static int cli_connect_uuid(const char *uuid, int uuid_len)
 		if (!use_path) {
 			cli->quirks &= ~OBEXFTP_SPLIT_SETPATH;
 		}
+		cli->accept_timeout=timeout;
 	}
 
 	/* complete bt address if necessary */
@@ -493,6 +495,7 @@ int main(int argc, char *argv[])
 			{"uuid",	optional_argument, NULL, 'U'},
 			{"noconn",	no_argument, NULL, 'H'},
 			{"nopath",	no_argument, NULL, 'S'},
+			{"timeout",	required_argument, NULL, 'T'},
 			{"list",	optional_argument, NULL, 'l'},
 			{"chdir",	required_argument, NULL, 'c'},
 			{"mkdir",	required_argument, NULL, 'C'},
@@ -512,7 +515,7 @@ int main(int argc, char *argv[])
 			{0, 0, 0, 0}
 		};
 		
-		c = getopt_long (argc, argv, "-ib::B:d:u::t:n:U::HSL::l::c:C:f:o:g:G:p:k:XYxm:VvhN:FP",
+		c = getopt_long (argc, argv, "-ib::B:d:u::t:n:U::HST:L::l::c:C:f:o:g:G:p:k:XYxm:VvhN:FP",
 				 long_options, &option_index);
 		if (c == -1)
 			break;
@@ -609,6 +612,14 @@ int main(int argc, char *argv[])
 
 		case 'S':
 			use_path=0;
+			break;
+
+		case 'T':
+			timeout = atoi(optarg);
+			if (timeout < 0) {
+				fprintf(stderr, "timeout can't be less than 0. Using default.\n");
+				timeout = 20;
+			}
 			break;
 
 		case 'L':
@@ -774,7 +785,8 @@ int main(int argc, char *argv[])
 				" -n, --network <host>        connect to this host\n\n"
 				" -U, --uuid                  use given uuid (none, FBS, IRMC, S45, SHARP)\n"
 				" -H, --noconn                suppress connection ids (no conn header)\n"
-				" -S, --nopath                dont use setpaths (use path as filename)\n\n"
+				" -S, --nopath                dont use setpaths (use path as filename)\n"
+				" -T, --timeout <seconds>     timeout transfer if no accept/reject received\n\n"
 				" -c, --chdir <DIR>           chdir\n"
 				" -C, --mkdir <DIR>           mkdir and chdir\n"
 				" -l, --list [<FOLDER>]       list current/given folder\n"
