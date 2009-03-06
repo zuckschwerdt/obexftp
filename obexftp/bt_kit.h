@@ -19,12 +19,19 @@
 	License along with ObexFTP. If not, see <http://www.gnu.org/>.
  */
 
+#ifndef BT_KIT_H
+#define BT_KIT_H
+
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
 
 #ifndef BTKITSYM
 #define BTKITSYM	__attribute__ ((visibility ("hidden")))
+#endif
+
+#ifdef __cplusplus
+extern "C" {
 #endif
 
 #ifdef HAVE_BLUETOOTH
@@ -119,3 +126,9 @@ BTKITSYM int btkit_unregister_service(int svclass);
 //KITSYM int btkit_open_rfcomm(char *src, char *dest, int channel);
 
 #endif /* HAVE_BLUETOOTH */
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif /* BT_KIT_H */

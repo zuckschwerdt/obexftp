@@ -43,6 +43,8 @@
 #include <common.h>
 
 
+#ifdef HAVE_BLUETOOTH
+
 /**
 	Nokia OBEX PC Suite Services.
 	binary representation of 00005005-0000-1000-8000-0002ee000001
@@ -113,8 +115,6 @@ int btkit_exit()
 }
 
  
-#ifdef HAVE_BLUETOOTH
-
 #ifdef _WIN32
 //void baswap(bdaddr_t *dst, const bdaddr_t *src)
 //bdaddr_t *strtoba(const char *str)
