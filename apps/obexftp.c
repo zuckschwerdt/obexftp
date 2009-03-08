@@ -585,6 +585,14 @@ int main(int argc, char *argv[])
 			transport = OBEX_TRANS_INET;
        			device = optarg;
 			channel = 0;
+			{
+				char *p;
+				if ((p=strchr(optarg, ':'))) {
+					*p = '\0';
+					channel = atoi(++p);
+				}
+			}
+
 
 			{
 				int n;
