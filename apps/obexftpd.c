@@ -873,8 +873,7 @@ reset:
 #else
                 (void) inet_aton(device, &saddr.sin_addr);
 #endif
-		//InOBEX_ServerRegister(handle); /* always port 650 */
-		if (0 > OBEX_ServerRegister(handle, (struct sockaddr *)&saddr, sizeof(saddr))) {
+		if (0 > TcpOBEX_ServerRegister(handle, (struct sockaddr *)&saddr, sizeof(saddr))) {
        			perror("failed to register inet server");
 	       		exit(-1);
 		}
