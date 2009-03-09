@@ -88,7 +88,7 @@ BTKITSYM int str2ba(const char *straddr, BTH_ADDR *btaddr);
 #define rc_bdaddr	rfcomm_bdaddr
 #define rc_channel	rfcomm_channel
 #define BTPROTO_RFCOMM	BLUETOOTH_PROTO_RFCOMM
-#define BDADDR_ANY	(&(bdaddr_t) {{0, 0, 0, 0, 0, 0}})
+#define BDADDR_ANY	NG_HCI_BDADDR_ANY
 
 /* NetBSD-4 and up */
 #elif defined(__NetBSD__)
