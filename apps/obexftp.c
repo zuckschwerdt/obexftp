@@ -693,7 +693,8 @@ int main(int argc, char *argv[])
 				else p = optarg;
 				if (output_file) p = output_file;
 				/* Get file */
-				if (obexftp_get(cli, p, optarg) && c == 'G')
+				ret = obexftp_get(cli, p, optarg);
+				if (ret > 0 && c == 'G')
 					ret = obexftp_del(cli, optarg);
 				output_file = NULL;
 			}
