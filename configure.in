@@ -31,6 +31,8 @@ PKG_CHECK_MODULES(OPENOBEX,openobex)
 REQUIRES="openobex"
 
 AM_ICONV
+dnl uncomment line below if ICONV is not available
+dnl AC_SUBST(LTLIBICONV)
 AC_CHECK_HEADERS([langinfo.h])
 dnl IRDA_CHECK
 BLUETOOTH_CHECK
