@@ -311,7 +311,7 @@ static int cli_connect_uuid(const char *uuid, int uuid_len)
 			break; /* retry */
 
 		default:
-			perror("error on connect()");
+			fprintf(stderr, "unknown error on connect\n");
 			break;
 		} 
 
