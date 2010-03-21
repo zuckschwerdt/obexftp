@@ -90,7 +90,7 @@ obex_object_t *build_object_from_file(obex_t *obex, uint32_t conn, const char *l
 		return NULL;
 	}
 
-	ucname_len = OBEX_CharToUnicode(ucname, (uint8_t*)remotename, ucname_len);
+	ucname_len = CharToUnicode(ucname, (uint8_t*)remotename, ucname_len);
 
 	hv.bs = ucname;
 	(void ) OBEX_ObjectAddHeader(obex, object, OBEX_HDR_NAME, hv, ucname_len, 0);

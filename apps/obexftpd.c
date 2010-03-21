@@ -335,7 +335,7 @@ static void set_server_path(obex_t *handle, obex_object_t *object)
 			if (0 < hlen)
 			{
 				if( (name = malloc(hlen / 2)))	{
-					OBEX_UnicodeToChar((uint8_t*)name, hv.bs, hlen);
+					UnicodeToChar((uint8_t*)name, hv.bs, hlen);
 					printf("name:%s\n", name);
 				}
 			}
@@ -442,7 +442,7 @@ static void get_server(obex_t *handle, obex_object_t *object)
 		case OBEX_HDR_NAME:
 			printf("%s() Found name\n", __FUNCTION__);
 			if( (name = malloc(hlen / 2)))	{
-				OBEX_UnicodeToChar((uint8_t*)name, hv.bs, hlen);
+				UnicodeToChar((uint8_t*)name, hv.bs, hlen);
 				printf("name:%s\n", name);
 			}
 			break;
@@ -653,7 +653,7 @@ static void put_done(obex_t *handle, obex_object_t *object, int final)
 				free(name);
 			}
 			if( (name = malloc(hlen / 2)))	{
-				OBEX_UnicodeToChar((uint8_t *)name, hv.bs, hlen);
+				UnicodeToChar((uint8_t *)name, hv.bs, hlen);
 				fprintf(stderr, "put file name: %s\n", name);
 			}
 			break;

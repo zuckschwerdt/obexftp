@@ -131,7 +131,24 @@ int CharToUnicode(uint8_t *uc, const uint8_t *c, int size)
 
 	return size-no;
 #else /* HAVE_ICONV */
-	return OBEX_CharToUnicode(uc, c, size);
+	int len, n;
+
+	if (uc == NULL || c == NULL)
+		return -1;
+
+	len = n = strlen((char *) c);
+	if (n*2+2 > size)
+		return -1;
+
+	uc[n*2+1] = 0;
+	uc[n*2] = 0;
+
+	while (n--) {
+		uc[n*2+1] = c[n];
+		uc[n*2] = 0;
+	}
+
+	return (len * 2) + 2;
 #endif /* HAVE_ICONV */
 
 #endif /* _WIN32 */
@@ -193,7 +210,22 @@ int UnicodeToChar(uint8_t *c, const uint8_t *uc, int size)
 	}
 	return size-no;
 #else /* HAVE_ICONV */
-	return OBEX_UnicodeToChar(c, uc, size);
+	int n;
+
+	if (uc == NULL || c == NULL)
+		return -1;
+
+	/* Make sure buffer is big enough! */
+	for (n = 0; uc[n*2+1] != 0; n++);
+
+	if (n >= size)
+		return -1;
+
+	for (n = 0; uc[n*2+1] != 0; n++)
+		c[n] = uc[n*2+1];
+	c[n] = 0;
+
+	return 0;
 #endif /* HAVE_ICONV */
 
 #endif /* _WIN32 */

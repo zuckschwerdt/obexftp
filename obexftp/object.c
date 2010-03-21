@@ -36,7 +36,7 @@
 	 mem installed (0x01) or free mem (0x02)
 	\return a new obex object if successful, NULL otherwise
  */
-obex_object_t *obexftp_build_info (obex_t obex, uint32_t conn, uint8_t opcode)
+obex_object_t *obexftp_build_info (obex_t *obex, uint32_t conn, uint8_t opcode)
 {
 	obex_object_t *object;
 	obex_headerdata_t hv;
@@ -70,7 +70,7 @@ obex_object_t *obexftp_build_info (obex_t obex, uint32_t conn, uint8_t opcode)
 
 	\note \a name and \a type musn't both be NULL
  */
-obex_object_t *obexftp_build_get (obex_t obex, uint32_t conn, const char *name, const char *type)
+obex_object_t *obexftp_build_get (obex_t *obex, uint32_t conn, const char *name, const char *type)
 {
 	obex_object_t *object;
 	obex_headerdata_t hv;
@@ -122,7 +122,7 @@ obex_object_t *obexftp_build_get (obex_t obex, uint32_t conn, const char *name, 
 
 	\note neither filename may be NULL
  */
-obex_object_t *obexftp_build_rename (obex_t obex, uint32_t conn, const char *from, const char *to)
+obex_object_t *obexftp_build_rename (obex_t *obex, uint32_t conn, const char *from, const char *to)
 {
 	obex_object_t *object;
 	obex_headerdata_t hv;
@@ -186,7 +186,7 @@ obex_object_t *obexftp_build_rename (obex_t obex, uint32_t conn, const char *fro
 
 	\note \a name may not be NULL
  */
-obex_object_t *obexftp_build_del (obex_t obex, uint32_t conn, const char *name)
+obex_object_t *obexftp_build_del (obex_t *obex, uint32_t conn, const char *name)
 {
 	obex_object_t *object;
 	obex_headerdata_t hv;
@@ -235,7 +235,7 @@ obex_object_t *obexftp_build_del (obex_t obex, uint32_t conn, const char *name)
 	 if \a name is NULL ascend one directory 
 	 if \a name is empty change to top/default directory
  */
-obex_object_t *obexftp_build_setpath (obex_t obex, uint32_t conn, const char *name, int create)
+obex_object_t *obexftp_build_setpath (obex_t *obex, uint32_t conn, const char *name, int create)
 {
 	obex_object_t *object;
 	obex_headerdata_t hv;
@@ -296,7 +296,7 @@ obex_object_t *obexftp_build_setpath (obex_t obex, uint32_t conn, const char *na
 
 	\note use build_object_from_file() instead
  */
-obex_object_t *obexftp_build_put (obex_t obex, uint32_t conn, const char *name, const int size)
+obex_object_t *obexftp_build_put (obex_t *obex, uint32_t conn, const char *name, const int size)
 {
 	obex_object_t *object;
 	obex_headerdata_t hv;

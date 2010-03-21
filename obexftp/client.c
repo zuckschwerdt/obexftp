@@ -639,7 +639,7 @@ int obexftp_connect_src(obexftp_client_t *cli, const char *src, const char *devi
 		if (ret) {
 			peer.sin_family = AF_INET;
 			peer.sin_port = htons(port); /* overridden with OBEX_PORT 650 anyhow */
-			ret = InOBEX_TransportConnect(cli->obexhandle, (struct sockaddr *) &peer,
+			ret = TcpOBEX_TransportConnect(cli->obexhandle, (struct sockaddr *) &peer,
 						  sizeof(struct sockaddr_in));
 			DEBUG(3, "%s() TCP %d\n", __func__, ret);
 		} else
@@ -697,7 +697,7 @@ int obexftp_connect_src(obexftp_client_t *cli, const char *src, const char *devi
 
 #ifdef HAVE_USB
 	case OBEX_TRANS_USB:
-		obex_intf_cnt = OBEX_FindInterfaces(cli->obexhandle, &obex_intf);
+		obex_intf_cnt = OBEX_EnumerateInterfaces(cli->obexhandle);
 		DEBUG(3, "%s() \n", __func__);
 		if (obex_intf_cnt <= 0) {
 			DEBUG(1, "%s() there are no valid USB interfaces\n", __func__);
@@ -707,7 +707,8 @@ int obexftp_connect_src(obexftp_client_t *cli, const char *src, const char *devi
 			DEBUG(1, "%s() %d is an invalid USB interface number\n", __func__, port);
 			ret = -EINVAL; /* is there a better errno? */
 		} else
-			ret = OBEX_InterfaceConnect(cli->obexhandle, &obex_intf[port]);
+			obex_intf = OBEX_GetInterfaceByIndex(cli->obexhandle, port);
+			ret = OBEX_InterfaceConnect(cli->obexhandle, obex_intf);
 		DEBUG(3, "%s() USB %d\n", __func__, ret);
 		break;
 #endif /* HAVE_USB */
@@ -1205,17 +1206,18 @@ static char **discover_usb()
 		DEBUG(1, "%s() OBEX_Init failed\n", __func__);
 		return NULL;
 	}
-	interfaces_number = OBEX_FindInterfaces(handle, &obex_intf);
+	interfaces_number = OBEX_EnumerateInterfaces(handle);
 
 	res = calloc(interfaces_number + 1, sizeof(char *));
 	
 	for (i=0; i < interfaces_number; i++) {
 		res[i] = malloc(201);
+		obex_intf = OBEX_GetInterfaceByIndex(handle, i);
 		snprintf(res[i], 200, "%d (Manufacturer: %s Product: %s Serial: %s Interface description: %s)", i,
-			obex_intf[i].usb.manufacturer,
-			obex_intf[i].usb.product,
-			obex_intf[i].usb.serial,
-		       	obex_intf[i].usb.control_interface);
+			obex_intf->usb.manufacturer,
+			obex_intf->usb.product,
+			obex_intf->usb.serial,
+		       	obex_intf->usb.control_interface);
 	}
 	/* OBEX_FreeInterfaces(handle); OpenOBEX 1.2 will crash */
 	OBEX_Cleanup(handle);
