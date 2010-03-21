@@ -12,6 +12,11 @@ m4/*.m4
 *.la
 .deps
 .libs
+*~
+autom4te.cache/
+manpage.*
+*.1
+*.1.html
 apps/discovery
 apps/obexftp
 apps/obexftpd
