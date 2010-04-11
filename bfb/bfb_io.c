@@ -456,11 +456,26 @@ fd_t bfb_io_open(const char *ttyname, enum trans_type *typeinfo)
 		DEBUG(1, "Motorola detected\n");
 		goto motorola;
 	}
-	if(strncasecmp("SIEMENS", rspbuf, 7) != 0) {
-		DEBUG(1, "No Siemens detected. Trying generic.\n");
-		goto generic;
+	if(strncasecmp("SIEMENS", rspbuf, 7) == 0) {
+		DEBUG(1, "Siemens detected\n");
+		goto siemens;
 	}
 
+	// Check for some other devices (mainly Gigasets show this behaviour)
+	if(do_at_cmd(ttyfd, "AT+CGMI\r", rspbuf, sizeof(rspbuf)) < 0) {
+		DEBUG(1, "Comm-error\n");
+		goto err;
+	}
+	DEBUG(1, "AT+CGMI: %s\n", rspbuf);
+	if(strncasecmp("SIEMENS", rspbuf, 7)) {
+		DEBUG(1, "Siemens/Gigaset detected\n");
+		goto newsiemens;
+	}
+
+	DEBUG(1, "Unknown Device detected. Trying generic.\n");
+	goto generic;
+
+ siemens:
 	if(do_at_cmd(ttyfd, "AT^SIFS\r", rspbuf, sizeof(rspbuf)) < 0)	{
 		DEBUG(1, "Comm-error\n");
 		goto err;
