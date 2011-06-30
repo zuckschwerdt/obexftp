@@ -1,5 +1,6 @@
 ## Process this file with autoconf to produce a configure script.
 # try CFLAGS="$CFLAGS -g -Wall -Wmissing-declarations -Wmissing-prototypes -Werror"
+AC_PREREQ(2.60)
 AC_INIT(ObexFTP, 0.23, zany@triq.net)
 #AC_CONFIG_SRCDIR(src/foo.c)
 AM_INIT_AUTOMAKE(dist-bzip2)
@@ -8,7 +9,9 @@ AM_CONFIG_HEADER(config.h)
 # note: AC_HELP_STRING is deprecated in autoconf 2.59 and later but
 # AS_HELP_STRING is not available in autoconf 2.57 or earlier.
 
-dnl AM_MAINTAINER_MODE
+AC_CONFIG_MACRO_DIR([m4])
+m4_ifdef([AM_SILENT_RULES], [AM_SILENT_RULES([yes])])
+#dnl AM_MAINTAINER_MODE
 
 # Checks for programs.
 AC_ISC_POSIX
