@@ -29,10 +29,6 @@
 
 #include <sys/types.h>
 
-#ifdef HAVE_SYS_TIMES_H
-#include <sys/times.h>
-#endif
-
 #include <obexftp/obexftp.h>
 #include <obexftp/client.h>
 #include <obexftp/uuid.h>
@@ -46,6 +42,10 @@
 #endif /* _WIN32 */
 
 #include <common.h>
+
+#ifdef HAVE_SYS_TIMES_H
+#include <sys/times.h>
+#endif
 
 // perhaps this scheme would be better?
 // IRDA		irda://[nick?]
@@ -253,6 +253,7 @@ static int cli_connect_uuid(const char *uuid, int uuid_len)
 	int ret, retry;
 #ifdef HAVE_SYS_TIMES_H
 	clock_t clock;
+	struct tms tms;
 #endif
 
 	if (cli == NULL) {
@@ -283,12 +284,12 @@ static int cli_connect_uuid(const char *uuid, int uuid_len)
 
 		/* Connect */
 #ifdef HAVE_SYS_TIMES_H
-		clock = times(NULL);
+		clock = times(&tms);
 #endif
 		ret = obexftp_connect_src(cli, src_dev, device, channel, uuid, uuid_len);
 #ifdef HAVE_SYS_TIMES_H
-		clock = times(NULL)-clock;
-		fprintf(stderr, "Tried to connect for %ldms\n", clock);
+		clock = (times(&tms) - clock) * 1000 / sysconf(_SC_CLK_TCK);
+		fprintf(stderr, "Tried to connect for %ldms\n", (long)clock);
 #endif
 		if (ret >= 0)
        			return ret;
