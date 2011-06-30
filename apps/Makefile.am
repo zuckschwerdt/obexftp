@@ -1,4 +1,5 @@
 AM_CFLAGS =			@OPENOBEX_CFLAGS@ \
+				@BLUETOOTH_CFLAGS@ \
 				-I$(top_builddir) \
 				-I$(top_srcdir) \
 				-I$(top_srcdir)/includes
