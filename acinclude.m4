@@ -40,35 +40,35 @@ dnl Option to enable or disable Bluetooth support
 dnl Waring: the AC_TRY_COMPILE won't work with -Werror
 dnl
 
-AC_DEFUN([AC_PATH_WINBT], [ 
-	AC_CACHE_VAL(winbt_found,[ 
-		AC_CHECK_HEADERS(ws2bth.h, winbt_found=yes, winbt_found=no, [ 
-				#include <winsock2.h> 
-		]) 
-	]) 
-	AC_MSG_CHECKING([for Windows Bluetooth support]) 
-	AC_MSG_RESULT([$winbt_found]) 
+AC_DEFUN([AC_PATH_WINBT], [
+	AC_CACHE_VAL(winbt_cv_found,[
+		AC_CHECK_HEADERS(ws2bth.h, winbt_cv_found=yes, winbt_cv_found=no, [
+				#include <winsock2.h>
+		])
+	])
+	AC_MSG_CHECKING([for Windows Bluetooth support])
+	AC_MSG_RESULT([$winbt_cv_found])
 ])
 
 AC_DEFUN([AC_PATH_NETBSDBT], [
-	AC_CACHE_CHECK([for NetBSD Bluetooth support], netbsdbt_found, [
+	AC_CACHE_CHECK([for NetBSD Bluetooth support], netbsdbt_cv_found, [
 		AC_TRY_COMPILE([
 				#include <bluetooth.h>
 			], [
 				struct sockaddr_bt *bt;
-			], netbsdbt_found=yes, netbsdbt_found=no)
+			], netbsdbt_cv_found=yes, netbsdbt_cv_found=no)
 	])
 ])
 
 AC_DEFUN([AC_PATH_FREEBSDBT], [
-	AC_CACHE_CHECK([for FreeBSD Bluetooth support], freebsdbt_found, [
+	AC_CACHE_CHECK([for FreeBSD Bluetooth support], freebsdbt_cv_found, [
 		AC_TRY_COMPILE([
 				#include <bluetooth.h>
 			], [
 				struct sockaddr_rfcomm *rfcomm;
-			], freebsdbt_found=yes, freebsdbt_found=no)
+			], freebsdbt_cv_found=yes, freebsdbt_cv_found=no)
 	])
-	if test "${freebsdbt_found}" = "yes"; then
+	if test "${freebsdbt_cv_found}" = "yes"; then
 		BLUETOOTH_LIBS=-lbluetooth
 	fi
 ])
@@ -104,7 +104,7 @@ AC_ARG_ENABLE([bluetooth],
 
 if test "$ac_bluetooth_enabled" = yes; then
        	AC_PATH_BLUETOOTH
-	if test "${netbsdbt_found}" = "yes" -o "${freebsdbt_found}" = "yes" -o "${bluez_found}" = "yes" -o "${winbt_found}" = "yes"; then
+	if test "${netbsdbt_cv_found}" = "yes" -o "${freebsdbt_cv_found}" = "yes" -o "${bluez_found}" = "yes" -o "${winbt_cv_found}" = "yes"; then
 		AC_DEFINE([HAVE_BLUETOOTH], [1], [Define if system supports Bluetooth and it's enabled])
 	fi
 fi
