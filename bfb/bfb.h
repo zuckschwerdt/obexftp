@@ -90,7 +90,7 @@ int	bfb_stuff_data(/*@out@*/ uint8_t *buffer, uint8_t type, uint8_t *data, uint1
 int	bfb_write_packets(fd_t fd, uint8_t type, uint8_t *buffer, int length);
 
 #define bfb_write_at(fd, data) \
-	bfb_write_packets(fd, BFB_FRAME_AT, data, strlen(data))
+	bfb_write_packets(fd, BFB_FRAME_AT, (uint8_t *)data, strlen(data))
 
 #define bfb_write_key(fd, data) \
 	bfb_write_subcmd8(fd, BFB_FRAME_KEY, BFB_KEY_PRESS, data)

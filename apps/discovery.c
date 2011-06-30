@@ -193,7 +193,7 @@ static int do_at_cmd(fd_t fd, const char *cmd, char *rspbuf, int rspbuflen)
 static struct mobile_info *probe_tty(const char *ttyname)
 {
 	int speed;
-	uint8_t rspbuf[200];
+	char rspbuf[200];
 	struct mobile_info *info;
 	char *p;
 #ifdef _WIN32

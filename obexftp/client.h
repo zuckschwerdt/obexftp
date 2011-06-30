@@ -100,7 +100,7 @@ typedef struct {
 	/* transfer (get) */
 	char *target_fn; /* used in get body */
 	uint32_t buf_size; /* not size but len... */
-	uint8_t *buf_data;
+	char *buf_data;
 	uint32_t apparam_info;
 	/* persistence */
 	cache_object_t *cache;
@@ -184,7 +184,7 @@ int obexftp_get_type(obexftp_client_t *cli,
 int obexftp_put_file(obexftp_client_t *cli, const char *filename,
 		     const char *remotename);
 
-int obexftp_put_data(obexftp_client_t *cli, const char *data, int size,
+int obexftp_put_data(obexftp_client_t *cli, const uint8_t *data, int size,
 		     const char *remotename);
 
 int obexftp_del(obexftp_client_t *cli, const char *name);

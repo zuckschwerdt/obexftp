@@ -38,10 +38,10 @@ extern "C" {
 #endif
 
 /* Write out a BFB buffer */
-int	bfb_io_write(fd_t fd, const uint8_t *buffer, int length);
+int	bfb_io_write(fd_t fd, const void *buffer, int length);
 
 /* Read in a BFB answer */
-int	bfb_io_read(fd_t fd, uint8_t *buffer, int length, int timeout);
+int	bfb_io_read(fd_t fd, void *buffer, int length, int timeout);
 
 /* Send an BFB init command an check for a valid answer frame */
 int	bfb_io_init(fd_t fd);

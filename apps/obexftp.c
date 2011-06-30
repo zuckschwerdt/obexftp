@@ -131,13 +131,13 @@ static void info_cb(int event, const char *msg, int len, void *UNUSED(data))
 }
 
 /* create global uuid buffers */
-static const char *fbs_uuid = (const char *)UUID_FBS;
-static const char *irmc_uuid = (const char *)UUID_IRMC;
-static const char *s45_uuid = (const char *)UUID_S45;
-static const char *pcsoftware_uuid = (const char *)UUID_PCSOFTWARE;
+static const uint8_t *fbs_uuid = UUID_FBS;
+static const uint8_t *irmc_uuid = UUID_IRMC;
+static const uint8_t *s45_uuid = UUID_S45;
+static const uint8_t *pcsoftware_uuid = UUID_PCSOFTWARE;
 
 /* parse UUID string to real bytes */
-static int parse_uuid(char *name, const char **uuid, int *uuid_len)
+static int parse_uuid(char *name, const uint8_t **uuid, int *uuid_len)
 {
 	if (name == NULL || *name == '\0' ||
 			!strncasecmp(name, "none", 4) ||
@@ -240,7 +240,7 @@ static int transport = OBEX_TRANS_IRDA;
 #endif /* HAVE_BLUETOOTH */
 /*@only@*/ /*@null@*/ static char *device = NULL;
 static int channel = -1;
-static const char *use_uuid = (const char *)UUID_FBS;
+static const uint8_t *use_uuid = UUID_FBS;
 static int use_uuid_len = sizeof(UUID_FBS);
 static int use_conn=1;
 static int use_path=1;
@@ -248,7 +248,7 @@ static int timeout = 20; /* default accept/reject timeout of 20 seconds */
 
 
 /* connect with given uuid. re-connect every time */
-static int cli_connect_uuid(const char *uuid, int uuid_len)
+static int cli_connect_uuid(const uint8_t *uuid, int uuid_len)
 {
 	int ret, retry;
 #ifdef HAVE_SYS_TIMES_H
@@ -348,7 +348,7 @@ static void cli_disconnect()
 	}
 }
 
-static void probe_device_uuid(const char *uuid, int uuid_len)
+static void probe_device_uuid(const uint8_t *uuid, int uuid_len)
 {
 	int rsp[10];
 	

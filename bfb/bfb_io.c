@@ -51,7 +51,7 @@
 #include <common.h>
 
 /* Write out an IO buffer */
-int bfb_io_write(fd_t fd, const uint8_t *buffer, int length)
+int bfb_io_write(fd_t fd, const void *buffer, int length)
 {
 #ifdef _WIN32
 	DWORD bytes;
@@ -79,7 +79,7 @@ int bfb_io_write(fd_t fd, const uint8_t *buffer, int length)
 }
 
 /* Read an answer to an IO buffer of max length bytes */
-int bfb_io_read(fd_t fd, uint8_t *buffer, int length, int timeout)
+int bfb_io_read(fd_t fd, void *buffer, int length, int timeout)
 {
 #ifdef _WIN32
 	DWORD bytes;
@@ -123,7 +123,7 @@ int bfb_io_read(fd_t fd, uint8_t *buffer, int length, int timeout)
 /**
 	Read (repeatedly) from fd until a timeout or an error is encountered.
  */
-static int bfb_io_read_all(int fd, uint8_t *buffer, int length, int timeout)
+static int bfb_io_read_all(int fd, char *buffer, int length, int timeout)
 {
 	int actual;
 	int pos = 0;

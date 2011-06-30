@@ -267,7 +267,7 @@ static void client_done(obex_t *handle, obex_object_t *object, int UNUSED(obex_c
 	uint8_t hi;
 	uint32_t hlen;
 	const apparam_t *app = NULL;
-	uint8_t *p;
+	char *p;
 
         const uint8_t *body_data = NULL;
 	uint32_t body_len = -1;
@@ -1142,7 +1142,7 @@ int obexftp_put_file(obexftp_client_t *cli, const char *filename, const char *re
 
 	\note A remotename must be given always.
  */
-int obexftp_put_data(obexftp_client_t *cli, const char *data, int size,
+int obexftp_put_data(obexftp_client_t *cli, const uint8_t *data, int size,
 		     const char *remotename)
 {
 	obex_object_t *object;
