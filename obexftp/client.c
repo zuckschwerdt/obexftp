@@ -385,7 +385,8 @@ static void cli_obex_event(obex_t *handle, obex_object_t *object, int UNUSED(mod
 			cli->success = TRUE;
 		else {
 			cli->success = FALSE;
-			DEBUG(2, "%s() OBEX_EV_REQDONE: obex_rsp=%02x\n", __func__, obex_rsp);
+			DEBUG(2, "%s() OBEX_EV_REQDONE: obex_rsp=%d%02d\n",
+				__func__, obex_rsp >> 8, obex_rsp & 0xF);
 		}
 		cli->obex_rsp = obex_rsp;
 		client_done(handle, object, obex_cmd, obex_rsp);
