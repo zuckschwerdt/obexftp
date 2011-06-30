@@ -113,8 +113,8 @@ BTKITSYM int str2ba(const char *straddr, BTH_ADDR *btaddr);
 
 /* library setup/teardown functions (needed for win32) */
 
-BTKITSYM int btkit_init();
-BTKITSYM int btkit_exit();
+BTKITSYM int btkit_init(void);
+BTKITSYM int btkit_exit(void);
 
 /* additional functions */
 

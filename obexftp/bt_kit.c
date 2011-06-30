@@ -78,7 +78,7 @@
 
 	\note Needed for win32 winsock compatibility.
  */
-int btkit_init()
+int btkit_init(void)
 {
 #ifdef _WIN32
 	WORD wVersionRequired = MAKEWORD(WSA_VER_MAJOR,WSA_VER_MINOR);
@@ -103,7 +103,7 @@ int btkit_init()
 
 	\note Needed for win32 winsock compatibility.
  */
-int btkit_exit()
+int btkit_exit(void)
 {
 #ifdef _WIN32
 	if (WSACleanup() != 0) {
