@@ -569,7 +569,7 @@ int obexftp_connect_uuid(obexftp_client_t *cli, const char *device, int port, co
 
 int obexftp_connect_service(obexftp_client_t *cli, const char *src, const char *device, int port, int service)
 {
-	uint8_t *uuid = NULL;
+	const uint8_t *uuid = NULL;
 	uint32_t uuid_len = 0;
 	if (service == OBEX_FTP_SERVICE) {
 		uuid = UUID_FBS;
