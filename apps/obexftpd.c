@@ -61,6 +61,7 @@
 
 #include <obexftp/obexftp.h>
 #include <obexftp/object.h>
+#include <obexftp/unicode.h>
 #include <common.h>
 
 /* define this to "", "\r\n" or "\n" */
