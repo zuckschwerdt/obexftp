@@ -3,7 +3,7 @@
 AC_PREREQ(2.60)
 AC_INIT(ObexFTP, 0.23, zany@triq.net)
 #AC_CONFIG_SRCDIR(src/foo.c)
-AM_INIT_AUTOMAKE(dist-bzip2)
+AM_INIT_AUTOMAKE([dist-bzip2 nostdinc])
 AM_CONFIG_HEADER(config.h)
 
 # note: AC_HELP_STRING is deprecated in autoconf 2.59 and later but

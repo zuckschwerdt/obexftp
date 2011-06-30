@@ -1,6 +1,7 @@
 lib_LTLIBRARIES =		libobexftp.la
 
 AM_CFLAGS =			@OPENOBEX_CFLAGS@ \
+				-I$(top_builddir) \
 				-I$(top_srcdir) \
 				-I$(top_srcdir)/includes
 

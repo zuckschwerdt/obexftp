@@ -1,6 +1,8 @@
 lib_LTLIBRARIES =		libbfb.la
 
-AM_CFLAGS =			-I$(top_srcdir)/includes
+AM_CFLAGS =			-I$(top_builddir) \
+				-I$(top_srcdir) \
+				-I$(top_srcdir)/includes
 
 bfbincludedir =			$(includedir)/bfb
 
