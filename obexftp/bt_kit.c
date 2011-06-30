@@ -349,8 +349,350 @@ int btkit_unregister_service(int UNUSED(svclass))
 
 #else /* _WIN32 */
 
-#ifdef HAVE_SDPLIB /* should switch on OS here */
+#ifdef HAVE_SDP
+#if defined(__NetBSD__) || defined(__FreeBSD__)
 
+char **btkit_discover(const char *src)
+{
+	struct bt_devinquiry *di;
+	char **res;
+	int num_rsp = 10;
+	int length = 8;
+	int i;
+
+	DEBUG(2, "%s: Scanning ...\n", __func__);
+
+	num_rsp = bt_devinquiry(src, length, num_rsp, &di);
+	if(num_rsp < 0) {
+		DEBUG(1, "%s: Inquiry failed\n", __func__);
+		return NULL;
+	}
+
+	res = calloc(num_rsp + 1, sizeof(char *));
+	for(i = 0; i < num_rsp; i++) {
+		res[i] = bt_malloc(18);	/* size of text bdaddr */
+		bt_ntoa(&di->bdaddr, res[i]);
+		DEBUG(2, "%s: Found\t%s\n", __func__, res[i]);
+	}
+
+	free(di);
+
+	return res;
+}
+
+static int btkit_getname_cb(int UNUSED(s), const struct bt_devinfo *di, void *arg)
+{
+
+	if ((di->enabled)) {
+		strncpy(arg, di->devname, HCI_DEVNAME_SIZE);
+		return 1;
+	}
+
+	return 0;
+}
+
+char *btkit_getname(const char *src, const char *addr)
+{
+	hci_remote_name_req_cp cp;
+	hci_remote_name_req_compl_ep ep;
+	struct bt_devreq req;
+	int s;
+
+	return_val_if_fail(addr != NULL, NULL);
+
+	if (!src) {
+		if (bt_devenum(btkit_getname_cb, ep.name) == -1) {
+			DEBUG(1, "%s: device enumeration failed\n", __func__);
+			return NULL;
+		}
+
+		src = (const char *)ep.name;
+	}
+
+	s = bt_devopen(src, 0);
+	if (s == -1) {
+		DEBUG(1, "%s: HCI device open failed\n", __func__);
+		return NULL;
+	}
+
+	memset(&cp, 0, sizeof(cp));
+	bt_aton(addr, &cp.bdaddr);
+
+	memset(&req, 0, sizeof(req));
+	req.opcode = HCI_CMD_REMOTE_NAME_REQ;
+	req.cparam = &cp;
+	req.clen = sizeof(cp);
+	req.event = HCI_EVENT_REMOTE_NAME_REQ_COMPL;
+	req.rparam = &ep;
+	req.rlen = sizeof(ep);
+
+	if (bt_devreq(s, &req, 100) == -1) {
+		DEBUG(1, "%s: remote name request failed\n", __func__);
+		strcpy(ep.name, "No Name");
+	}
+
+	close(s);
+
+	return strndup(ep.name, sizeof(ep.name));
+}
+
+static int btkit_browse_sdp(sdp_session_t ss, uuid_t *uuid)
+{
+	uint8_t buf[19];	/* enough for uuid128 (ssp) and uint16 (ail) */
+	sdp_data_t seq, ssp, ail, rsp, rec, value, pdl;
+	uintmax_t channel;
+	uint16_t attr;
+
+	seq.next = buf;
+	seq.end = buf + sizeof(buf);
+
+	/* build ServiceSearchPattern */
+	ssp.next = seq.next;
+	sdp_put_uuid(&seq, uuid);
+	ssp.end = seq.next;
+
+	/* build AttributeIDList */
+	ail.next = seq.next;
+	sdp_put_uint16(&seq, SDP_ATTR_PROTOCOL_DESCRIPTOR_LIST);
+	ail.end = seq.next;
+
+	if (!sdp_service_search_attribute(ss, &ssp, &ail, &rsp)) {
+		DEBUG(1, "%s: SDP service search failed\n", __func__);
+		return -1;
+	}
+
+	/*
+	 * we expect the response to contain a list of records
+	 * containing ProtocolDescriptorList. Return the first
+	 * one with a valid RFCOMM channel.
+	 */
+	while (sdp_get_seq(&rsp, &rec)) {
+		if (!sdp_get_attr(&rec, &attr, &value)
+		    || attr != SDP_ATTR_PROTOCOL_DESCRIPTOR_LIST)
+			continue;
+
+		/* drop any alt header */
+		sdp_get_alt(&value, &value);
+
+		/* for each protocol stack */
+		while (sdp_get_seq(&value, &pdl)) {
+			/* and for each protocol */
+			while (sdp_get_seq(&pdl, &seq)) {
+				/* check for RFCOMM */
+				if (sdp_match_uuid16(&seq, SDP_UUID_PROTOCOL_RFCOMM)
+				    && sdp_get_uint(&seq, &channel)
+				    && channel >= RFCOMM_CHANNEL_MIN
+				    && channel <= RFCOMM_CHANNEL_MAX)
+					return channel;
+			}
+		}
+	}
+
+	DEBUG(1, "%s: no channel found\n", __func__);
+
+	return -1;
+}
+
+int btkit_browse(const char *src, const char *addr, int svclass)
+{
+	bdaddr_t laddr, raddr;
+	sdp_session_t ss;
+	uuid_t uuid;
+	int channel;
+
+	return_val_if_fail(addr != NULL, -1);
+	bt_aton(addr, &raddr);
+
+	if (src) {
+		if (!bt_devaddr(src, &laddr)) {
+			DEBUG(1, "%s: invalid source address\n", __func__);
+			return -1;
+		}
+	} else {
+		bdaddr_copy(&laddr, BDADDR_ANY);
+	}
+
+	ss = sdp_open(&laddr, &raddr);
+	if (ss == NULL) {
+		DEBUG(1, "%s: Failed to connect to SDP server\n", __func__);
+		return -1;
+	}
+
+	if (svclass >= 0x0001 && svclass <= 0x0004) {
+		uuid_dec_be(SVC_UUID_SYNCML, &uuid);
+		uuid.time_low = svclass;
+	} else if (svclass >= 0x1000 && svclass <= 0x12FF) {
+		uuid_dec_be(SVC_UUID_BASE, &uuid);
+		uuid.time_low = svclass;
+	} else {
+		svclass = SDP_SERVICE_CLASS_OBEX_FILE_TRANSFER;
+	}
+
+	DEBUG(1, "%s: svclass 0x%04x\n", __func__, svclass);
+
+	channel = -1;
+
+	/* Try PCSUITE first */
+	if (svclass == SDP_SERVICE_CLASS_OBEX_FILE_TRANSFER) {
+		DEBUG(1, "%s: trying PCSUITE first\n", __func__);
+		uuid_dec_be(SVC_UUID_PCSUITE, &uuid);
+		channel = btkit_browse_sdp(ss, &uuid);
+
+		uuid_dec_be(SVC_UUID_BASE, &uuid);
+		uuid.time_low = svclass;
+	}
+
+	if (channel == -1)
+		channel = btkit_browse_sdp(ss, &uuid);
+
+	sdp_close(ss);
+	return channel;
+}
+
+static sdp_session_t ss;
+static uint32_t opush_handle;
+static uint32_t ftrn_handle;
+static uint32_t irmc_handle;
+
+int btkit_register_obex(int svclass, int channel)
+{
+	uint8_t buffer[256];
+	sdp_data_t rec;
+	uint32_t *hp;
+
+	DEBUG(1, "%s: svclass 0x%04x channel %d\n", __func__, svclass, channel);
+
+	/* Build SDP record */
+	rec.next = buffer;
+	rec.end = buffer + sizeof(buffer);
+
+	sdp_put_uint16(&rec, SDP_ATTR_SERVICE_RECORD_HANDLE);
+	sdp_put_uint32(&rec, 0x00000000);
+
+	sdp_put_uint16(&rec, SDP_ATTR_SERVICE_CLASS_ID_LIST);
+	sdp_put_seq(&rec, 3);
+	sdp_put_uuid16(&rec, (uint16_t)svclass);
+
+	sdp_put_uint16(&rec, SDP_ATTR_PROTOCOL_DESCRIPTOR_LIST);
+	sdp_put_seq(&rec, 17);
+	sdp_put_seq(&rec, 3);
+	sdp_put_uuid16(&rec, SDP_UUID_PROTOCOL_L2CAP);
+	sdp_put_seq(&rec, 5);
+	sdp_put_uuid16(&rec, SDP_UUID_PROTOCOL_RFCOMM);
+	sdp_put_uint8(&rec, (uint8_t)channel);
+	sdp_put_seq(&rec, 3);
+	sdp_put_uuid16(&rec, SDP_UUID_PROTOCOL_OBEX);
+
+	sdp_put_uint16(&rec, SDP_ATTR_BROWSE_GROUP_LIST);
+	sdp_put_seq(&rec, 3);
+	sdp_put_uuid16(&rec, SDP_SERVICE_CLASS_PUBLIC_BROWSE_GROUP);
+
+	sdp_put_uint16(&rec, SDP_ATTR_LANGUAGE_BASE_ATTRIBUTE_ID_LIST);
+	sdp_put_seq(&rec, 9);
+	sdp_put_uint16(&rec, 0x656e);	/* "en" */
+	sdp_put_uint16(&rec, 106);	/* UTF-8 */
+	sdp_put_uint16(&rec, SDP_ATTR_PRIMARY_LANGUAGE_BASE_ID);
+
+	sdp_put_uint16(&rec, SDP_ATTR_BLUETOOTH_PROFILE_DESCRIPTOR_LIST);
+	sdp_put_seq(&rec, 8);
+	sdp_put_seq(&rec, 6);
+	sdp_put_uuid16(&rec, (uint16_t)svclass);
+	sdp_put_uint16(&rec, 0x0100);	/* v1.0 */
+
+	sdp_put_uint16(&rec, SDP_ATTR_PRIMARY_LANGUAGE_BASE_ID + SDP_ATTR_SERVICE_NAME_OFFSET);
+	switch (svclass) {
+	case SDP_SERVICE_CLASS_OBEX_OBJECT_PUSH:
+		sdp_put_str(&rec, "OBEX Object Push", -1);
+
+		sdp_put_uint16(&rec, SDP_ATTR_SUPPORTED_FORMATS_LIST);
+		sdp_put_seq(&rec, 2);
+		sdp_put_uint8(&rec, 0xff);	/* Any */
+		hp = &opush_handle;
+		break;
+
+	case SDP_SERVICE_CLASS_OBEX_FILE_TRANSFER:
+		sdp_put_str(&rec, "OBEX File Transfer", -1);
+		hp = &ftrn_handle;
+		break;
+
+	case SDP_SERVICE_CLASS_IR_MC_SYNC:
+		sdp_put_str(&rec, "IrMC Sync", -1);
+		hp = &irmc_handle;
+		break;
+
+	default:
+		DEBUG(1, "%s: unknown svclass\n", __func__);
+		return -1;
+		break;
+	}
+
+	rec.end = rec.next;
+	rec.next = buffer;
+
+	/* Register service with SDP server */
+	if (ss == NULL) {
+		ss = sdp_open_local(NULL);
+		if (ss == NULL) {
+			DEBUG(1, "%s: failed to open SDP session\n", __func__);
+			return -1;
+		}
+		DEBUG(2, "%s: opened SDP session\n", __func__);
+	}
+
+	if (!sdp_record_insert(ss, NULL, hp, &rec)) {
+		DEBUG(1, "%s: failed to insert SDP record\n", __func__);
+		sdp_data_print(&rec, 2);
+		return -1;
+	}
+
+	return 0;
+}
+
+int btkit_unregister_service(int svclass)
+{
+	uint32_t *hp;
+
+	if (ss == NULL) {
+		DEBUG(1, "%s: no session open\n", __func__);
+		return -1;
+	}
+
+	switch (svclass) {
+	case SDP_SERVICE_CLASS_OBEX_OBJECT_PUSH:
+		hp = &opush_handle;
+		break;
+
+	case SDP_SERVICE_CLASS_OBEX_FILE_TRANSFER:
+		hp = &ftrn_handle;
+		break;
+
+	case SDP_SERVICE_CLASS_IR_MC_SYNC:
+		hp = &irmc_handle;
+		break;
+
+	default:
+		DEBUG(1, "%s: unknown svclass\n", __func__);
+		return -1;
+		break;
+	}
+
+	if (!sdp_record_remove(ss, *hp)) {
+		DEBUG(1, "%s: failed to remove SDP record\n", __func__);
+		return -1;
+	}
+
+	*hp = 0;
+
+	if (opush_handle == 0 && ftrn_handle == 0 && irmc_handle == 0) {
+		DEBUG(2, "%s: closed SDP session\n", __func__);
+		sdp_close(ss);
+		ss = NULL;
+	}
+
+	return 0;
+}
+
+#else /* defined(__NetBSD__) || defined(__FreeBSD__) */
 
 /**
 	Discover all bluetooth devices in range.
@@ -695,6 +1037,7 @@ int btkit_register_obex(int service, int channel)
 	return 0;
 }
 
+#endif	/* BlueZ/Linux */
 
 #else
 #warning "no bluetooth sdp support for this platform"
@@ -723,7 +1066,7 @@ int btkit_unregister_service(int UNUSED(svclass))
 	return -1;
 }
 
-#endif /* HAVE_SDPLIB */
+#endif /* HAVE_SDP */
 #endif /* _WIN32 */
 
 #else

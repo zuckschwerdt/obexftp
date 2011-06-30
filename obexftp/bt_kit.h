@@ -79,26 +79,26 @@ extern "C" {
 BTKITSYM int ba2str(const bdaddr_t *btaddr, char *straddr);
 BTKITSYM int str2ba(const char *straddr, BTH_ADDR *btaddr);
 
-/* FreeBSD 5 and up */
-#elif defined(__FreeBSD__)
-//#include <sys/types.h>
+/* Various BSD systems */
+#elif defined(__NetBSD__) || defined(__FreeBSD__)
+#define COMPAT_BLUEZ
 #include <bluetooth.h>
-#define sockaddr_rc	sockaddr_rfcomm
-#define rc_family	rfcomm_family
-#define rc_bdaddr	rfcomm_bdaddr
-#define rc_channel	rfcomm_channel
-#define BTPROTO_RFCOMM	BLUETOOTH_PROTO_RFCOMM
-#define BDADDR_ANY	NG_HCI_BDADDR_ANY
+#ifdef HAVE_SDP
+#include <sdp.h>
+#include <string.h>
+#endif
 
-/* NetBSD-4 and up */
-#elif defined(__NetBSD__)
-#include <bluetooth.h>
-#include <netbt/rfcomm.h>
-#define sockaddr_rc	sockaddr_bt
-#define rc_family	bt_family
-#define rc_bdaddr	bt_bdaddr
-#define rc_channel	bt_channel
+#ifndef BDADDR_ANY
 #define BDADDR_ANY	NG_HCI_BDADDR_ANY
+#endif
+
+#ifndef RFCOMM_CHANNEL_MIN
+#define RFCOMM_CHANNEL_MIN	1
+#endif
+
+#ifndef RFCOMM_CHANNEL_MAX
+#define RFCOMM_CHANNEL_MAX	30
+#endif
 
 /* BlueZ, Linux 2.4.6 and up (incl. 2.6) */
 #else

@@ -664,7 +664,12 @@ int obexftp_connect_src(obexftp_client_t *cli, const char *src, const char *devi
 		if (!src) {
 			bacpy(&src_addr, BDADDR_ANY);
 		}
-#ifdef HAVE_SDPLIB
+#if defined(_WIN32)
+		/* nothing */
+#elif defined(__NetBSD__) || defined(__FreeBSD__)
+		else if (bt_devaddr(src, &src_addr)) {
+		}
+#else
 		else if (!strncmp(src, "hci", 3)) {
 			hci_devba(atoi(src + 3), &src_addr);
 		}

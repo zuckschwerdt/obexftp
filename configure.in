@@ -41,7 +41,6 @@ dnl IRDA_CHECK
 BLUETOOTH_CHECK
 if test "${bluez_found}" = "yes"; then
 	REQUIRES="$REQUIRES bluez"
-	SDPLIB_CHECK
 fi
 USB_CHECK
 if test "${am_cv_usb_found}" = "yes"; then
