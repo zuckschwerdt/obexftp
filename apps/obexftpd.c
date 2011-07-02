@@ -56,6 +56,8 @@
 #include <netdb.h>
 #endif
 
+#include <obexftp/bt_kit.h>
+
 /* just until there is a server layer in obexftp */
 #include <openobex/obex.h>
 
