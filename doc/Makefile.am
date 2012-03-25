@@ -12,13 +12,13 @@ if BUILD_DOCS
 SUFFIXES = .1 .1.txt .1.html .1.xml
 
 .1.xml.1:
-	xmlto man $<
+	xmlto -o $(top_builddir)/doc man $<
 
 .1.txt.1.xml:
-	asciidoc --doctype=manpage --backend=docbook $<
+	asciidoc --doctype=manpage --backend=docbook -o $(top_builddir)/doc/$@ $<
 
 .1.txt.1.html:
-	asciidoc --doctype=manpage --backend=xhtml11 $<
+	asciidoc --doctype=manpage --backend=xhtml11 -o $(top_builddir)/doc/$@ $<
 
 CLEANFILES = obexftp.1.xml obexftp.1 obexftp.1.html \
              obexftpd.1.xml obexftpd.1 obexftpd.1.html
