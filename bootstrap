@@ -2,7 +2,22 @@
 
 test -f config.status && make maintainer-clean
 
+# This gets various file iconv stuff like
+#   m4/iconv.m4,
+#   m4/lib-(ld|link|prefix).m4
+#   config.rpath
+# and other gettext-specific stuff that we don't want
+cp Makefile.am copy_of_Makefile.am
+cp configure.in copy_of_configure.in
+gettextize --no-changelog <<EOF
+
+EOF
+rm -rf ABOUT-NLS po/
+mv copy_of_configure.in configure.in
+mv copy_of_Makefile.am Makefile.am
+
+# Call all the other autotools in the rigt order
 autoreconf --verbose --force --install
 
-./configure ${@:- --enable-swig --enable-tcl --enable-builddocs --prefix=/usr}
+#./configure ${@:- --enable-swig --enable-tcl --enable-builddocs --prefix=/usr}
 

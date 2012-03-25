@@ -3,6 +3,7 @@ INSTALL
 Makefile
 Makefile.in
 aclocal.m4
+config.rpath
 m4/*.m4
 *.o
 *.lo
