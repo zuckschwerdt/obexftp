@@ -63,6 +63,8 @@ typedef struct {
 	mode_t mode;
 	int size;
 	time_t mtime;
+	time_t atime;
+	time_t ctime;
 } stat_entry_t;
 
 typedef struct cache_object cache_object_t;

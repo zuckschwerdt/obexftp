@@ -227,16 +227,31 @@ static char *obexftp_cache_list(obexftp_client_t *cli, const char *name)
 static time_t atotime (const char *date)
 {
 	struct tm tm;
+	time_t retval = 0;
 
 	if (6 == sscanf(date, "%4d%2d%2dT%2d%2d%2d",
 			&tm.tm_year, &tm.tm_mon, &tm.tm_mday,
 			&tm.tm_hour, &tm.tm_min, &tm.tm_sec)) {
 		tm.tm_year -= 1900;
 		tm.tm_mon--;
+		tm.tm_isdst = 0;
+		retval = mktime(&tm);
 	}
-	tm.tm_isdst = 0;
 
-	return mktime(&tm);
+	return retval;
+}
+
+static mode_t get_perm(char *perm)
+{
+	mode_t retval = 0;
+
+	if(strcasestr(perm, "R")!=NULL)
+		retval |= S_IRUSR | S_IRGRP;
+
+	if(strcasestr(perm, "W")!=NULL)
+		retval |= S_IWUSR | S_IRGRP;
+
+	return retval;
 }
 
 /**
@@ -251,7 +266,10 @@ static stat_entry_t *parse_directory(char *xml)
         const char *p, *h;
         char tagname[201];
         char name[201]; // bad coder
+        char perm[201];
         char mod[201]; // - no biscuits!
+        char acc[201];
+        char cre[201];
         char size[201]; // int would be ok too.
 
 	stat_entry_t *dir_start, *dir;
@@ -286,31 +304,62 @@ static stat_entry_t *parse_directory(char *xml)
 		while (*p != '<') p++;
 		
 		tagname[0] = '\0';
-                sscanf (p, "<%200[^> \t\n\r] ", tagname);
+		sscanf (p, "<%200[^> \t\n\r] ", tagname);
 
-                name[0] = '\0';
+		name[0] = '\0';
 		h = strstr(p, "name=");
-		if (h) sscanf (h, "name=\"%200[^\"]\"", name);
-                
+		if (h)
+			sscanf (h, "name=\"%200[^\"]\"", name);
+
+		perm[0] = '\0';
+		h = strstr(p, "user-perm=");
+		if (h)
+			sscanf(h, "user-perm=\"%200[^\"]\"", perm);
+		else
+			strcpy(perm, "RW"); //default permissions
+
+		cre[0] = '\0';
+                h = strstr(p, "created=");
+		if (h)
+			sscanf (h, "created=\"%200[^\"]\"", cre);
+
 		mod[0] = '\0';
                 h = strstr(p, "modified=");
-		if (h) sscanf (h, "modified=\"%200[^\"]\"", mod);
-                
+		if (h)
+			sscanf (h, "modified=\"%200[^\"]\"", mod);
+
+		acc[0] = '\0';
+                h = strstr(p, "accessed=");
+		if (h)
+			sscanf(h, "accessed=\"%200[^\"]\"", acc);
+
 		size[0] = '\0';
                 h = strstr(p, "size=");
-		if (h) sscanf (h, "size=\"%200[^\"]\"", size);
+		if (h)
+			sscanf (h, "size=\"%200[^\"]\"", size);
 	
 		if (!strcmp("folder", tagname)) {
-                        dir->mode = S_IFDIR | 0755;
+                        dir->mode = S_IFDIR | get_perm(perm);
+			if (get_perm(perm) & (S_IRUSR | S_IRGRP))
+				dir->mode |= S_IXUSR | S_IXGRP;
+
                         strcpy(dir->name, name);
+			DEBUG(2, "FOLDER: times for '%s'(ctime, mtime, atime): "
+			      "'%s', '%s', '%s'\n", name, cre, mod, acc);
+			dir->ctime = atotime(cre);
 			dir->mtime = atotime(mod);
+			dir->atime = atotime(acc);
                         dir->size = 0;
 			dir++;
                 }
 		if (!strcmp("file", tagname)) {
-                        dir->mode = S_IFREG | 0644;
+                        dir->mode = S_IFREG | get_perm(perm);
                         strcpy(dir->name, name);
+			DEBUG(2, "FILE: times for '%s'(ctime, mtime, atime): "
+			      "'%s', '%s', '%s'\n", name, cre, mod, acc);
+			dir->ctime = atotime(cre);
 			dir->mtime = atotime(mod);
+			dir->atime = atotime(acc);
 			i = 0;
 			sscanf(size, "%i", &i);
 			dir->size = i; /* int to off_t */

@@ -282,6 +282,8 @@ static void client_done(obex_t *handle, obex_object_t *object, int UNUSED(obex_c
 		(void) close(cli->fd);
 	if (cli->buf_data) {
 		DEBUG(1, "%s: Warning: buffer still active?\n", __func__);
+		free(cli->buf_data);
+		cli->buf_data = NULL;
 	}
 
 	while(OBEX_ObjectGetNextHeader(handle, object, &hi, &hv, &hlen)) {
@@ -868,6 +870,8 @@ int obexftp_get_type(obexftp_client_t *cli, const char *type, const char *localn
 
 	if (cli->buf_data) {
 		DEBUG(1, "%s: Warning: buffer still active?\n", __func__);
+		free(cli->buf_data);
+		cli->buf_data = NULL;
 	}
 
 	cli->infocb(OBEXFTP_EV_RECEIVING, remotename, 0, cli->infocb_data);
@@ -1085,6 +1089,8 @@ int obexftp_put_file(obexftp_client_t *cli, const char *filename, const char *re
 
 	if (cli->out_data) {
 		DEBUG(1, "%s: Warning: buffer still active?\n", __func__);
+		free(cli->buf_data);
+		cli->buf_data = NULL;
 	}
 	cli->infocb(OBEXFTP_EV_SENDING, filename, 0, cli->infocb_data);
 
@@ -1158,6 +1164,8 @@ int obexftp_put_data(obexftp_client_t *cli, const uint8_t *data, int size,
 
 	if (cli->out_data) {
 		DEBUG(1, "%s: Warning: buffer still active?\n", __func__);
+		free(cli->buf_data);
+		cli->buf_data = NULL;
 	}
 
 	cli->infocb(OBEXFTP_EV_SENDING, remotename, 0, cli->infocb_data);
