@@ -90,7 +90,7 @@
 #elif defined SWIGRUBY
 /* VALUE str = StringValue($input); // perhaps better? */
 	$1 = STR2CSTR($input);
-	$2 = (int) RSTRING($input)->len;
+	$2 = (int) RSTRING_LEN($input);
 #elif defined SWIGTCL
 	$1 = Tcl_GetStringFromObj($input,&$2);
 #else
