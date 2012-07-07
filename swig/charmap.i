@@ -88,8 +88,7 @@
 	$1 = PyString_AsString($input);
 	$2 = PyString_Size($input);
 #elif defined SWIGRUBY
-/* VALUE str = StringValue($input); // perhaps better? */
-	$1 = STR2CSTR($input);
+	$1 = RSTRING_PTR($input);
 	$2 = (int) RSTRING_LEN($input);
 #elif defined SWIGTCL
 	$1 = Tcl_GetStringFromObj($input,&$2);
