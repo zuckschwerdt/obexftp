@@ -412,7 +412,7 @@ fd_t bfb_io_open(const char *ttyname, enum trans_type *typeinfo)
 	/* send an ABORT (0xFF) with cleverly embedded AT command.	*/
 	/* look for valid OBEX frame (OK=0xA0, BADREQ=0xC0, or alike)	*/
 	DEBUG(1, "Checking for transparent OBEX mode\n");
-	actual = bfb_io_write(ttyfd, "\xFF\x00\x08\xCBATZ\r", 8);
+	actual = bfb_io_write(ttyfd, "\377\000\010\313ATZ\r", 8);
 	if (actual == 8) {
 		DEBUG(3, "Write ok, reading back\n");
 		actual = bfb_io_read_all(ttyfd, rspbuf, sizeof(rspbuf), 2);
