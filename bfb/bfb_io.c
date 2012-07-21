@@ -225,7 +225,7 @@ int do_at_cmd(fd_t fd, const char *cmd, char *rspbuf, int rspbuflen)
 	int answer_size;
 
 	char tmpbuf[100] = {0,};
-	int total = 0;
+	unsigned int total = 0;
 	int cmdlen;
 
         return_val_if_fail (cmd != NULL, -1);
