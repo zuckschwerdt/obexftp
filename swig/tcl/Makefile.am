@@ -1,6 +1,8 @@
 lib_LTLIBRARIES =	obexftp.la
 obexftp_la_SOURCES =	tcl_wrap.c
-obexftp_la_CFLAGS =	-I$(top_srcdir) -I$(oldincludedir)/tcl
+obexftp_la_CFLAGS =	-I$(top_srcdir) \
+			-I$(oldincludedir)/tcl \
+			@OPENOBEX_CFLAGS@
 obexftp_la_LDFLAGS =	-module
 obexftp_la_LIBADD =	$(top_builddir)/obexftp/libobexftp.la \
 			$(top_builddir)/multicobex/libmulticobex.la \
