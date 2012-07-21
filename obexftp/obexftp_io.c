@@ -33,6 +33,8 @@
 #include <openobex/obex.h>
 
 #include "obexftp_io.h"
+#include "unicode.h"
+
 #include <common.h>
 
 #ifdef _WIN32
