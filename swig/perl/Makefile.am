@@ -9,7 +9,7 @@ MOSTLYCLEANFILES=perl_wrap.c OBEXFTP.pm OBEXFTP.bs
 endif
 
 Makefile.perl: Makefile.PL
-	$(PERL) $< PREFIX=$(prefix) MAKEFILE=$@
+	$(PERL) Makefile.PL PREFIX=$(prefix) MAKEFILE=$@
 
 OBEXFTP.so: perl_wrap.c Makefile.perl
 	if test ! -f perl_wrap.c; then cp $(srcdir)/perl_wrap.c . ; fi
