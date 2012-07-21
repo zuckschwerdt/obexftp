@@ -181,6 +181,7 @@ static int parse_uuid(char *name, const uint8_t **uuid, int *uuid_len)
 	return -1;
 }
 
+#ifdef HAVE_USB
 static void discover_usb()
 {
 	char **devices;
@@ -196,6 +197,7 @@ static void discover_usb()
        	}
 	printf("\nUse '-u interface_number' to connect\n");
 }
+#endif
 
 static int find_bt(char *addr, char **res_bdaddr, int *res_channel)
 {
