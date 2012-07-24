@@ -36,7 +36,7 @@ if ( PKGCONFIG_FUSE_FOUND )
   endforeach ( i )
   
 else ( PKGCONFIG_FUSE_FOUND )
-  find_patch ( Fuse_INCLUDE_DIRS
+  find_path ( Fuse_INCLUDE_DIRS
     NAMES
       fuse/fuse.h
     PATH_SUFFIXES
