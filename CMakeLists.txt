@@ -44,6 +44,7 @@ add_subdirectory ( bfb )
 add_subdirectory ( multicobex )
 add_subdirectory ( obexftp )
 add_subdirectory ( apps )
+add_subdirectory ( fuse )
 add_subdirectory ( swig )
 add_subdirectory ( doc )
 #examples

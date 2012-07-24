@@ -1,4 +1,4 @@
-SUBDIRS =			bfb multicobex obexftp apps doc examples swig
+SUBDIRS =			bfb multicobex obexftp apps fuse doc examples swig
 
 ACLOCAL_AMFLAGS =		-I m4
 

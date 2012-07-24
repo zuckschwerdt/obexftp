@@ -47,6 +47,17 @@ if test "${am_cv_usb_found}" = "yes"; then
 	REQUIRES="$REQUIRES libusb"
 fi
 
+PKG_CHECK_MODULES(FUSE,fuse,[fuse_found=true],[fuse_found=false])
+AC_ARG_ENABLE(fuse,
+	AC_HELP_STRING([--enable-fuse],
+			[Compile obex(auto)fs @<:@default=no@:>@]),
+[case "${enableval}" in
+  yes) buildfuse=true ;;
+  no)  buildfuse=false ;;
+  *) AC_MSG_ERROR(bad value ${enableval} for --enable-fuse) ;;
+esac],[buildfuse=$fuse_found])
+AM_CONDITIONAL(BUILD_FUSE, test x$buildfuse = xtrue)
+
 # check for optional swig rebuild
 AC_ARG_ENABLE([swig],
 		[AC_HELP_STRING([--enable-swig],
@@ -151,6 +162,7 @@ AC_SUBST(REQUIRES)
 # should use AC_CONFIG_FILES
 AC_OUTPUT([
 Makefile
+fuse/Makefile
 swig/perl/Makefile
 swig/perl/Makefile.PL
 swig/python/Makefile
