@@ -25,6 +25,27 @@ if ( ICONV_INCLUDE_DIRS )
   endif ( NOT ICONV_FOUND )
 endif ( ICONV_INCLUDE_DIRS )
 
+if ( ICONV_FOUND )
+  set ( ICONV_CONST_TEST_SOURCE "
+#include <stdlib.h>
+#include <iconv.h>
+extern
+#ifdef __cplusplus
+"C"
+#endif
+#if defined(__STDC__) || defined(__cplusplus)
+size_t iconv (iconv_t cd, const char * *inbuf, size_t *inbytesleft, char * *outbuf, size_t *outbytesleft);
+#else
+size_t iconv();
+#endif
+")
+  unset ( CMAKE_REQUIRED_FLAGS )
+  unset ( CMAKE_REQUIRED_DEFINITIONS )
+  set ( CMAKE_REQUIRED_INCLUDES ${ICONV_INCLUDE_DIRS} )
+  unset ( CMAKE_REQUIRED_LIBRARIES )
+  check_c_source_compiles ( "${ICONV_CONST_TEST_SOURCE}" ICONV_USES_CONST )
+endif ( ICONV_FOUND )
+
 if ( NOT ICONV_FOUND )
   if ( Iconv_REQUIRED )
     message ( FATAL_ERROR "Iconv not found" )

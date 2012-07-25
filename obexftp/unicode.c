@@ -33,6 +33,9 @@
 #ifdef HAVE_ICONV
 #include <iconv.h>
 #include <locale.h>
+#ifndef ICONV_CONST
+#define ICONV_CONST
+#endif
 #ifdef HAVE_LANGINFO_H
 #include <langinfo.h>
 #define locale_charset nl_langinfo(CODESET)
@@ -82,7 +85,7 @@ int CharToUnicode(uint8_t *uc, const uint8_t *c, int size)
 	size_t ni, no, nrc;
 	int ret;
 	/* avoid type-punned dereferecing (breaks strict aliasing) */
-	const char *cc = (const char *)c;
+	ICONV_CONST char *cc = (ICONV_CONST char *)c;
 	char *ucc = (char *)uc;
 
         return_val_if_fail(uc != NULL, -1);
@@ -103,7 +106,7 @@ int CharToUnicode(uint8_t *uc, const uint8_t *c, int size)
 	/* try current locale charset to UTF-16BE */
 	setlocale(LC_CTYPE, "");
 	DEBUG(2, "Iconv from locale \"%s\"\n", locale_charset);
-	cc = (const char *)c;
+	cc = (ICONV_CONST char *)c;
 	ucc = (char *)uc;
 	ni = strlen(cc) + 1;
 	no = size;
@@ -117,7 +120,7 @@ int CharToUnicode(uint8_t *uc, const uint8_t *c, int size)
 	}
 
 	/* fallback to ISO-8859-1 to UTF-16BE (every byte is valid here) */
-	cc = (const char *)c;
+	cc = (ICONV_CONST char *)c;
 	ucc = (char *)uc;
 	ni = strlen(cc) + 1;
 	no = size;
@@ -191,7 +194,7 @@ int UnicodeToChar(uint8_t *c, const uint8_t *uc, int size)
 	int ret;
 	/* avoid type-punned dereferecing (breaks strict aliasing) */
 	char *cc = (char *)c;
-	const char *ucc = (const char *)uc;
+	ICONV_CONST char *ucc = (ICONV_CONST char *)uc;
 
         return_val_if_fail(uc != NULL, -1);
         return_val_if_fail(c != NULL, -1);
@@ -266,7 +269,7 @@ int Utf8ToChar(uint8_t *c, const uint8_t *uc, int size)
 	int ret;
 	/* avoid type-punned dereferecing (breaks strict aliasing) */
 	char *cc = (char *)c;
-	const char *ucc = (const char *)uc;
+	ICONV_CONST char *ucc = (ICONV_CONST char *)uc;
 
         return_val_if_fail(uc != NULL, -1);
         return_val_if_fail(c != NULL, -1);
