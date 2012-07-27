@@ -28,12 +28,6 @@ find_package ( Bluetooth REQUIRED )
 include_directories ( ${Bluetooth_INCLUDE_DIRS} )
 add_definitions ( -DHAVE_BLUETOOTH -DHAVE_SDP )
 
-find_package ( OpenObex ${OpenObex_FORCE_VERSION} QUIET NO_MODULE)
-if ( NOT OpenObex_FOUND )
-  find_package ( OpenObex REQUIRED )
-endif ( NOT OpenObex_FOUND )
-include_directories ( ${OpenObex_INCLUDE_DIRS} )
-
 find_package ( Iconv REQUIRED )
 add_definitions ( -DHAVE_ICONV )
 if ( ICONV_USES_CONST )

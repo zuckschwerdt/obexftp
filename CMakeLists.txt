@@ -40,6 +40,16 @@ include_directories (
   ${PROJECT_SOURCE_DIR}/includes
 )
 
+#
+# many parts of this project need the OpenObex includes
+#
+find_package ( OpenObex ${OpenObex_FORCE_VERSION} QUIET NO_MODULE)
+if ( NOT OpenObex_FOUND )
+  find_package ( OpenObex REQUIRED )
+endif ( NOT OpenObex_FOUND )
+include_directories ( ${OpenObex_INCLUDE_DIRS} )
+
+
 add_subdirectory ( bfb )
 add_subdirectory ( multicobex )
 add_subdirectory ( obexftp )
