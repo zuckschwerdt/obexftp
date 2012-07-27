@@ -1,5 +1,5 @@
 
-add_definitions( -DVERSION=${VERSION} )
+add_definitions( -DVERSION="${VERSION}" )
 
 # always set this
 add_definitions ( -DHAVE_USB )
