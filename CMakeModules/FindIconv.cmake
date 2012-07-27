@@ -38,6 +38,8 @@ size_t iconv (iconv_t cd, const char * *inbuf, size_t *inbytesleft, char * *outb
 #else
 size_t iconv();
 #endif
+
+int main(void) { return 0; }
 ")
   unset ( CMAKE_REQUIRED_FLAGS )
   unset ( CMAKE_REQUIRED_DEFINITIONS )
