@@ -36,10 +36,6 @@
 #include <fcntl.h>
 #include <errno.h>
 
-#ifdef HAVE_SYS_TIME_H
-#include <sys/time.h>
-#endif
-
 #ifdef _WIN32
 #include <windows.h>
 #define sleep(t) Sleep((t) * 1000)

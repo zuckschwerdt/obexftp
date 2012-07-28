@@ -34,10 +34,6 @@
 #include <sys/select.h>
 #endif
 
-#ifdef HAVE_SYS_TIME_H
-#include <sys/time.h>
-#endif
-
 #ifdef _WIN32
 #include <windows.h>
 #define sleep(n)	Sleep(n*1000)

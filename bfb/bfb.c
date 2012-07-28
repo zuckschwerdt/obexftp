@@ -31,10 +31,6 @@
 
 #include <sys/select.h>
 
-#ifdef HAVE_SYS_TIME_H
-#include <sys/time.h>
-#endif
-
 /* htons */
 #ifdef _WIN32
 #include <winsock2.h>
