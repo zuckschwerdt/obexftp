@@ -203,7 +203,6 @@ static int ofs_getdir(const char *path, fuse_dirh_t h, fuse_dirfil_t filler)
 {
 	DIR *dir;
 	stat_entry_t *ent;
-	struct stat stat;
 	int res;
 
 	res = ofs_connect();
@@ -221,7 +220,6 @@ static int ofs_getdir(const char *path, fuse_dirh_t h, fuse_dirfil_t filler)
 	res = filler(h, "..", DT_DIR, 0);
 	while ((ent = obexftp_readdir(dir)) != NULL) {
 		DEBUG("GETDIR:%s\n", ent->name);
-		stat.st_mode = S_ISDIR(ent->mode) ? DT_DIR : DT_REG;
 		res = filler(h, ent->name, S_ISDIR(ent->mode) ? DT_DIR : DT_REG, 0);
 		if(res != 0)
 			break;
