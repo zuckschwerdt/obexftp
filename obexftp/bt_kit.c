@@ -767,8 +767,11 @@ char *btkit_getname(const char *src, const char *addr)
 		dev_id = hci_devid(src);
 	else if (src)
 		dev_id = atoi(src);
-	else
-		dev_id = hci_get_route(NULL);
+	else {
+		dev_id = hci_get_route(&bdaddr);
+		if (dev_id < 0)
+			dev_id = hci_get_route(NULL);
+	}
 
 	dd = hci_open_dev(dev_id); 
 	if (dd < 0) {
@@ -837,6 +840,7 @@ int btkit_browse(const char *src, const char *addr, int svclass)
 	sdp_session_t *sess;
 	uuid_t root_uuid;
 	bdaddr_t bdaddr;
+	bdaddr_t adapter;
 
 	if (!addr || strlen(addr) != 17)
 		return -1;
@@ -847,11 +851,19 @@ int btkit_browse(const char *src, const char *addr, int svclass)
 		dev_id = hci_devid(src);
 	else if (src)
 		dev_id = atoi(src);
+	else {
+		dev_id = hci_get_route(&bdaddr);
+		if (dev_id < 0)
+			dev_id = hci_get_route(NULL);
+	}
+
+	if (dev_id >= 0)
+		hci_devba(dev_id, &adapter);
 	else
-		dev_id = hci_get_route(NULL);
+		bacpy(&adapter, BDADDR_ANY);
 
 	/* Connect to remote SDP server */
-	sess = sdp_connect(BDADDR_ANY, &bdaddr, SDP_RETRY_IF_BUSY);
+	sess = sdp_connect(&adapter, &bdaddr, SDP_RETRY_IF_BUSY);
 
 	if(!sess) {
 		DEBUG(1, "%s: Failed to connect to SDP server", __func__);
