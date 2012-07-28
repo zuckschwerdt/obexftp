@@ -30,9 +30,7 @@
 #include <fcntl.h>
 #include <sys/types.h>
 #include <unistd.h>
-#ifdef HAVE_SYS_SELECT_H
 #include <sys/select.h>
-#endif
 
 #ifdef _WIN32
 #include <windows.h>

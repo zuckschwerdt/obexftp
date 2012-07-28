@@ -30,9 +30,7 @@
 #include <unistd.h>
 #include <string.h>
 #include <sys/types.h>
-#ifdef HAVE_SYS_SELECT_H
 #include <sys/select.h>
-#endif
 #include <fcntl.h>
 #include <errno.h>
 
