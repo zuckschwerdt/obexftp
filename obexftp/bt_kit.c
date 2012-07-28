@@ -946,6 +946,8 @@ int btkit_unregister_service(int svclass)
 		DEBUG(1, "Service record unregistration failed.");
 
 	sdp_close(session);
+
+	return 0;
 }
 
 
