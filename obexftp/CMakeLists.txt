@@ -24,10 +24,6 @@ set ( obexftp_HEADERS
   ${obexftp_PUBLIC_HEADERS}
 )
 
-find_package ( Bluetooth REQUIRED )
-include_directories ( ${Bluetooth_INCLUDE_DIRS} )
-add_definitions ( -DHAVE_BLUETOOTH -DHAVE_SDP )
-
 find_package ( Iconv REQUIRED )
 add_definitions ( -DHAVE_ICONV )
 if ( ICONV_USES_CONST )
