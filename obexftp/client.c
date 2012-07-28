@@ -610,7 +610,6 @@ int obexftp_connect_src(obexftp_client_t *cli, const char *src, const char *devi
 #endif
 #ifdef HAVE_USB
 	int obex_intf_cnt;
-	obex_interface_t *obex_intf;
 #endif
 	obex_object_t *object;
 	obex_headerdata_t hv;
@@ -714,9 +713,11 @@ int obexftp_connect_src(obexftp_client_t *cli, const char *src, const char *devi
 		else if (port >= obex_intf_cnt) {
 			DEBUG(1, "%s() %d is an invalid USB interface number\n", __func__, port);
 			ret = -EINVAL; /* is there a better errno? */
-		} else
+		} else {
+			obex_interface_t *obex_intf;
 			obex_intf = OBEX_GetInterfaceByIndex(cli->obexhandle, port);
 			ret = OBEX_InterfaceConnect(cli->obexhandle, obex_intf);
+		}
 		DEBUG(3, "%s() USB %d\n", __func__, ret);
 		break;
 #endif /* HAVE_USB */
@@ -1213,7 +1214,6 @@ static char **discover_usb()
 	char **res = NULL;
 #ifdef HAVE_USB
 	obex_t *handle;
-	obex_interface_t* obex_intf;
 	int i, interfaces_number;
 
 	if(! (handle = OBEX_Init(OBEX_TRANS_USB, cli_obex_event, 0))) {
@@ -1225,6 +1225,8 @@ static char **discover_usb()
 	res = calloc(interfaces_number + 1, sizeof(char *));
 	
 	for (i=0; i < interfaces_number; i++) {
+		obex_interface_t *obex_intf;
+
 		res[i] = malloc(201);
 		obex_intf = OBEX_GetInterfaceByIndex(handle, i);
 		snprintf(res[i], 200, "%d (Manufacturer: %s Product: %s Serial: %s Interface description: %s)", i,
