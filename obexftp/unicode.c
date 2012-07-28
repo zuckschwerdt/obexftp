@@ -83,7 +83,6 @@ int CharToUnicode(uint8_t *uc, const uint8_t *c, int size)
 #ifdef HAVE_ICONV
 	iconv_t utf16;
 	size_t ni, no, nrc;
-	int ret;
 	/* avoid type-punned dereferecing (breaks strict aliasing) */
 	ICONV_CONST char *cc = (ICONV_CONST char *)c;
 	char *ucc = (char *)uc;
@@ -96,7 +95,7 @@ int CharToUnicode(uint8_t *uc, const uint8_t *c, int size)
 	no = size;
 	utf16 = iconv_open("UTF-16BE", "UTF-8");
        	nrc = iconv(utf16, &cc, &ni, &ucc, &no);
-       	ret = iconv_close(utf16);
+		(void)iconv_close(utf16);
        	if (nrc == (size_t)(-1)) {
        		DEBUG(3, "Iconv from UTF-8 conversion error: '%s'\n", cc);
        	} else {
@@ -112,7 +111,7 @@ int CharToUnicode(uint8_t *uc, const uint8_t *c, int size)
 	no = size;
 	utf16 = iconv_open("UTF-16BE", locale_charset);
        	nrc = iconv(utf16, &cc, &ni, &ucc, &no);
-       	ret = iconv_close(utf16);
+		(void)iconv_close(utf16);
        	if (nrc == (size_t)(-1)) {
        		DEBUG(3, "Iconv from locale conversion error: '%s'\n", cc);
        	} else {
@@ -126,7 +125,7 @@ int CharToUnicode(uint8_t *uc, const uint8_t *c, int size)
 	no = size;
 	utf16 = iconv_open("UTF-16BE", "ISO-8859-1");
        	nrc = iconv(utf16, &cc, &ni, &ucc, &no);
-       	ret = iconv_close(utf16);
+		(void)iconv_close(utf16);
        	if (nrc == (size_t)(-1)) {
        		DEBUG(2, "Iconv internal conversion error: '%s'\n", cc);
 		return -1;
@@ -191,7 +190,6 @@ int UnicodeToChar(uint8_t *c, const uint8_t *uc, int size)
 #ifdef HAVE_ICONV
 	iconv_t utf16;
 	size_t ni, no, nrc;
-	int ret;
 	/* avoid type-punned dereferecing (breaks strict aliasing) */
 	char *cc = (char *)c;
 	ICONV_CONST char *ucc = (ICONV_CONST char *)uc;
@@ -207,7 +205,7 @@ int UnicodeToChar(uint8_t *c, const uint8_t *uc, int size)
 	no = size;
 	utf16 = iconv_open(locale_charset, "UTF-16BE");
        	nrc = iconv(utf16, &ucc, &ni, &cc, &no);
-       	ret = iconv_close(utf16);
+		(void)iconv_close(utf16);
        	if (nrc == (size_t)(-1)) {
        		DEBUG(2, "Iconv from locale conversion error: '%s'\n", cc);
 	}
@@ -266,7 +264,6 @@ int Utf8ToChar(uint8_t *c, const uint8_t *uc, int size)
 #ifdef HAVE_ICONV
 	iconv_t utf8;
 	size_t ni, no, nrc;
-	int ret;
 	/* avoid type-punned dereferecing (breaks strict aliasing) */
 	char *cc = (char *)c;
 	ICONV_CONST char *ucc = (ICONV_CONST char *)uc;
@@ -280,7 +277,7 @@ int Utf8ToChar(uint8_t *c, const uint8_t *uc, int size)
 	no = size;
 	utf8 = iconv_open(locale_charset, "UTF-8");
        	nrc = iconv(utf8, &ucc, &ni, &cc, &no);
-       	ret = iconv_close(utf8);
+		(void)iconv_close(utf8);
        	if (nrc != (size_t)(-1)) {
        		DEBUG(2, "Iconv from locale conversion error: '%s'\n", cc);
        	}
