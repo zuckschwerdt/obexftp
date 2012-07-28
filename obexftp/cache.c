@@ -274,18 +274,21 @@ static stat_entry_t *parse_directory(char *xml)
 
 	stat_entry_t *dir_start, *dir;
 	int ret, n, i;
-	char *xml_conv;
+	uint8_t *xml_conv;
 		
 	if (!xml)
 		return NULL;
+
 	n = strlen(xml) + 1;
 	xml_conv = malloc(n);
-	ret = Utf8ToChar(xml_conv, xml, n);
-       	if (ret > 0) {
-       		xml = xml_conv;
-       	} else {
-       		DEBUG(1, "UTF-8 conversion error\n");
-       	}
+	if (xml_conv) {
+		ret = Utf8ToChar(xml_conv, (uint8_t *)xml, n);
+		if (ret > 0) {
+			xml = (char *)xml_conv;
+		} else {
+			DEBUG(1, "UTF-8 conversion error\n");
+		}
+	}
 	
 	DEBUG(4, "Converted cache xml: '%s'\n", xml);
 	/* prepare a cache to hold this dir */

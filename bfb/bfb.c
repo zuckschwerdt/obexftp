@@ -347,15 +347,13 @@ int bfb_write_packets(fd_t fd, uint8_t type, uint8_t *buffer, int length)
 		rc = select(fd+1, NULL, &fds, NULL, &timeout);
 		if ( rc > 0) {
 #ifdef _WIN32
-			if(!WriteFile(fd, frame, l + sizeof (bfb_frame_t), &actual, NULL))
+			if(!WriteFile(fd, frame, l + sizeof (bfb_frame_t), &actual, NULL)) {
 				DEBUG(2, "%s() Write error: %ld\n", __func__, actual);
-			DEBUG(3, "%s() Wrote %ld bytes (expected %d)\n", __func__, actual, l + sizeof (bfb_frame_t));
+			}
 #else
 			actual = write(fd, frame, l + sizeof (bfb_frame_t));
-			DEBUG(3, "%s() Wrote %d bytes (expected %d)\n", __func__, actual, l + sizeof (bfb_frame_t));
-			// delay for some USB-serial coverters (Gerhard Reithofer)
-			// usleep(1000); // there has to be a better way
 #endif
+			DEBUG(3, "%s() Wrote %d bytes (expected %lu)\n", __func__, actual, (unsigned long)(l + sizeof (bfb_frame_t)));
 			if (actual < 0 || actual < l + (int) sizeof (bfb_frame_t)) {
 				DEBUG(1, "%s() Write failed\n", __func__);
 				free(frame);
@@ -504,6 +502,7 @@ int bfb_check_data(bfb_data_t *data, int len)
                 uint16_t value;
                 uint8_t bytes[2];
         } l;
+	uint8_t inv_chk;
 
 	DEBUG(3, "%s() \n", __func__);
 
@@ -513,12 +512,13 @@ int bfb_check_data(bfb_data_t *data, int len)
 	if (len < (int) sizeof(bfb_data_t))
 		return 0;
 
-	if (data->cmd != (uint8_t)~data->chk) {
-		DEBUG(1, "%s() Broken data? 0x%02x, 0x%02x\n", __func__, data->cmd, (uint8_t)~data->chk);
+	DEBUG(3, "%s() cmd: 0x%02x, chk: 0x%02x, seq: %d\n", __func__, data->cmd, data->chk, data->seq);
+	inv_chk = ~data->chk;
+	if (data->cmd != inv_chk) {
+		DEBUG(1, "%s() Broken data?\n", __func__);
 		DEBUGBUFFER(data, len);
 	}
 
-	DEBUG(3, "%s() cmd: 0x%02x, chk: 0x%02x, seq: %d\n", __func__, data->cmd, data->chk, data->seq);
 
 	if ((data->cmd != BFB_DATA_FIRST) && (data->cmd != BFB_DATA_NEXT)) {
 		DEBUG(1, "%s() Wrong data type (0x%02x)?\n", __func__, data->cmd);
@@ -529,7 +529,7 @@ int bfb_check_data(bfb_data_t *data, int len)
 	l.bytes[1] = data->len1;
 	l.value = htons(l.value);
 
-	DEBUG(3, "%s() fragment size %d, payload %d of indicated %d\n", __func__, len, len-sizeof(bfb_data_t), l.value);
+	DEBUG(3, "%s() fragment size %d, payload %lu of indicated %d\n", __func__, len, (unsigned long)(len - sizeof(bfb_data_t)), l.value);
 
 	if (len-(int)sizeof(bfb_data_t) < (int)(l.value) + /*crc*/ 2)
 		return 0;

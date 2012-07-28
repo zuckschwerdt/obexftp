@@ -305,7 +305,7 @@ static void client_done(obex_t *handle, obex_object_t *object, int UNUSED(obex_c
 			}
 			body_len = hlen;
 			body_data = hv.bs;
-			cli->infocb(OBEXFTP_EV_BODY, hv.bs, hlen, cli->infocb_data);
+			cli->infocb(OBEXFTP_EV_BODY, (char *)hv.bs, hlen, cli->infocb_data);
 			DEBUG(3, "%s() Done body\n", __func__);
                         /* break; */
                 }
@@ -330,7 +330,7 @@ static void client_done(obex_t *handle, obex_object_t *object, int UNUSED(obex_c
 				cli->infocb(OBEXFTP_EV_INFO, (char*)&cli->apparam_info, 0, cli->infocb_data);
 			}
 			else
-				DEBUG(3, "%s() Application parameters don't fit %d vs. %d.\n", __func__, hlen, sizeof(apparam_t));
+				DEBUG(3, "%s() Application parameters don't fit %d vs. %lu.\n", __func__, hlen, (unsigned long)sizeof(apparam_t));
                         break;
                 }
                 else    {

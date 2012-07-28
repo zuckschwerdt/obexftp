@@ -403,7 +403,7 @@ static int ofs_release(const char *path, struct fuse_file_info *fi)
 		if(res < 0)
 			return res; /* errno */
 
-		(void) obexftp_put_data(cli, wb->data, wb->size, path);
+		(void) obexftp_put_data(cli, (uint8_t *)wb->data, wb->size, path);
 
 		ofs_disconnect();
 
