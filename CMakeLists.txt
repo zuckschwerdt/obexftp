@@ -52,9 +52,11 @@ include_directories ( ${OpenObex_INCLUDE_DIRS} )
 #
 # some code is only included if bluetooth is available
 #
-find_package ( Bluetooth REQUIRED )
-include_directories ( ${Bluetooth_INCLUDE_DIRS} )
-add_definitions ( -DHAVE_BLUETOOTH -DHAVE_SDP )
+find_package ( Bluetooth )
+if ( Bluetooth_FOUND )
+  include_directories ( ${Bluetooth_INCLUDE_DIRS} )
+  add_definitions ( -DHAVE_BLUETOOTH -DHAVE_SDP )
+endif ( Bluetooth_FOUND )
 
 add_subdirectory ( bfb )
 add_subdirectory ( multicobex )
