@@ -533,10 +533,10 @@ static void get_server(obex_t *handle, obex_object_t *object)
 		
 		//composite the obex obejct
 		OBEX_ObjectSetRsp(object, OBEX_RSP_CONTINUE, OBEX_RSP_SUCCESS);
-		hv.bs = (uint8_t *)xmldata->data;
-		OBEX_ObjectAddHeader(handle, object, OBEX_HDR_BODY, hv, xmldata->size, 0);
 		hv.bq4 = xmldata->size;
 		OBEX_ObjectAddHeader(handle, object, OBEX_HDR_LENGTH, hv, sizeof(uint32_t), 0);
+		hv.bs = (uint8_t *)xmldata->data;
+		OBEX_ObjectAddHeader(handle, object, OBEX_HDR_BODY, hv, xmldata->size, 0);
 		//fprintf(stderr, "%s:%d:%s\n", __FILE__, __LINE__, __FUNCTION__);
 		FREE_RAWDATA_STREAM(xmldata);
 		//fprintf(stderr, "%s:%d:%s\n", __FILE__, __LINE__, __FUNCTION__);
@@ -553,10 +553,10 @@ static void get_server(obex_t *handle, obex_object_t *object)
 		}
 
 		OBEX_ObjectSetRsp(object, OBEX_RSP_CONTINUE, OBEX_RSP_SUCCESS);
-		hv.bs = buf;
-		OBEX_ObjectAddHeader(handle, object, OBEX_HDR_BODY, hv, file_size, 0);
 		hv.bq4 = file_size;
 		OBEX_ObjectAddHeader(handle, object, OBEX_HDR_LENGTH, hv, sizeof(uint32_t), 0);
+		hv.bs = buf;
+		OBEX_ObjectAddHeader(handle, object, OBEX_HDR_BODY, hv, file_size, 0);
 	}
 	else
 	{
