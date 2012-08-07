@@ -903,8 +903,6 @@ reset:
 	}
 	printf("Waiting for connection...\n");
 
-	(void) OBEX_ServerAccept(handle, obex_event, NULL);
-
 	while (!finished) {
 		//printf("Handling connection...\n");
 		OBEX_HandleInput(handle, 1);
