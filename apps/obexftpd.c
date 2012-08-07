@@ -455,6 +455,7 @@ static void get_server(obex_t *handle, obex_object_t *object)
 				strcpy(type, (char *)hv.bs);
 			}
 			printf("%s() type:%s\n", __FUNCTION__, type);
+			break;
 
 		case 0xbe: // user-defined inverse push
 			printf("%s() Found inverse push req\n", __FUNCTION__);
