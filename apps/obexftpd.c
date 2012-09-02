@@ -776,6 +776,7 @@ static void obex_event(obex_t *handle, obex_object_t *obj, int mode, int event, 
 	case OBEX_EV_REQHINT:
         /* An incoming request is about to come. Accept it! */
 		switch(obex_cmd) {
+		case OBEX_CMD_GET:
 		case OBEX_CMD_PUT:
 		case OBEX_CMD_CONNECT:
 		case OBEX_CMD_DISCONNECT:
