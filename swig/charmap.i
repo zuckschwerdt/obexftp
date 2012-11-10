@@ -91,7 +91,7 @@
 	$1 = RSTRING_PTR($input);
 	$2 = (int) RSTRING_LEN($input);
 #elif defined SWIGTCL
-	$1 = Tcl_GetStringFromObj($input,&$2);
+	$1 = Tcl_GetStringFromObj($input,(int*)&$2);
 #else
 #warning "no char *, size_t in-typemap for this language"
 #endif
