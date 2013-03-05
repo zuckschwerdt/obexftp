@@ -1,3 +1,12 @@
+ObexFTP 0.24 (released 2013-03-05)
+----------------------------------
+
+	* Maintainer changed from Christian to Hendrik
+	* change build system to using CMake
+	* integrate obexfs-0.12
+	* fix build for OpenOBEX-1.7
+
+
 ObexFTP 0.23 (released 2009-02-17)
 ----------------------------------
 

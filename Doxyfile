@@ -4,7 +4,7 @@
 # Project related configuration options
 #---------------------------------------------------------------------------
 PROJECT_NAME           = ObexFTP
-PROJECT_NUMBER         = 0.22
+PROJECT_NUMBER         = 0.24
 OUTPUT_DIRECTORY       = doc/api
 CREATE_SUBDIRS         = NO
 OUTPUT_LANGUAGE        = English
