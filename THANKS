@@ -28,8 +28,6 @@ Frode Isaksen <fisaksen@bewan.com> - obexftpd improvements
 
 Simon Ruggier <Simon80@gmail.com> - cobex write patch
 
-Hendrik Sattler - various cleanups and hints
-
 Sergey Vlasov <vsu@altlinux.ru> sugg. LDADD to LIBADD
 
 Alan J. McFarlane - rep. invalid conn_id in disconnect
@@ -43,4 +41,3 @@ Manuel Naranjo - hci selection draft
 Andrey Rahmatullin - Motorola SLVR L2 cobex fix
 
 Adam Williamson - Python distutils testing
-

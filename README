@@ -122,9 +122,4 @@ targets. Our distcheck will boldly ignore those files.
 Author and Contact
 ------------------
 
-Author: Christian W. Zuckschwerdt <zany@triq.net>
-     http://dev.zuckschwerdt.org/openobex/
-     http://openobex.sourceforge.net/
-     http://sourceforge.net/tracker/?group_id=8960
-     http://sourceforge.net/forum/?group_id=8960
- 
+See file AUTHORS.
