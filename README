@@ -49,39 +49,22 @@ Short Installation Instructions
 -------------------------------
 
 To compile and install:
-	# ./configure
-	# make
-	# make install (as superuser)
+  # mkdir build
+  # cd build
+  # cmake ..
+  # make
+  # make install (as superuser)
 
 If you plan to use a Siemens x45 or x55 series (e.g. S45 or C55,
 not S65) use
-	CFLAGS="$CFLAGS -DCOMPAT_S45" ./configure
-instead
+  # export CFLAGS="$CFLAGS -DCOMPAT_S45"
+before calling cmake.
 
 Consider using pedantic error checking:
-	CFLAGS="$CFLAGS -Werror" ./configure
+  # export CFLAGS="$CFLAGS -Werror"
 
-If compiling doesn't work, try to disable some of the language bindings on
-configure.
-	--disable-perl --disable-python --disable-ruby --disable-tcl
-
-
-Building from CVS/SVN/GIT
--------------------------
-
-Prepare the source tree with:
-	# autoreconf --install --force
-
-If that doesn't work or you want to control the individual steps run:
-
-	# aclocal --force -I m4
-	# libtoolize --copy --force	||	glibtoolize --copy --force
-	# autoconf --force
-	# autoheader --force
-	# automake --add-missing --copy --force-missing
-
-Then do a full configure and make:
-	# ./configure --enable-swig --enable-builddocs && make
+If compiling doesn't work, try to disable some of the language bindings:
+  # cmake -DENABLE_PERL=NO -DENABLE_PYTHON=NO -DENABLE_RUBY=NO -DENABLE_TCL=NO
 
 
 Further Development
@@ -103,20 +86,11 @@ the newest library features and further development can focus on your needs.
 Debugging
 ---------
 
-remove all ObexFTP installations from your system. Build using
-	CFLAGS="-DOBEXFTP_DEBUG=5" ./configure
-	make clean ; make
+remove all ObexFTP installations from your system. Rebuild using:
+  # export CFLAGS="$CFLAGS -DOBEXFTP_DEBUG=5"
+
 Start debugging using
 	./apps/obexftp [...]
-
-You might want to try picking up compiler warnings too (and mail them to me)
-	CFLAGS="$CFLAGS -g -Wall -Wmissing-declarations -Wmissing-prototypes \
-		-Werror" ./configure
-	make clean ; make
-Please mail me all warnings and errors, if any.
-
-The bindings use language-native installers which are missing the uninstall
-targets. Our distcheck will boldly ignore those files.
 
 
 Author and Contact
