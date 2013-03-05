@@ -909,7 +909,7 @@ reset:
 
 	while (!finished) {
 		//printf("Handling connection...\n");
-		OBEX_HandleInput(handle, 1);
+		OBEX_HandleInput(handle, -1);
 	}
 
 	OBEX_Cleanup(handle);
