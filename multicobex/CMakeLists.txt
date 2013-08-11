@@ -25,6 +25,9 @@ target_link_libraries ( multicobex
   bfb
 )
 
+#disable link chaining
+set_property(TARGET multicobex PROPERTY LINK_INTERFACE_LIBRARIES "")
+
 install ( TARGETS multicobex
   RUNTIME
     DESTINATION ${CMAKE_INSTALL_BINDIR}

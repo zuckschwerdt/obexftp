@@ -52,6 +52,9 @@ target_link_libraries ( obexftp
   ${OpenObex_LIBRARIES}
 )
 
+#disable link chaining
+set_property(TARGET obexftp PROPERTY LINK_INTERFACE_LIBRARIES "")
+
 install ( TARGETS obexftp
   RUNTIME
     DESTINATION ${CMAKE_INSTALL_BINDIR}
