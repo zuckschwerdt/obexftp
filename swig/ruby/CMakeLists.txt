@@ -17,6 +17,7 @@ swig_add_module ( obexftp-ruby ruby ${obexftp-ruby_SWIG_SOURCES} )
 set_target_properties ( ${SWIG_MODULE_obexftp-ruby_REAL_NAME} PROPERTIES
   OUTPUT_NAME obexftp
   PREFIX ""
+  NO_SONAME TRUE
 )
 
 swig_link_libraries ( obexftp-ruby

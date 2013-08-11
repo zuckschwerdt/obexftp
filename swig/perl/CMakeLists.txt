@@ -23,6 +23,7 @@ swig_add_module ( obexftp-perl perl ${obexftp-perl_SWIG_SOURCES} )
 set_target_properties ( ${SWIG_MODULE_obexftp-perl_REAL_NAME} PROPERTIES
   OUTPUT_NAME OBEXFTP
   PREFIX ""
+  NO_SONAME TRUE
 )
 
 swig_link_libraries ( obexftp-perl

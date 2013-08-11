@@ -24,6 +24,7 @@ swig_add_module ( obexftp-python python ${obexftp-python_SWIG_SOURCES} )
 
 set_target_properties ( ${SWIG_MODULE_obexftp-python_REAL_NAME} PROPERTIES
   OUTPUT_NAME _obexftp
+  NO_SONAME TRUE
 )
 
 swig_link_libraries ( obexftp-python

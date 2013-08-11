@@ -18,6 +18,7 @@ if ( TCL_FOUND )
   set_target_properties ( ${SWIG_MODULE_obexftp-tcl_REAL_NAME} PROPERTIES
     OUTPUT_NAME obexftp
     PREFIX ""
+    NO_SONAME TRUE
   )
 
   swig_link_libraries ( obexftp-tcl
