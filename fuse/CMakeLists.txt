@@ -14,7 +14,6 @@ if ( Fuse_FOUND )
     ${Fuse_LIBRARIES}
   )
 
-
   add_executable ( obexautofs
     obexautofs.c
   )
@@ -22,5 +21,11 @@ if ( Fuse_FOUND )
   target_link_libraries ( obexautofs
     obexftp
     ${Fuse_LIBRARIES}
+  )
+
+  install ( TARGETS obexfs obexautofs
+    RUNTIME
+      DESTINATION ${CMAKE_INSTALL_BINDIR}
+      COMPONENT applications
   )
 endif ( Fuse_FOUND )
