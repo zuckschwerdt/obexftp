@@ -12,7 +12,7 @@ set_target_properties ( obexftp_app PROPERTIES
 
 
 add_executable ( obexftpd_app obexftpd.c )
-target_link_libraries ( obexftpd_app obexftp )
+target_link_libraries ( obexftpd_app obexftp openobex )
 set_target_properties ( obexftpd_app PROPERTIES
   OUTPUT_NAME obexftpd
 )
