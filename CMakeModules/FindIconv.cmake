@@ -31,7 +31,7 @@ if ( ICONV_FOUND )
 #include <iconv.h>
 extern
 #ifdef __cplusplus
-"C"
+\"C\"
 #endif
 #if defined(__STDC__) || defined(__cplusplus)
 size_t iconv (iconv_t cd, const char * *inbuf, size_t *inbytesleft, char * *outbuf, size_t *outbytesleft);
