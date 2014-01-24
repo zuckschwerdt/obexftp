@@ -75,7 +75,7 @@ set ( prefix      "${CMAKE_INSTALL_PREFIX}" )
 set ( exec_prefix "\${prefix}" )
 set ( libdir      "\${prefix}/${CMAKE_INSTALL_LIBDIR}" )
 set ( includedir  "\${prefix}/${CMAKE_INSTALL_INCLUDEDIR}" )
-set ( REQUIRES    "bluetooth openobex" )
+set ( REQUIRES    "bluez openobex" )
 configure_file (
   ${CMAKE_CURRENT_SOURCE_DIR}/obexftp.pc.in
   ${CMAKE_CURRENT_BINARY_DIR}/obexftp.pc
