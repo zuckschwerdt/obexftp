@@ -2,7 +2,8 @@
 set ( bfb_SOURCES
   bfb.c
   bfb_io.c
-  crc.c
+  irda_fcs.c
+  ${CMAKE_CURRENT_BINARY_DIR}/irda_fcs_table.c
 )
 
 set ( bfb_PUBLIC_HEADERS
@@ -11,8 +12,18 @@ set ( bfb_PUBLIC_HEADERS
 )
 
 set ( bfb_HEADERS
-  crc.h
+  irda_fcs.h
   ${bfb_PUBLIC_HEADERS}
+)
+
+add_executable (crctable
+  crcmodel.h
+  crcmodel.c
+  crctable.c
+)
+
+add_custom_command ( OUTPUT irda_fcs_table.c
+  COMMAND crctable
 )
 
 add_library ( bfb

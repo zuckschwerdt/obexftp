@@ -39,7 +39,7 @@
 #include <netinet/in.h>
 #endif
 
-#include "crc.h"
+#include "irda_fcs.h"
 #include "bfb.h"
 #include <common.h>
 
@@ -134,16 +134,10 @@ int bfb_stuff_data(uint8_t *buffer, uint8_t type, uint8_t *data, uint16_t len, u
 	buffer[4] = fcs.bytes[1];
 
 	/* copy data */
-	memcpy(&buffer[5], data, len);
+	memcpy(buffer+5, data, len);
 
 	/* gen CRC */
-        fcs.value = INIT_FCS;
-
-        for (i=2; i < len+5; i++) {
-                fcs.value = irda_fcs(fcs.value, buffer[i]);
-        }
-        
-        fcs.value = ~fcs.value;
+        fcs.value = irda_fcs(buffer+2, len+3);
 
 	/* append CRC to packet */
 	/* fcs.value = htons(fcs.value); */
@@ -533,13 +527,7 @@ int bfb_check_data(bfb_data_t *data, int len)
 		return 0;
 
 	/* check CRC */
-        l.value = INIT_FCS;
-
-        for (i=2; i < len-2; i++) {
-                l.value = irda_fcs(l.value, ((uint8_t *)data)[i]);
-        }
-        
-        l.value = ~l.value;
+        l.value = irda_fcs((unsigned char *)data + 2, len - 4);
 
 	if ((((uint8_t *)data)[len-2] != l.bytes[0]) ||
 	    (((uint8_t *)data)[len-1] != l.bytes[1])) {
