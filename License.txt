@@ -1,0 +1,38 @@
+Licenses
+========
+
+The files
+    bfb/crcmodel.c
+    bfb/crcmodel.h
+    bfb/crctable.h
+    bfb/irda_fcs.c
+    bfb/irda_fcs.h
+are copied (with small modifications) from
+    A Painless Guide to CRC Error Detection Algorithms
+    Copyright (C) 1993 Ross Williams <ross@guest.adelaide.edu.au>
+and are in the public domain.
+
+================================================================================
+
+All other .h and .c files are distributed under the license as stated at the
+start of each file. This is either LGPLv2+ or GPLv2+.
+
+================================================================================
+
+The files used by the CMake build system have the following license:
+  Copyright (C) 2011-2014 Hendrik Sattler <post@hendrik-sattler.de>
+
+  This is free software; you can redistribute it and/or modify
+  it under the terms of the GNU General Public License as
+  published by the Free Software Foundation; either version 2 of
+  the License, or (at your option) any later version.
+
+  This program is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  GNU General Public License for more details.
+
+  You should have received a copy of the GNU General Public
+  License along with these files. If not, see <http://www.gnu.org/>.
+
+Alternatively, you can use the same license that CMake is licensed with.
