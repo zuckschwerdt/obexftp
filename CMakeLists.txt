@@ -11,7 +11,8 @@ project ( obexftp C )
 #
 set ( VERSION_MAJOR 0 )
 set ( VERSION_MINOR 24 )
-set ( VERSION "${VERSION_MAJOR}.${VERSION_MINOR}" )
+set ( VERSION_PATCH 1 )
+set ( VERSION "${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_PATCH}" )
 
 #
 # The path for our own CMake modules
