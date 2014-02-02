@@ -1,3 +1,9 @@
+ObexFTP 0.24.1 (released 2014-02-03)
+------------------------------------
+
+	* Fix build system bugs
+	* Replace CRC implementation in libbfb
+
 ObexFTP 0.24 (released 2013-03-05)
 ----------------------------------
 
