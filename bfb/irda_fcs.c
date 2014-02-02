@@ -4,6 +4,8 @@
  * This code is in the public domain.
  */
 
+#include "irda_fcs.h"
+
 /* For the values see IrPHY specification, chapter 5.3.1 */
 #define FCS_INIT  0xFFFF
 #define FCS_XOROT 0xFFFF

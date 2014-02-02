@@ -106,7 +106,6 @@ uint8_t bfb_checksum(uint8_t *data, int len)
  */
 int bfb_stuff_data(uint8_t *buffer, uint8_t type, uint8_t *data, uint16_t len, uint8_t seq)
 {
-        int i;
         union {
                 uint16_t value;
                 uint8_t bytes[2];
@@ -489,7 +488,6 @@ int	bfb_assemble_data(bfb_data_t **data, int *size, int *len, bfb_frame_t *frame
  */
 int bfb_check_data(bfb_data_t *data, int len)
 {
-	int i;
         union {
                 uint16_t value;
                 uint8_t bytes[2];
