@@ -68,6 +68,8 @@ static int transport = 0;
 static char *source = NULL; // "00:11:22:33:44:55"; "hci0";
 static char *device = NULL; // "00:11:22:33:44:55"; "/dev/ttyS0";
 static int channel = -1;
+static char *root = NULL; // "E:";
+static int root_len = 0; // Length of 'root'.
 
 static int nonblock = 0;
 
@@ -75,6 +77,13 @@ static char *mknod_dummy = NULL; /* bad coder, no cookies! */
 
 static int nodal = 0;
 
+static char* translate_path(const char* path) {
+	char* tpath = (char*)malloc(sizeof(char)*(root_len+strlen(path)+1));
+	strcpy(tpath, root);
+	strcat(tpath, path);
+	DEBUG("TRANSLATED: %s\n", tpath);
+	return tpath;
+}
 
 static int cli_open()
 {
@@ -145,6 +154,7 @@ static void ofs_disconnect()
 
 static int ofs_getattr(const char *path, struct stat *stbuf)
 {
+	char *tpath;
 	stat_entry_t *st;
 	int res;
 
@@ -178,7 +188,9 @@ static int ofs_getattr(const char *path, struct stat *stbuf)
 	if(res < 0)
 		return res; /* errno */
 	
-	st = obexftp_stat(cli, path);
+	tpath = translate_path(path);
+	st = obexftp_stat(cli, tpath);
+	free(tpath);
 
 	ofs_disconnect();
 	
@@ -201,6 +213,7 @@ static int ofs_getattr(const char *path, struct stat *stbuf)
 
 static int ofs_getdir(const char *path, fuse_dirh_t h, fuse_dirfil_t filler)
 {
+	char *tpath;
 	DIR *dir;
 	stat_entry_t *ent;
 	int res;
@@ -209,9 +222,11 @@ static int ofs_getdir(const char *path, fuse_dirh_t h, fuse_dirfil_t filler)
 	if(res < 0)
 		return res; /* errno */
 
-	dir = obexftp_opendir(cli, path);
+	tpath = translate_path(path);
+	dir = obexftp_opendir(cli, tpath);
 	
 	if (!dir) {
+		free(tpath);
 		ofs_disconnect();
 		return -ENOENT;
 	}
@@ -225,6 +240,7 @@ static int ofs_getdir(const char *path, fuse_dirh_t h, fuse_dirfil_t filler)
 			break;
 	}
 	obexftp_closedir(dir);
+	free(tpath);
 
 	ofs_disconnect();
 
@@ -248,6 +264,7 @@ static int ofs_mknod(const char *path, mode_t UNUSED(mode), dev_t UNUSED(dev))
 
 static int ofs_mkdir(const char *path, mode_t UNUSED(mode))
 {
+	char *tpath;
 	int res;
 
 	if(!path || *path != '/')
@@ -257,7 +274,9 @@ static int ofs_mkdir(const char *path, mode_t UNUSED(mode))
 	if(res < 0)
 		return res; /* errno */
 
-	(void) obexftp_setpath(cli, path, 1);
+	tpath = translate_path(path);
+	(void) obexftp_setpath(cli, tpath, 1);
+	free(tpath);
 
 	ofs_disconnect();
 
@@ -266,6 +285,7 @@ static int ofs_mkdir(const char *path, mode_t UNUSED(mode))
 
 static int ofs_unlink(const char *path)
 {
+	char *tpath;
 	int res;
 
 	if(!path || *path != '/')
@@ -275,7 +295,9 @@ static int ofs_unlink(const char *path)
 	if(res < 0)
 		return res; /* errno */
 
-	(void) obexftp_del(cli, path);
+	tpath = translate_path(path);
+	(void) obexftp_del(cli, tpath);
+	free(tpath);
 
 	ofs_disconnect();
 
@@ -285,6 +307,7 @@ static int ofs_unlink(const char *path)
 
 static int ofs_rename(const char *from, const char *to)
 {
+	char *tfrom, *tto;
 	int res;
 
 	if(!from || *from != '/')
@@ -297,7 +320,11 @@ static int ofs_rename(const char *from, const char *to)
 	if(res < 0)
 		return res; /* errno */
 
-	(void) obexftp_rename(cli, from, to);
+	tfrom = translate_path(from);
+	tto = translate_path(to);
+	(void) obexftp_rename(cli, tfrom, tto);
+	free(tto);
+	free(tfrom);
 
 	ofs_disconnect();
 
@@ -326,6 +353,7 @@ static int ofs_open(const char *UNUSED(path), struct fuse_file_info *fi)
 
 static int ofs_read(const char *path, char *buf, size_t size, off_t offset, struct fuse_file_info *UNUSED(fi))
 {
+	char *tpath;
 	data_buffer_t *wb;
 	int res = 0;
 	size_t actual;
@@ -340,7 +368,10 @@ static int ofs_read(const char *path, char *buf, size_t size, off_t offset, stru
 		if(res < 0)
 			return res; /* errno */
 
-		(void) obexftp_get(cli, NULL, path);
+		tpath = translate_path(path);
+		(void) obexftp_get(cli, NULL, tpath);
+		free(tpath);
+
 		wb->size = cli->buf_size;
 		wb->data = cli->buf_data; /* would be better to memcpy this */
 		//cli->buf_data = NULL; /* now the data is ours -- without copying */
@@ -389,6 +420,7 @@ static int ofs_write(const char *path, const char *buf, size_t size, off_t offse
 /* careful, this can be a read release or a write release */
 static int ofs_release(const char *path, struct fuse_file_info *fi)
 {
+	char *tpath;
 	data_buffer_t *wb;
 	int res;
 	
@@ -401,7 +433,9 @@ static int ofs_release(const char *path, struct fuse_file_info *fi)
 		if(res < 0)
 			return res; /* errno */
 
-		(void) obexftp_put_data(cli, (uint8_t *)wb->data, wb->size, path);
+		tpath = translate_path(path);
+		(void) obexftp_put_data(cli, (uint8_t *)wb->data, wb->size, tpath);
+		free(tpath);
 
 		ofs_disconnect();
 
@@ -511,13 +545,14 @@ int main(int argc, char *argv[])
 			{"usb",		required_argument, NULL, 'u'},
 			{"tty",		required_argument, NULL, 't'},
 			{"network",	required_argument, NULL, 'n'},
+			{"root",	required_argument, NULL, 'r'},
 			{"nonblock",	no_argument, NULL, 'N'},
 			{"help",	no_argument, NULL, 'h'},
 			{"usage",	no_argument, NULL, 'h'},
 			{0, 0, 0, 0}
 		};
 		
-		c = getopt_long (argc, argv, "+ib:B:d:u:t:n:Nh",
+		c = getopt_long (argc, argv, "+ib:B:d:u:t:n:r:Nh",
 				 long_options, &option_index);
 		if (c == -1)
 			break;
@@ -569,6 +604,12 @@ int main(int argc, char *argv[])
                         }
 			break;
 			
+		case 'r':
+			if (root != NULL)
+				free(root);
+			root = optarg;
+			break;
+
 		case 'N':
 			nonblock = 1;
 			break;
@@ -586,7 +627,8 @@ int main(int argc, char *argv[])
 				" -u, --usb <interface>       connect to this usb interface number\n"
 				" -t, --tty <device>          connect to this tty using a custom transport\n"
 				" -n, --network <device>      connect to this network host\n\n"
-				" -N, --nonblock              nonblocking mode\n\n"
+				" -r, --root <path>           path on device to use as root\n\n"
+				" -N, --nonblock              nonblocking mode\n"
 				" -h, --help, --usage         this help text\n\n"
 				"Options to fusermount need to be preceeded by two dashes (--).\n"
 				"\n",
@@ -604,6 +646,12 @@ int main(int argc, char *argv[])
 	if (transport == 0) {
 	       	fprintf(stderr, "No device selected. Use --help for help.\n");
 		exit(0);
+	}
+	if (root == NULL) root = "";
+	root_len = strlen(root);
+	if (root[root_len-1] == '/' || root[root_len-1] == '\\') {
+		root[root_len-1] = '\0';
+		--root_len;
 	}
 
 	argv[optind-1] = argv[0];
