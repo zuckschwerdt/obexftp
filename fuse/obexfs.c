@@ -73,6 +73,9 @@ static int root_len = 0; // Length of 'root'.
 
 static int nonblock = 0;
 
+// Free/total space (in bytes) to report if can't get real info.
+static int report_space = 0;
+
 static char *mknod_dummy = NULL; /* bad coder, no cookies! */
 
 static int nodal = 0;
@@ -446,13 +449,16 @@ static int ofs_release(const char *path, struct fuse_file_info *fi)
 	return 0;
 }
 
-#ifdef SIEMENS
 static int ofs_statfs(const char *UNUSED(label), struct statfs *st)
 {
 	int res;
 	int size, free;
 
 	memset(st, 0, sizeof(struct statfs));
+	st->f_bsize = 1;
+	st->f_blocks = report_space;
+	st->f_bfree = report_space;
+	st->f_bavail = report_space;
 
 	res = ofs_connect();
 	if(res < 0)
@@ -486,7 +492,6 @@ static int ofs_statfs(const char *UNUSED(label), struct statfs *st)
 
 	return 0;
 }
-#endif
 
 static void *ofs_init(void) {
 	//cli_open();
@@ -520,9 +525,7 @@ static struct fuse_operations ofs_oper = {
 	open:		ofs_open,
 	read:		ofs_read,
 	write:		ofs_write,
-#ifdef SIEMENS
 	statfs:		ofs_statfs,
-#endif
 	release:	ofs_release,
 	flush:		NULL,
 	fsync:		NULL,
@@ -547,12 +550,13 @@ int main(int argc, char *argv[])
 			{"network",	required_argument, NULL, 'n'},
 			{"root",	required_argument, NULL, 'r'},
 			{"nonblock",	no_argument, NULL, 'N'},
+			{"report-space",required_argument, NULL, 'S'},
 			{"help",	no_argument, NULL, 'h'},
 			{"usage",	no_argument, NULL, 'h'},
 			{0, 0, 0, 0}
 		};
 		
-		c = getopt_long (argc, argv, "+ib:B:d:u:t:n:r:Nh",
+		c = getopt_long (argc, argv, "+ib:B:d:u:t:n:r:NS:h",
 				 long_options, &option_index);
 		if (c == -1)
 			break;
@@ -614,6 +618,10 @@ int main(int argc, char *argv[])
 			nonblock = 1;
 			break;
 
+		case 'S':
+			report_space = atoi(optarg);
+			break;
+
 		case 'h':
 			/* printf("ObexFS %s\n", VERSION); */
 			printf("Usage: %s [-i | -b <dev> [-B <chan>] [-d <hci>] | -u <dev> | -t <dev> | -n <dev>] [-- <fuse options>]\n"
@@ -629,6 +637,7 @@ int main(int argc, char *argv[])
 				" -n, --network <device>      connect to this network host\n\n"
 				" -r, --root <path>           path on device to use as root\n\n"
 				" -N, --nonblock              nonblocking mode\n"
+				" -S, --report-space <bytes>  report this number as total/free space\n\n"
 				" -h, --help, --usage         this help text\n\n"
 				"Options to fusermount need to be preceeded by two dashes (--).\n"
 				"\n",
