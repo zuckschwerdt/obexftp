@@ -61,7 +61,7 @@ typedef struct data_buffer data_buffer_t;
 struct data_buffer {
 	size_t size;
 	char *data;
-	int write_mode; /* is this a write buffer? */
+	bool write_mode; /* is this a write buffer? */
 };
 
 
@@ -418,7 +418,7 @@ static int ofs_write(const char *path, const char *buf, size_t size, off_t offse
 	if (!wb->data)
 		return -1;
 	wb->size = newsize;
-	wb->write_mode = 1;
+	wb->write_mode = true;
 
 	DEBUG("memcpy to %p (%p) from %p cnt %zu\n", wb->data + offset, wb->data, buf, size);
 	(void) memcpy(&wb->data[offset], buf, size);
