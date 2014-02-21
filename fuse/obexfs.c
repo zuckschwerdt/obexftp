@@ -698,6 +698,21 @@ static void ofs_destroy(void *UNUSED(private_data)) {
 	return;
 }
 
+static int ofs_utime(const char *a, struct utimbuf *b)
+{
+	return 0;
+}
+
+static int ofs_chmod(const char *a, mode_t b)
+{
+	return 0;
+}
+
+static int ofs_chown(const char *a, uid_t b, gid_t c)
+{
+	return 0;
+}
+
 static struct fuse_operations ofs_oper = {
 	getattr:	ofs_getattr,
 	readlink:	NULL,
@@ -712,10 +727,10 @@ static struct fuse_operations ofs_oper = {
 	rmdir:		ofs_unlink,
 	rename:		ofs_rename,
 	link:		NULL,
-	chmod:		NULL,
-	chown:		NULL,
+	chmod:		ofs_chmod,
+	chown:		ofs_chown,
 	truncate:	ofs_truncate,
-	utime:		NULL,
+	utime:		ofs_utime,
 	open:		ofs_open,
 	read:		ofs_read,
 	write:		ofs_write,
