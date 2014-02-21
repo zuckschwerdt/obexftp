@@ -109,7 +109,11 @@ static int cli_open()
         for (retry = 0; retry < 3; retry++) {
 
                 /* Connect */
+#ifdef SIEMENS_S45
+                if (obexftp_connect_src (cli, source, device, channel, UUID_S45, sizeof(UUID_S45)) >= 0)
+#else
                 if (obexftp_connect_src (cli, source, device, channel, UUID_FBS, sizeof(UUID_FBS)) >= 0)
+#endif
                         return 0;
                 /* Still trying to connect */
 		sleep(1);
@@ -452,7 +456,6 @@ static int ofs_release(const char *path, struct fuse_file_info *fi)
 static int ofs_statfs(const char *UNUSED(label), struct statfs *st)
 {
 	int res;
-	int size, free;
 
 	memset(st, 0, sizeof(struct statfs));
 	st->f_bsize = 1;
@@ -464,31 +467,18 @@ static int ofs_statfs(const char *UNUSED(label), struct statfs *st)
 	if(res < 0)
 		return res; /* errno */
 
-	/* for S45 */
-	(void) obexftp_disconnect (cli);
-	(void) obexftp_connect_uuid (cli, device, channel, UUID_S45, sizeof(UUID_S45));
- 
+#ifdef SIEMENS_S45
 	/* Retrieve Infos */
 	(void) obexftp_info(cli, 0x01);
-	size = cli->apparam_info;
+	st->f_blocks = cli->apparam_info;
 	(void) obexftp_info(cli, 0x02);
-	free = cli->apparam_info;
- 
- DEBUG("%s() GOT FS STAT: %d / %d\n", __func__, free, size);
- 
-	(void) obexftp_disconnect (cli);
-	(void) obexftp_connect (cli, device, channel);
+	st->f_bfree = cli->apparam_info;
+	st->f_bavail = st->f_bfree;
 
+
+#endif
+	DEBUG("%s() GOT FS STAT: %" PRId64 " / %" PRId64 "\n", __func__, st->f_bfree, st->f_blocks);
 	ofs_disconnect();
-
-	st->f_bsize = 1;	/* optimal transfer block size */
-	st->f_blocks = size;	/* total data blocks in file system */
-	st->f_bfree = free;	/* free blocks in fs */
-	st->f_bavail = free;	/* free blocks avail to non-superuser */
-
-	/* st->f_files;		/ * total file nodes in file system */
-	/* st->f_ffree;		/ * free file nodes in fs */
-	/* st->f_namelen;	/ * maximum length of filenames */
 
 	return 0;
 }
