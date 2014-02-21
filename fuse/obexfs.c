@@ -28,6 +28,7 @@
 #include <fuse.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdbool.h>
 #include <unistd.h>
 #include <inttypes.h>
 #include <string.h>
@@ -40,6 +41,7 @@
 #include <dirent.h>
 #include <signal.h>
 #include <getopt.h>
+#include <xmltok/xmlparse.h>
 
 #include <obexftp/obexftp.h>
 #include <obexftp/client.h>
@@ -453,6 +455,178 @@ static int ofs_release(const char *path, struct fuse_file_info *fi)
 	return 0;
 }
 
+struct parsing_data {
+	enum state_t {
+		PS_ROOT,
+		PS_CAPABILITY,
+		PS_GENERAL,
+		PS_MEMORY,
+		PS_MEM_TYPE,
+		PS_LOCATION,
+		PS_FREE,
+		PS_USED,
+		PS_FILENLEN,
+
+		PS_FINISH,
+		PS_ERROR,
+	} state;
+	int depth;
+	const char *error;
+
+	unsigned long used; // Used space.
+	unsigned long free; // Free space.
+	unsigned long namelen; // Max length of file name.
+	bool found; // Is device for given root found?
+};
+
+static void xml_element_start(void* user_data, const char* name, const char** UNUSED(attrs))
+{
+	struct parsing_data *data = (struct parsing_data*)user_data;
+
+	switch (data->state) {
+	case PS_ROOT:
+		if (data->depth == 0 && strcmp(name, "Capability") == 0) {
+			data->state = PS_CAPABILITY;
+		} else {
+			data->error = "Root element must be \"Capability\"";
+			data->state = PS_ERROR;
+		}
+		break;
+
+	case PS_CAPABILITY:
+		if (data->depth == 1 && strcmp(name, "General") == 0)
+			data->state = PS_GENERAL;
+		break;
+
+	case PS_GENERAL:
+		if (data->depth == 2 && strcmp(name, "Memory") == 0)
+			data->state = PS_MEMORY;
+		break;
+
+	case PS_MEMORY:
+		if (data->depth == 3) {
+			if (strcmp(name, "MemType") == 0)
+				data->state = PS_MEM_TYPE;
+			else if (strcmp(name, "Location") == 0)
+				data->state = PS_LOCATION;
+			else if (strcmp(name, "Free") == 0)
+				data->state = PS_FREE;
+			else if (strcmp(name, "Used") == 0)
+				data->state = PS_USED;
+			else if (strcmp(name, "FileNLen") == 0)
+				data->state = PS_FILENLEN;
+		}
+		break;
+
+	case PS_MEM_TYPE:
+	case PS_LOCATION:
+	case PS_FREE:
+	case PS_USED:
+	case PS_FILENLEN:
+		// Memory properties must be plain text.
+		data->error = "Memory properties must be plain text, no elements inside are allowed";
+		data->state = PS_ERROR;
+		break;
+
+	case PS_FINISH:
+	case PS_ERROR:
+		break;
+	}
+
+	++(data->depth);
+}
+
+static void xml_element_end(void* user_data, const char* name)
+{
+	struct parsing_data *data = (struct parsing_data*)user_data;
+	(data->depth)--;
+
+	switch (data->state) {
+	case PS_ROOT:
+		break;
+
+	case PS_CAPABILITY:
+		if (data->depth == 0 && strcmp(name, "Capability") == 0) {
+			data->error = "\"General\" section not found";
+			data->state = PS_ERROR;
+		}
+		break;
+
+	case PS_GENERAL:
+		if (data->depth == 1 && strcmp(name, "General") == 0)
+			data->state = PS_FINISH;
+		break;
+
+	case PS_MEMORY:
+		if (data->depth == 2 && strcmp(name, "Memory") == 0) {
+			if (data->found) {
+				data->state = PS_FINISH;
+			} else {
+				data->state = PS_GENERAL;
+				data->free = data->used = data->namelen = 0;
+			}
+		}
+		break;
+
+	case PS_MEM_TYPE:
+	case PS_LOCATION:
+	case PS_FREE:
+	case PS_USED:
+	case PS_FILENLEN:
+		data->state = PS_MEMORY;
+		break;
+
+	case PS_FINISH:
+	case PS_ERROR:
+		break;
+	}
+}
+
+static unsigned long parse_ulong(const char* b, int len) {
+	if (len > 0)
+	{
+		char *str = strndup(b, len);
+		long result;
+		errno = 0;
+		result = strtol(str, NULL, 10);
+		free(str);
+		//check invalid string or invalid value
+		if (errno == 0 || result >= 0)
+			return (unsigned long)result;
+	}
+	return 0UL;
+}
+
+static void xml_character_data(void* user_data, const char* str, int len)
+{
+	struct parsing_data *data = (struct parsing_data*)user_data;
+
+	switch (data->state) {
+	case PS_MEM_TYPE:
+		break;
+
+	case PS_LOCATION:
+		if (len-1 <= root_len && str[len-1] == '\\' && strncasecmp(root, str, len-1) == 0) {
+			data->found = true;
+		}
+		break;
+
+	case PS_FREE:
+		data->free = parse_ulong(str, len);
+		break;
+
+	case PS_USED:
+		data->used = parse_ulong(str, len);
+		break;
+
+	case PS_FILENLEN:
+		data->namelen = parse_ulong(str, len);
+		break;
+
+	default: break;
+	}
+}
+
 static int ofs_statfs(const char *UNUSED(label), struct statfs *st)
 {
 	int res;
@@ -475,7 +649,37 @@ static int ofs_statfs(const char *UNUSED(label), struct statfs *st)
 	st->f_bfree = cli->apparam_info;
 	st->f_bavail = st->f_bfree;
 
+#else
+	res = obexftp_get_type(cli, XOBEX_CAPABILITY, 0, 0);
+	if (res >= 0) {
+		XML_Parser parser;
+		struct parsing_data data;
+		data.found = false;
+		data.depth = 0;
+		data.error = NULL;
+		data.state = PS_ROOT;
 
+		parser = XML_ParserCreate(NULL);
+		XML_SetUserData(parser, &data);
+		XML_SetElementHandler(parser, xml_element_start, xml_element_end);
+		XML_SetCharacterDataHandler(parser, xml_character_data);
+		if (XML_Parse(parser, cli->buf_data, cli->buf_size, 1)) {
+			if (data.error) {
+				DEBUG("%s(): PARSE ERROR: %s\n", __func__, data.error);
+			} else if (data.found) {
+				st->f_blocks = data.used + data.free;
+				st->f_bfree = data.free;
+				st->f_bavail = data.free;
+				st->f_namelen = data.namelen;
+			}
+		} else {
+			DEBUG("%s(): PARSE ERROR: %s at line %d\n", __func__,
+				XML_ErrorString(XML_GetErrorCode(parser)),
+				XML_GetCurrentLineNumber(parser)
+			);
+		}
+		XML_ParserFree(parser);
+	}
 #endif
 	DEBUG("%s() GOT FS STAT: %" PRId64 " / %" PRId64 "\n", __func__, st->f_bfree, st->f_blocks);
 	ofs_disconnect();
