@@ -778,7 +778,14 @@ int main(int argc, char *argv[])
 
 		case 'h':
 			printf("ObexFTP %s\n", VERSION);
-			printf("Usage: %s [ -i | -b <dev> [-B <chan>] | -U <intf> | -t <dev> | -N <host> ]\n"
+			printf("Usage: %s [ -i "
+#ifdef HAVE_BLUETOOTH
+			        "| -b <dev> [-B <chan>] [-d <addr>]"
+#endif
+#ifdef HAVE_USB
+			        "| -u <intf> "
+#endif
+			        "| -t <dev> | -N <host> ]\n"
 				"[-c <dir> ...] [-C <dir> ] [-l [<dir>]]\n"
 				"[-g <file> ...] [-p <files> ...] [-k <files> ...] [-x] [-m <src> <dest> ...]\n"
 				"Transfer files from/to Mobile Equipment.\n"
@@ -787,8 +794,8 @@ int main(int argc, char *argv[])
 				" -i, --irda                  connect using IrDA transport (default)\n"
 #ifdef HAVE_BLUETOOTH
 				" -b, --bluetooth [<device>]  use or search a bluetooth device\n"
-				" [ -B, --channel <number> ]  use this bluetooth channel when connecting\n"
-				" [ -d, --hci <no/address> ]  use source device with this address or number\n"
+				" -B, --channel <number>      use this bluetooth channel when connecting\n"
+				" -d, --hci <no/address>      use source device with this address or number\n"
 #endif
 #ifdef HAVE_USB
 				" -u, --usb [<intf>]          connect to a usb interface or list interfaces\n"
