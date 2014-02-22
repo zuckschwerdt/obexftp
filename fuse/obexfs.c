@@ -73,7 +73,7 @@ static int channel = -1;
 static char *root = NULL; // "E:";
 static int root_len = 0; // Length of 'root'.
 
-static int nonblock = 0;
+static bool nonblock = false;
 
 // Free/total space (in bytes) to report if can't get real info.
 static int report_space = 0;
@@ -83,9 +83,10 @@ static char *mknod_dummy = NULL; /* bad coder, no cookies! */
 static int nodal = 0;
 
 static char* translate_path(const char* path) {
-	char* tpath = (char*)malloc(sizeof(char)*(root_len+strlen(path)+1));
-	strcpy(tpath, root);
-	strcat(tpath, path);
+	char* tpath = calloc(sizeof(char), root_len + strlen(path) + 1);
+	if (root)
+		strcpy(tpath, root);
+	strcpy(tpath + root_len, path);
 	DEBUG("TRANSLATED: %s\n", tpath);
 	return tpath;
 }
@@ -818,13 +819,11 @@ int main(int argc, char *argv[])
 			break;
 			
 		case 'r':
-			if (root != NULL)
-				free(root);
 			root = optarg;
 			break;
 
 		case 'N':
-			nonblock = 1;
+			nonblock = true;
 			break;
 
 		case 'S':
