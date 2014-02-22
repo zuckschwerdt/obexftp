@@ -587,7 +587,7 @@ int main(int argc, char *argv[])
 		case 'n':
 			transport = OBEX_TRANS_INET;
        			device = optarg;
-			channel = 0;
+			channel = 650;
 			{
 				char *p;
 				if ((p=strchr(optarg, ':'))) {

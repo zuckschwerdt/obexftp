@@ -812,6 +812,13 @@ int main(int argc, char *argv[])
 			device = optarg;
 			channel = 650;
 			{
+				char *p  =strchr(optarg, ':');
+				if (p) {
+					*p = '\0';
+					channel = atoi(++p);
+				}
+			}
+			{
                                 int n;
                                 if (sscanf(optarg, "%d.%d.%d.%d", &n, &n, &n, &n) != 4)
                                         fprintf(stderr, "Please use dotted quad notation.\n");
