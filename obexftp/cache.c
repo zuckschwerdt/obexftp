@@ -254,6 +254,37 @@ static mode_t get_perm(char *perm)
 	return retval;
 }
 
+static struct {
+	char *esc;
+	int size;
+	char c;
+} xml_esc_seq[] = {
+	{ "&amp;",  5, '&'  },
+	{ "&quot;", 6, '"'  },
+	{ "&apos;", 6, '\'' },
+	{ "&lt;",   4, '<'  },
+	{ "&gt;",   4, '>'  },
+};
+static int xml_esc_seq_count = sizeof(xml_esc_seq) / sizeof(xml_esc_seq[0]);
+static void replace_xml_escape_sequences(char *xmltext)
+{
+	int i;
+	for (i = 0; i < xml_esc_seq_count; ++i)
+	{
+		char *esc_pos = strstr(xmltext, xml_esc_seq[i].esc);
+		while (esc_pos)
+		{
+			size_t rem_len = strlen(esc_pos + xml_esc_seq[i].size);
+			esc_pos[0] = xml_esc_seq[i].c;
+			memmove(esc_pos + 1, esc_pos + xml_esc_seq[i].size, rem_len);
+			esc_pos[rem_len + 1] = 0;
+
+			//re-evaluate
+			esc_pos = strstr(esc_pos + 1, xml_esc_seq[i].esc);
+		} ;
+	}
+}
+
 /**
 	Parse an XML file to array of stat_entry_t's.
 	Very limited - not multi-byte character save.
@@ -312,7 +343,10 @@ static stat_entry_t *parse_directory(char *xml)
 		name[0] = '\0';
 		h = strstr(p, "name=");
 		if (h)
+		{
 			sscanf (h, "name=\"%200[^\"]\"", name);
+			replace_xml_escape_sequences(name);
+		}
 
 		perm[0] = '\0';
 		h = strstr(p, "user-perm=");
