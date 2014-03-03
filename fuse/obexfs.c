@@ -457,8 +457,12 @@ static int ofs_release(const char *path, struct fuse_file_info *fi)
 }
 
 struct parsing_data {
+	/* Input */
+	const char *path;
+
+	/* Intermediate states */
 	enum state_t {
-		PS_ROOT,
+		PS_ROOT = 0,
 		PS_CAPABILITY,
 		PS_GENERAL,
 		PS_MEMORY,
@@ -470,14 +474,18 @@ struct parsing_data {
 
 		PS_FINISH,
 		PS_ERROR,
-	} state;
-	int depth;
-	const char *error;
+	} state;               // State based on found XML tags
+	int depth;             // XML tag depth
+	char *mem_location;
+	unsigned long mem_used;
+	unsigned long mem_free;
+	unsigned long mem_namelen;
 
-	unsigned long used; // Used space.
-	unsigned long free; // Free space.
-	unsigned long namelen; // Max length of file name.
-	bool found; // Is device for given root found?
+	int path_match_len;    // Needed to find best-matching entry
+
+	/* Output */
+	const char *error;
+	struct statfs meminfo;
 };
 
 static void xml_element_start(void* user_data, const char* name, const char** UNUSED(attrs))
@@ -559,13 +567,46 @@ static void xml_element_end(void* user_data, const char* name)
 		break;
 
 	case PS_MEMORY:
-		if (data->depth == 2 && strcmp(name, "Memory") == 0) {
-			if (data->found) {
-				data->state = PS_FINISH;
-			} else {
-				data->state = PS_GENERAL;
-				data->free = data->used = data->namelen = 0;
+		if (data->depth == 2 && strcmp(name, "Memory") == 0)
+		{
+
+			bool use_memory_entry = false;
+			ssize_t len = data->mem_location? strlen(data->mem_location): 0;
+
+			data->state = PS_GENERAL;
+
+			if (len == 0 && data->path_match_len < 0)
+			{
+				/* use memory entry in case that it contains no/empty
+				 * location entry and there was no previous location
+				 */
+				use_memory_entry = true;
+				data->path_match_len = 0;
 			}
+			else
+			{
+				/* Check if this memory entity is a better match */
+				if (data->path_match_len < len &&
+				    len <= (int)strlen(data->path) &&
+				    strncasecmp(data->path, data->mem_location, len) == 0 &&
+				    (data->path[len] == '/' || data->path[len] == 0))
+				{
+					use_memory_entry = true;
+					data->path_match_len = len;
+				}
+			}
+
+			if (use_memory_entry)
+			{
+				data->meminfo.f_bsize = 1;
+				data->meminfo.f_blocks = data->mem_used + data->mem_free;
+				data->meminfo.f_bfree = data->mem_free;
+				data->meminfo.f_bavail = data->mem_free;
+				data->meminfo.f_namelen = data->mem_namelen;
+			}
+
+			if (data->mem_location)
+				free(data->mem_location);
 		}
 		break;
 
@@ -583,56 +624,73 @@ static void xml_element_end(void* user_data, const char* name)
 	}
 }
 
-static unsigned long parse_ulong(const char* b, int len) {
-	if (len > 0)
-	{
-		char *str = strndup(b, len);
-		long result;
-		errno = 0;
-		result = strtol(str, NULL, 10);
-		free(str);
-		//check invalid string or invalid value
-		if (errno == 0 || result >= 0)
-			return (unsigned long)result;
-	}
+static unsigned long parse_ulong(const char* str) {
+	long result;
+	errno = 0;
+	result = strtol(str, NULL, 10);
+	//check invalid string or invalid value
+	if (errno == 0 || result >= 0)
+		return (unsigned long)result;
 	return 0UL;
 }
 
 static void xml_character_data(void* user_data, const char* str, int len)
 {
 	struct parsing_data *data = (struct parsing_data*)user_data;
+	int i;
+	char *tmp = NULL;
 
 	switch (data->state) {
 	case PS_MEM_TYPE:
 		break;
 
 	case PS_LOCATION:
-		if (len-1 <= root_len && str[len-1] == '\\' && strncasecmp(root, str, len-1) == 0) {
-			data->found = true;
+		if (len > 0)
+		{
+			data->mem_location = strndup(str, len);
+			/* Convert path separators to unix type */
+			for (i = 0; i < len; ++i)
+			{
+				if (data->mem_location[i] == '\\')
+					data->mem_location[i] = '/';
+			}
+			/* Remove trailing directory separator */
+			if (data->mem_location[len-1] == '/')
+			  data->mem_location[len-1] = 0;
 		}
 		break;
 
 	case PS_FREE:
-		data->free = parse_ulong(str, len);
+		tmp = strndup(str, len);
+		data->mem_free = parse_ulong(tmp);
 		break;
 
 	case PS_USED:
-		data->used = parse_ulong(str, len);
+		tmp = strndup(str, len);
+		data->mem_used = parse_ulong(tmp);
 		break;
 
 	case PS_FILENLEN:
-		data->namelen = parse_ulong(str, len);
+		tmp = strndup(str, len);
+		data->mem_namelen = parse_ulong(tmp);
 		break;
 
-	default: break;
+	default:
+		break;
 	}
+
+	if (tmp)
+		free(tmp);
 }
 
-static int ofs_statfs(const char *UNUSED(label), struct statfs *st)
+static int ofs_statfs(const char *path, struct statfs *st)
 {
 	int res;
+	char *tpath = translate_path(path);
 
-	memset(st, 0, sizeof(struct statfs));
+	DEBUG("%s() %s\n", __FUNCTION__, path);
+
+	memset(st, 0, sizeof(*st));
 	st->f_bsize = 1;
 	st->f_blocks = report_space;
 	st->f_bfree = report_space;
@@ -651,14 +709,15 @@ static int ofs_statfs(const char *UNUSED(label), struct statfs *st)
 	st->f_bavail = st->f_bfree;
 
 #else
+	(void) obexftp_setpath(cli, tpath, 1);
 	res = obexftp_get_type(cli, XOBEX_CAPABILITY, 0, 0);
 	if (res >= 0) {
 		XML_Parser parser;
+
 		struct parsing_data data;
-		data.found = false;
-		data.depth = 0;
-		data.error = NULL;
-		data.state = PS_ROOT;
+		memset(&data, 0, sizeof(data));
+		data.path = tpath + 1;
+		data.path_match_len = -1;
 
 		parser = XML_ParserCreate(NULL);
 		XML_SetUserData(parser, &data);
@@ -667,11 +726,8 @@ static int ofs_statfs(const char *UNUSED(label), struct statfs *st)
 		if (XML_Parse(parser, cli->buf_data, cli->buf_size, 1)) {
 			if (data.error) {
 				DEBUG("%s(): PARSE ERROR: %s\n", __func__, data.error);
-			} else if (data.found) {
-				st->f_blocks = data.used + data.free;
-				st->f_bfree = data.free;
-				st->f_bavail = data.free;
-				st->f_namelen = data.namelen;
+			} else if (data.path_match_len >= 0) {
+				*st = data.meminfo;
 			}
 		} else {
 			DEBUG("%s(): PARSE ERROR: %s at line %d\n", __func__,
@@ -684,6 +740,8 @@ static int ofs_statfs(const char *UNUSED(label), struct statfs *st)
 #endif
 	DEBUG("%s() GOT FS STAT: %" PRId64 " / %" PRId64 "\n", __func__, st->f_bfree, st->f_blocks);
 	ofs_disconnect();
+
+	free(tpath);
 
 	return 0;
 }
