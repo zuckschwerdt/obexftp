@@ -21,16 +21,6 @@ set ( CMAKE_MODULE_PATH
   ${PROJECT_SOURCE_DIR}/CMakeModules
 )
 
-#
-# Define the default build type
-#
-set ( CMAKE_CONFIGURATION_TYPES "Release;Debug"
-      CACHE STRING "" FORCE )
-if ( NOT CMAKE_BUILD_TYPE )
-  set ( CMAKE_BUILD_TYPE Release
-        CACHE STRING "Build type" FORCE )
-endif ( NOT CMAKE_BUILD_TYPE )
-
 include ( MaintainerMode )
 include ( GNUInstallDirs )
 
@@ -93,3 +83,39 @@ install ( FILES ${CMAKE_CURRENT_BINARY_DIR}/obexftp.pc
   DESTINATION ${CMAKE_INSTALL_PKGCONFIGDIR}
   COMPONENT devel
 )
+
+#
+# The following adds CPack support
+#
+set ( CPACK_PACKAGE_DESCRIPTION_SUMMARY "ObexFTP" )
+set ( CPACK_PACKAGE_VENDOR "The OpenObex Development Team" )
+
+set ( CPACK_RESOURCE_FILE_LICENSE "${CMAKE_CURRENT_SOURCE_DIR}/License.txt" )
+set ( CPACK_RESOURCE_FILE_README  "${CMAKE_CURRENT_SOURCE_DIR}/README" )
+
+set ( CPACK_PACKAGE_VERSION_MAJOR "${VERSION_MAJOR}" )
+set ( CPACK_PACKAGE_VERSION_MINOR "${VERSION_MINOR}" )
+set ( CPACK_PACKAGE_VERSION_PATCH "${VERSION_PATCH}" )
+set ( CPACK_PACKAGE_VERSION       "${VERSION}" )
+
+if ( UNIX )
+  set ( CPACK_GENERATOR "TGZ" )
+  set ( CPACK_SOURCE_GENERATOR "TGZ" )
+
+elseif ( WIN32 )
+  #
+  # For NSIS, install from http://nsis.sf.net.
+  # For ZIP, install e.g. info-zip from http://www.info-zip.org.
+  #
+  set ( CPACK_GENERATOR "ZIP;NSIS" )
+  set ( CPACK_SOURCE_GENERATOR "ZIP" )
+endif ( UNIX )
+set ( CPACK_SOURCE_IGNORE_FILES
+  "/build/"
+  "/\\\\.git/"
+  "/\\\\.gitignore$"
+  "~$"
+)
+
+# this must _follow_ the settings!
+include ( CPack )
