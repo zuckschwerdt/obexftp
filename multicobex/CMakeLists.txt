@@ -1,6 +1,7 @@
 
 set ( multicobex_SOURCES
   multi_cobex.c
+  multi_cobex_io.c
 )
 
 set ( multicobex_PUBLIC_HEADERS
@@ -9,6 +10,7 @@ set ( multicobex_PUBLIC_HEADERS
 
 set ( multicobex_HEADERS
   multi_cobex.h
+  multi_cobex_io.h
   ${multicobex_PUBLIC_HEADERS}
 )
 
@@ -17,7 +19,7 @@ add_library ( multicobex
   ${multicobex_HEADERS}
 )
 
-set_property ( TARGET multicobex PROPERTY VERSION 1.0.1 )
+set_property ( TARGET multicobex PROPERTY VERSION 1.0.2 )
 set_property ( TARGET multicobex PROPERTY SOVERSION 1 )
 set_property ( TARGET multicobex PROPERTY PUBLIC_HEADER ${multicobex_PUBLIC_HEADERS} )
 

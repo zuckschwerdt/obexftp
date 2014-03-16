@@ -29,8 +29,6 @@
 #include <string.h>
 #include <unistd.h>
 
-#include <sys/select.h>
-
 /* htons */
 #ifdef _WIN32
 #include <winsock2.h>
@@ -41,6 +39,7 @@
 
 #include "irda_fcs.h"
 #include "bfb.h"
+#include "bfb_io.h"
 #include <common.h>
 
 /* Provide convenience macros for handling structure
@@ -294,25 +293,14 @@ int bfb_write_packets(fd_t fd, uint8_t type, uint8_t *buffer, int length)
 	bfb_frame_t *frame;
 	int i;
 	int l;
-
-	struct timeval timeout;
-	fd_set fds;
-	int rc;
-#ifdef _WIN32
-	DWORD actual;
-#else
 	int actual;
-#endif
 
 #ifdef _WIN32
         return_val_if_fail (fd != INVALID_HANDLE_VALUE, FALSE);
 #else
         return_val_if_fail (fd > 0, FALSE);
 #endif
-	/* select setup */
-	FD_ZERO(&fds);
-	FD_SET(fd, &fds);
-	
+
 	/* alloc frame buffer */
 	frame = malloc((length > MAX_PACKET_DATA ? MAX_PACKET_DATA : length) + sizeof (bfb_frame_t));
 	if (frame == NULL)
@@ -330,32 +318,13 @@ int bfb_write_packets(fd_t fd, uint8_t type, uint8_t *buffer, int length)
 
 		memcpy(frame->payload, &buffer[i], l);
 
-		/* Set time limit. */
-		timeout.tv_sec = 1;
-		timeout.tv_usec = 0;
-
-		/* actual = bfb_io_write(fd, frame, l + sizeof (bfb_frame_t)); */
-		rc = select(fd+1, NULL, &fds, NULL, &timeout);
-		if ( rc > 0) {
-#ifdef _WIN32
-			if(!WriteFile(fd, frame, l + sizeof (bfb_frame_t), &actual, NULL)) {
-				DEBUG(2, "%s() Write error: %ld\n", __func__, actual);
-			}
-#else
-			actual = write(fd, frame, l + sizeof (bfb_frame_t));
-#endif
-			DEBUG(3, "%s() Wrote %d bytes (expected %lu)\n", __func__, actual, (unsigned long)(l + sizeof (bfb_frame_t)));
-			if (actual < 0 || actual < l + (int) sizeof (bfb_frame_t)) {
-				DEBUG(1, "%s() Write failed\n", __func__);
-				free(frame);
-				return -1;
-			}
-		} else { /* ! rc > 0*/
-			DEBUG(1, "%s() Select failed\n", __func__);
+		actual = bfb_io_write(fd, frame, l + sizeof (bfb_frame_t), 1);
+		DEBUG(3, "%s() Wrote %d bytes (expected %lu)\n", __func__, actual, (unsigned long)(l + sizeof (bfb_frame_t)));
+		if (actual < (int)(l + sizeof(bfb_frame_t))) {
+			DEBUG(1, "%s() Write failed\n", __func__);
 			free(frame);
 			return -1;
 		}
-
 	}
 	free(frame);
 	return i / MAX_PACKET_DATA;

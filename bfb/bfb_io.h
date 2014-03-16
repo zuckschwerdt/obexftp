@@ -22,39 +22,17 @@
 #ifndef BFB_IO_H
 #define BFB_IO_H
 
-#include <inttypes.h>
-
-enum trans_type
-{
-        TT_BFB,			/* use a bfb transport */
-        TT_ERICSSON,		/* just custom init and teardown */
-        TT_SIEMENS,		/* new siemens, like ericsson above */
-        TT_MOTOROLA,		/* experimental motorola support */
-        TT_GENERIC		/* should work on most phones */
-};
+#include "bfb/bfb.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-/* Write out a BFB buffer */
-int	bfb_io_write(fd_t fd, const void *buffer, int length);
-
-/* Read in a BFB answer */
-int	bfb_io_read(fd_t fd, void *buffer, int length, int timeout);
-
 /* Send an BFB init command an check for a valid answer frame */
-int	bfb_io_init(fd_t fd);
+int bfb_io_init(fd_t fd);
 
-/* Send an AT-command an expect 1 line back as answer */
-int	do_at_cmd(fd_t fd, const char *cmd, char *rspbuf, int rspbuflen);
-
-/* close the connection */
-void	bfb_io_close(fd_t fd, int force);
-
-/* Init the phone and set it in BFB-mode */
-/* Returns fd or -1 on failure */
-fd_t	bfb_io_open(const char *ttyname, enum trans_type *typeinfo);
+int bfb_io_read(fd_t fd, void *buffer, int length, int timeout);
+int bfb_io_write(fd_t fd, const void *buffer, int length, int timeout);
 
 #ifdef __cplusplus
 }

@@ -31,8 +31,8 @@ add_library ( bfb
   ${bfb_HEADERS}
 )
 
-set_property ( TARGET bfb PROPERTY VERSION 0.0.5 )
-set_property ( TARGET bfb PROPERTY SOVERSION 0 )
+set_property ( TARGET bfb PROPERTY VERSION 0.0.6 )
+set_property ( TARGET bfb PROPERTY SOVERSION 1 )
 set_property ( TARGET bfb PROPERTY PUBLIC_HEADER ${bfb_PUBLIC_HEADERS} )
 
 install ( TARGETS bfb

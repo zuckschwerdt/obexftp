@@ -28,11 +28,15 @@
 extern "C" {
 #endif
 
-#ifdef _WIN32
-#include <windows.h>
-typedef HANDLE fd_t;
-#else
-typedef int fd_t;
+#ifndef fd_t_defined
+  #ifdef _WIN32
+    #include <windows.h>
+    typedef HANDLE fd_t;
+    #define fd_t_defined
+  #else
+    typedef int fd_t;
+    #define fd_t_defined
+  #endif
 #endif
 
 #pragma pack(1)
