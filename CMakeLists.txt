@@ -24,6 +24,10 @@ set ( CMAKE_MODULE_PATH
 include ( MaintainerMode )
 include ( GNUInstallDirs )
 
+set ( ENABLE_DEBUG 0 CACHE STRING "Set DEBUG level" )
+set_property ( CACHE ENABLE_DEBUG PROPERTY STRINGS 0 1 2 3 4 )
+add_definitions( -DOBEXFTP_DEBUG=${ENABLE_DEBUG} )
+
 #
 # define how to build libraries
 #
