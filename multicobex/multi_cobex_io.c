@@ -404,7 +404,7 @@ static bool cobex_io_init_siemens2(fd_t ttyfd)
 		DEBUG(1, "Comm-error\n"); 
 		return false;
 	} 
-	if (strcasecmp("^SQWE:0",rspbuf) != 0) { 
+	if (strcasecmp("^SQWE: 0",rspbuf) != 0) {
 		if(!do_at_cmd(ttyfd, "AT^SQWE=0\r", rspbuf, sizeof(rspbuf))) { 
 			DEBUG(1, "Comm-error\n"); 
 			return false;
@@ -427,7 +427,7 @@ static bool cobex_io_init_siemens2(fd_t ttyfd)
 	return true;
 }
 
-static bool cobex_io_init_siemens(fd_t ttyfd)
+static bool cobex_io_init_siemens(fd_t ttyfd, enum cobex_type *typeinfo)
 {
 	char rspbuf[200];
 
@@ -447,23 +447,34 @@ static bool cobex_io_init_siemens(fd_t ttyfd)
 		DEBUG(1, "Comm-error\n");
 		return false;
 	}
-	if(!strncasecmp("^SBFB: (0-3", rspbuf, 11) != 0)	{
-		DEBUG(1, "New plain Siemens protocol. (%s)\n", rspbuf);
-		return cobex_io_init_siemens2(ttyfd);
-	}
-       	DEBUG(1, "Old BFB Siemens protocol. (%s)\n", rspbuf);
-	
-	if(!do_at_cmd(ttyfd, "AT^SBFB=1\r", rspbuf, sizeof(rspbuf))) {
-		DEBUG(1, "Comm-error\n");
-		return false;
-	}
-	if(strcasecmp("OK", rspbuf) != 0)	{
-		DEBUG(1, "Error doing AT^SBFB=1 (%s)\n", rspbuf);
-		return false;
-	}
 
-	sleep(1); /* synch a bit */
-	return cobex_io_init_bfb(ttyfd);
+	if(!strncasecmp("^SBFB: (0-3", rspbuf, 11) != 0) {
+		bool success;
+		DEBUG(1, "New plain Siemens protocol. (%s)\n", rspbuf);
+		success = cobex_io_init_siemens2(ttyfd);
+		if (success)
+			*typeinfo = CT_SIEMENS;
+		return success;
+
+	} else {
+		bool success;
+		DEBUG(1, "Old BFB Siemens protocol. (%s)\n", rspbuf);
+	
+		if(!do_at_cmd(ttyfd, "AT^SBFB=1\r", rspbuf, sizeof(rspbuf))) {
+			DEBUG(1, "Comm-error\n");
+			return false;
+		}
+		if(strcasecmp("OK", rspbuf) != 0)	{
+			DEBUG(1, "Error doing AT^SBFB=1 (%s)\n", rspbuf);
+			return false;
+		}
+
+		sleep(1); /* synch a bit */
+		success = cobex_io_init_bfb(ttyfd);
+		if (success)
+			*typeinfo = CT_BFB;
+		return success;
+	}
 }
 
 static bool cobex_io_init_ericsson(fd_t ttyfd)
@@ -607,9 +618,8 @@ fd_t cobex_io_open(const char *ttyname, enum cobex_type *typeinfo)
 	goto generic;
 
  siemens:
-	if (!cobex_io_init_siemens(ttyfd))
+	if (!cobex_io_init_siemens(ttyfd, typeinfo))
 		goto err;
-	*typeinfo = CT_BFB;
 	return ttyfd;
 
  bfbmode:
