@@ -530,6 +530,9 @@ fd_t cobex_io_open(const char *ttyname, enum cobex_type *typeinfo)
 	char rspbuf[200];
 	int actual;
 	fd_t ttyfd = cobex_io_open_port(ttyname);
+	const uint8_t transObexCheck[] = {
+		0xFF, 0x00, 0x08, 0xCB, 'A', 'T', 'Z', '\r'
+	};
 
 	/* Can't just try that now, as it will break some phones. */
 	//if (bfb_io_init (ttyfd)) {
@@ -541,18 +544,27 @@ fd_t cobex_io_open(const char *ttyname, enum cobex_type *typeinfo)
 	/* send an ABORT (0xFF) with cleverly embedded AT command.	*/
 	/* look for valid OBEX frame (OK=0xA0, BADREQ=0xC0, or alike)	*/
 	DEBUG(1, "Checking for transparent OBEX mode\n");
-	actual = cobex_io_write(ttyfd, "\377\000\010\313ATZ\r", 8);
+	actual = cobex_io_write(ttyfd, transObexCheck, sizeof(transObexCheck));
 	if (actual == 8) {
+		int i;
 		DEBUG(3, "Write ok, reading back\n");
 		actual = cobex_io_read_all(ttyfd, rspbuf, sizeof(rspbuf), 2);
-		if (actual >= 3 && rspbuf[actual-1] == actual) {
+		DEBUG(3, "Read %d bytes\n", actual);
+		for (i = 0; i < actual; ++i)
+		{
+			DEBUG(3, "0x%02X %c\n", (uint8_t)rspbuf[i], isprint((int)rspbuf[i])? rspbuf[i]: ' ');
+		}
+		/* First check for an AT echo, or only for an OK response if echo is disabled by default */
+		if (actual >= 3 &&
+		    (!strncmp(rspbuf, "ATZ\r", 4) || !strncmp(rspbuf, "\r\nOK\r\n", 4)))
+		{
+			DEBUG(1, "AT mode\n");
+		}
+		else if (actual >= 3) {
 			DEBUG(3, "Received %02X OBEX frame\n", (uint8_t)rspbuf[0]);
 			DEBUG(1, "Transparent OBEX\n");
 			*typeinfo = CT_GENERIC;
 			return ttyfd;
-		}
-		else if (actual >= 3 && !strncmp(rspbuf, "ATZ", 3)) {
-			DEBUG(1, "AT mode\n");
 		}
 	}
 
