@@ -1,18 +1,10 @@
 
-cmake_minimum_required(VERSION 2.8.5)
-
-set ( CMAKE_POLICY_DEFAULT_CMP0022 OLD )
-cmake_policy ( VERSION 2.8.5 )
-
-project ( obexftp C )
-
-#
-# The project version
-#
-set ( VERSION_MAJOR 0 )
-set ( VERSION_MINOR 24 )
-set ( VERSION_PATCH 1 )
-set ( VERSION "${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_PATCH}" )
+cmake_minimum_required( VERSION 3.1 FATAL_ERROR )
+cmake_policy ( VERSION 3.1 )
+project ( obexftp
+  VERSION 0.24.1
+  LANGUAGES C
+)
 
 #
 # The path for our own CMake modules
@@ -70,6 +62,7 @@ set ( prefix      "${CMAKE_INSTALL_PREFIX}" )
 set ( exec_prefix "\${prefix}" )
 set ( libdir      "\${prefix}/${CMAKE_INSTALL_LIBDIR}" )
 set ( includedir  "\${prefix}/${CMAKE_INSTALL_INCLUDEDIR}" )
+set ( VERSION     "${obexftp_VERSION}" )
 set ( REQUIRES    "bluez openobex" )
 configure_file (
   ${CMAKE_CURRENT_SOURCE_DIR}/obexftp.pc.in
@@ -97,10 +90,10 @@ set ( CPACK_PACKAGE_VENDOR "The OpenObex Development Team" )
 set ( CPACK_RESOURCE_FILE_LICENSE "${CMAKE_CURRENT_SOURCE_DIR}/License.txt" )
 set ( CPACK_RESOURCE_FILE_README  "${CMAKE_CURRENT_SOURCE_DIR}/README" )
 
-set ( CPACK_PACKAGE_VERSION_MAJOR "${VERSION_MAJOR}" )
-set ( CPACK_PACKAGE_VERSION_MINOR "${VERSION_MINOR}" )
-set ( CPACK_PACKAGE_VERSION_PATCH "${VERSION_PATCH}" )
-set ( CPACK_PACKAGE_VERSION       "${VERSION}" )
+set ( CPACK_PACKAGE_VERSION_MAJOR "${obexftp_VERSION_MAJOR}")
+set ( CPACK_PACKAGE_VERSION_MINOR "${obexftp_VERSION_MINOR}")
+set ( CPACK_PACKAGE_VERSION_PATCH "${obexftp_VERSION_PATCH}")
+set ( CPACK_PACKAGE_VERSION       "${obexftp_VERSION}" )
 
 if ( UNIX )
   set ( CPACK_GENERATOR "TGZ" )
