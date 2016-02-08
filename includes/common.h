@@ -7,9 +7,6 @@
 #ifndef _OBEXFTP_COMMON_H
 #define _OBEXFTP_COMMON_H
 
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif
 #include <stdio.h>
 
 #ifdef UNUSED

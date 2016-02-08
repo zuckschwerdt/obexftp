@@ -19,7 +19,6 @@
 	License along with ObexFTP. If not, see <http://www.gnu.org/>.
  */
 
-#define _GNU_SOURCE
 #include <stdio.h>
 #include <stdlib.h>
 #include <inttypes.h>
@@ -28,6 +27,7 @@
 #include <sys/time.h>
 #include <sys/types.h>
 #include <unistd.h>
+
 #ifdef _WIN32
 #include <windows.h>
 #define speed_t DWORD

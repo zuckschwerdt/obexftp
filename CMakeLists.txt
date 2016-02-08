@@ -25,6 +25,11 @@ add_definitions( -DOBEXFTP_DEBUG=${ENABLE_DEBUG} )
 #
 option ( BUILD_SHARED_LIBS "Build shared libraries" ON )
 
+#
+# Set the required C standard: C99
+#
+set ( CMAKE_C_STANDARD 99 )
+set ( CMAKE_C_STANDARD_REQUIRED TRUE )
 
 include_directories (
   ${PROJECT_SOURCE_DIR}

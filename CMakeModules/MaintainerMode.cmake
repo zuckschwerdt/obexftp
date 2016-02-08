@@ -12,10 +12,7 @@ if ( USE_MAINTAINER_MODE )
       cast-align
       error
     )
-    set ( MAINTAINER_MODE_FLAGS
-#      pedantic
-#      std=c99
-    )
+    set ( MAINTAINER_MODE_FLAGS )
     foreach ( flag ${MAINTAINER_MODE_WARN_FLAGS} )
       list ( APPEND MAINTAINER_MODE_FLAGS "W${flag}" )
     endforeach ( flag )

@@ -22,11 +22,6 @@
 	License along with ObexFTP. If not, see <http://www.gnu.org/>.
  */
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
-
-#define _GNU_SOURCE
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -38,6 +33,7 @@
 #include <errno.h>
 #include <sys/types.h>
 #include <fcntl.h>
+
 #ifdef _WIN32
 #include <winsock2.h>
 #define S_IRGRP 0

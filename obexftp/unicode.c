@@ -19,10 +19,6 @@
 	License along with ObexFTP. If not, see <http://www.gnu.org/>.
  */
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>

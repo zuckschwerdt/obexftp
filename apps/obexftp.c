@@ -19,7 +19,11 @@
 	License along with ObexFTP. If not, see <http://www.gnu.org/>.
  */
 
+/* for
+ * - strcasestr()
+ */
 #define _GNU_SOURCE
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
