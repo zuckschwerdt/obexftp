@@ -47,13 +47,11 @@ set_property ( TARGET obexftp PROPERTY SOVERSION 0 )
 set_property ( TARGET obexftp PROPERTY PUBLIC_HEADER ${obexftp_PUBLIC_HEADERS} )
 
 target_link_libraries ( obexftp
-  multicobex
-  ${Bluetooth_LIBRARIES}
-  ${OpenObex_LIBRARIES}
+  PRIVATE
+    multicobex
+    ${Bluetooth_LIBRARIES}
+    ${OpenObex_LIBRARIES}
 )
-
-#disable link chaining
-set_property(TARGET obexftp PROPERTY LINK_INTERFACE_LIBRARIES "")
 
 install ( TARGETS obexftp
   RUNTIME

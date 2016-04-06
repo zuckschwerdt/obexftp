@@ -24,12 +24,10 @@ set_property ( TARGET multicobex PROPERTY SOVERSION 1 )
 set_property ( TARGET multicobex PROPERTY PUBLIC_HEADER ${multicobex_PUBLIC_HEADERS} )
 
 target_link_libraries ( multicobex
-  bfb
-  ${OpenObex_LIBRARIES}
+  PRIVATE
+    bfb
+    ${OpenObex_LIBRARIES}
 )
-
-#disable link chaining
-set_property(TARGET multicobex PROPERTY LINK_INTERFACE_LIBRARIES "")
 
 install ( TARGETS multicobex
   RUNTIME
