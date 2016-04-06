@@ -41,7 +41,7 @@
 #include <dirent.h>
 #include <signal.h>
 #include <getopt.h>
-#include <xmltok/xmlparse.h>
+#include <expat.h>
 
 #include <obexftp/obexftp.h>
 #include <obexftp/client.h>
