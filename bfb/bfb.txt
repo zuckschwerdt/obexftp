@@ -1,0 +1,125 @@
+================================================================
+                           BFB protocol
+ as used by Siemens Mobile Equipment (e.g. S45/ME45) over a
+                        serial connection
+================================================================
+
+  Christian Zuckschwerdt  <zany@triq.net>  2002-02-06
+  added unknown S35i commands from Thierry's logs 2002-06-22
+
+
+0. Disclaimer
+
+ It is possible to harm your mobile phone.
+ Use the information in this document at your own risk.
+
+
+1. Preface
+
+ This document is a result of many hours of studying the
+ Siemens Mobile Equipment BFB protocol
+ by the author, in an attempt to implement a way to access
+ Flex.Mem. Like all tools, this document
+ was born out of frustration with the lack of documention
+ available on the subject.
+
+ Though every attempt has been made to ensure the correctness
+ of this document, the author cannot make any guarantees as
+ to its accuracy.
+
+
+2. Transport encapsulation:
+
+ [ type ][ len ][ chk ][ payload ]
+
+ Types are
+  0x02 - single bytes used for connecting and data reading
+  0x01 - crc'ed sequence to change interface (speed)
+  0x05 - Keypress and such
+  0x06 - AT-Command
+  0x09 - unkown (return code from mobile?)
+  0x0E - unkown (return code from mobile?)
+  0x14 - EEPROM block manipulation
+  0x16 - crc'ed generic data (like OBEX)
+
+ Len is from 1 to max 32 for a max MTU of 35 bytes.
+
+ Chk equals type xor len.
+
+
+3. OBEX encapsulation (transport type = 0x16):
+
+ [ cmd ][ chk ] for cmd 0x01
+
+ [ cmd ][ chk ][ seq ][ len16 ][ data... ][ crc16 ] for cmd 0x02 and 0x03.
+
+ Chk is ~cmd (bitwise not cmd)
+
+ Cmd 0x01: "ack" command. If some packet isn't acknowledged it will be resend.
+ Cmd 0x02: first transmission in a row. Sequence counter is 0
+ Cmd 0x03: continued transmission. Sequence counter is incremented with each
+	subsequent packet
+
+ Seq is 1 byte. TA increments, ME replies.
+
+ Len is 2 bytes in network byte order.
+
+ Data is an OBEX frame.
+
+ Crc16 is 2 bytes CCITT-CRC16 in network byte order. Rendered over the the
+ whole packet except for cmd and chk.
+
+4. Subcommands (transport type = 0x05):
+
+ Note: Some keys need the same code to release the key.
+
+4.1
+ 0x05 0x02 0x07 0x06 xx SIMULATE KEY-PRESS
+
+ A / 0x01	LEFT KEY-LEFT / SCROLL-UP / STOP-SCROLLING (S45: Quickbutton: left)
+ B / 0x02	LEFT KEY-RIGHT / SCROLL-DOWN / STOP-SCROLLING
+ C / 0x03	RIGHT KEY-LEFT
+ D / 0x04	RIGHT KEY-RIGHT (S45: Arrowpad: Right)
+ E / 0x05	ADRESS BOOK KEY
+ F / 0x06
+ G / 0x07
+ H / 0x08
+ I / 0x09
+ J / 0x0A	(S45: Abort/Level?-Up)
+ K / 0x0B	DIAL KEY
+ L / 0x0C	OFF KEY
+ M / 0x0D	PROFIL KEY (S45: KEY-UP)
+ N / 0x0E	(S45: PROFIL KEY-DOWN)
+ OPQRSTUZ	
+	
+     0x30	ASCII "0"
+     0x31	ASCII "1"
+     ..
+		ASCII "#"
+        	ASCII "*"
+
+4.2
+ 0x05 0x02 0x07 0x10 xx SET CONTRAST LEVEL (S45: won't work)
+
+  will return to internal value on reboot
+  00 	
+  .. 	
+  FF 	
+
+4.3
+ 0x05 0x03 0x06 0x11 xxxx PLAY INTERNAL SOUND (S45: won't work)
+
+ 0000	STOP LOOP
+ 0100	NETWORK-CONNECTION SOUND
+ 0200	BEEP NO.1
+ 0300	Empty-Battery Sound
+ 0400	KEY SOUND
+ 0500	BEEP NO.2
+ 0600	USER RING-TONE (loop)
+ 0700	DEFAULT RING-TONE (loop) 
+
+5. Conclusion
+
+ This seems to cover all the bits.
+ My test-implementation works great -- YMMV.
+
