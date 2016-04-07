@@ -1,3 +1,15 @@
+ObexFTP 0.24.2 (released 2016-04-07)
+------------------------------------
+
+	* obexfs: Parse XML data with Expat library
+	* obexfs: Properly encode XML special characters
+	* obexfs: New option -r to specify root path
+	* obexfs: New option -S to simulate free space
+	* Fix probing
+	* Add support for Gigaset devices
+	* CMake improvements
+
+
 ObexFTP 0.24.1 (released 2014-02-03)
 ------------------------------------
 
