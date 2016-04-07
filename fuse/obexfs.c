@@ -931,7 +931,7 @@ int main(int argc, char *argv[])
 	}
 	if (root == NULL) root = "";
 	root_len = strlen(root);
-	if (root[root_len-1] == '/' || root[root_len-1] == '\\') {
+	while (root_len > 0 && (root[root_len-1] == '/' || root[root_len-1] == '\\')) {
 		root[root_len-1] = '\0';
 		--root_len;
 	}
