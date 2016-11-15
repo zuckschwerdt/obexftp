@@ -5,14 +5,23 @@ add_definitions( -DVERSION="${obexftp_VERSION}" )
 add_definitions ( -DHAVE_USB )
 
 add_executable ( obexftp_app obexftp.c )
-target_link_libraries ( obexftp_app obexftp )
+target_link_libraries ( obexftp_app
+  PRIVATE multicobex
+  PRIVATE bfb
+  obexftp
+)
 set_target_properties ( obexftp_app PROPERTIES
   OUTPUT_NAME obexftp
 )
 
 
 add_executable ( obexftpd_app obexftpd.c )
-target_link_libraries ( obexftpd_app obexftp openobex )
+target_link_libraries ( obexftpd_app
+  PRIVATE multicobex
+  PRIVATE bfb
+  obexftp
+  openobex
+)
 set_target_properties ( obexftpd_app PROPERTIES
   OUTPUT_NAME obexftpd
 )
