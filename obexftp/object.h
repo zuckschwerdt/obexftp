@@ -39,6 +39,9 @@ extern "C" {
 /** Folder Browsing Service: Folder Listing file-type. */
 #define XOBEX_LISTING "x-obex/folder-listing"
 
+/* PullPhoneBook Service : file type */
+#define XBT_PHONEBOOK "x-bt/phonebook"
+ 
 /** Siemens specific: app. param. for memory info.
  * parameter 0x01: mem installed, 0x02: free mem */
 #define APPARAM_INFO_CODE '2'
