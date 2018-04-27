@@ -572,6 +572,10 @@ int obexftp_connect_service(obexftp_client_t *cli, const char *src, const char *
 		uuid = UUID_IRMC;
 		uuid_len = sizeof(UUID_IRMC);
 	}
+	if (service == OBEX_PBAP_SERVICE) {
+		uuid = UUID_PBAP;
+		uuid_len = sizeof(UUID_PBAP);
+	}
 	// otherwiese default to OBEX_PUSH_SERVICE
 	return obexftp_connect_src(cli, src, device, port, uuid, uuid_len);
 }
