@@ -114,7 +114,7 @@ static void info_cb(int event, const char *msg, int len, void *UNUSED(data))
 		break;
 
 	case OBEXFTP_EV_BODY:
-		if (c == 'l' || c == 'X' || c == 'P') {
+		if (c == 'l' || c == 'X' || c == 'Y') {
 			if (msg == NULL)
 				fprintf(stderr, "No body.\n");
 			else if (len == 0)
@@ -203,7 +203,7 @@ static void discover_usb()
 }
 #endif
 
-static int find_bt(char *addr, char **res_bdaddr, int *res_channel)
+static int find_bt(char *addr, char **res_bdaddr, int *res_channel, int svclass)
 {
 	char **devices;
 	char **dev;
@@ -228,7 +228,7 @@ static int find_bt(char *addr, char **res_bdaddr, int *res_channel)
   
        	if (*res_channel < 0) {
 		fprintf(stderr, "Browsing %s ...\n", *res_bdaddr);
-		*res_channel = obexftp_browse_bt_ftp(*res_bdaddr);
+		*res_channel = obexftp_browse_bt_src(*res_bdaddr, svclass);
 	}
 	if (*res_channel < 0)
 		return -1; /* No valid BT channel found */
@@ -254,7 +254,7 @@ static int timeout = 20; /* default accept/reject timeout of 20 seconds */
 
 
 /* connect with given uuid. re-connect every time */
-static int cli_connect_uuid(const uint8_t *uuid, int uuid_len)
+static int cli_connect_uuid(const uint8_t *uuid, int uuid_len, int svclass)
 {
 	int ret, retry;
 #ifdef HAVE_SYS_TIMES_H
@@ -282,10 +282,11 @@ static int cli_connect_uuid(const uint8_t *uuid, int uuid_len)
 
 	/* complete bt address if necessary */
 	if (transport == OBEX_TRANS_BLUETOOTH) {
-		find_bt(device, &device, &channel);
+	    channel = -1;
+		find_bt(device, &device, &channel, svclass);
 		// we should free() the find_bt result at some point
 	}
-
+    printf("using channel %d\n",channel);
 	for (retry = 0; retry < 3; retry++) {
 
 		/* Connect */
@@ -337,7 +338,7 @@ static int cli_connect()
 		return 0;
 	}
 
-	if (cli_connect_uuid(use_uuid, use_uuid_len) < 0)
+	if (cli_connect_uuid(use_uuid, use_uuid_len, OBEX_TP_SERVICE) < 0)
 		exit(1);
 
 	return 0;
@@ -354,11 +355,11 @@ static void cli_disconnect()
 	}
 }
 
-static void probe_device_uuid(const uint8_t *uuid, int uuid_len)
+static void probe_device_uuid(const uint8_t *uuid, int uuid_len, int svclass)
 {
 	int rsp[10];
 	
-	if (cli_connect_uuid(uuid, uuid_len) < 0) {
+	if (cli_connect_uuid(uuid, uuid_len, svclass) < 0) {
 		printf("couldn't connect.\n");
 		return;
 	}
@@ -422,10 +423,12 @@ static void probe_device_uuid(const uint8_t *uuid, int uuid_len)
 	printf("=== response codes === %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x\n",
 		rsp[0], rsp[1], rsp[2], rsp[3], rsp[4], rsp[5], rsp[6], rsp[7], rsp[8], rsp[9]);
 
-	//cli_disconnect();
+	cli_disconnect();
+	/*
 	if (cli != NULL) {
 		(void) obexftp_disconnect (cli);
 	}
+	*/
 		
 }
 
@@ -433,10 +436,13 @@ static void probe_device_uuid(const uint8_t *uuid, int uuid_len)
 static void probe_device()
 {
 	printf("\n=== Probing with FBS uuid.\n");
-	probe_device_uuid(UUID_FBS, sizeof(UUID_FBS));
+	probe_device_uuid(UUID_FBS, sizeof(UUID_FBS), OBEX_FTP_SERVICE);
 	
 	printf("\n=== Probing with S45 uuid.\n");
-	probe_device_uuid(UUID_S45, sizeof(UUID_S45));
+	probe_device_uuid(UUID_S45, sizeof(UUID_S45), OBEX_FTP_SERVICE);
+	
+	printf("\n=== Probing with PBAP uuid.\n");
+	probe_device_uuid(UUID_PBAP, sizeof(UUID_PBAP),OBEX_PBAP_SERVICE);
 	
 	printf("\n=== Probing without uuid.\n");
 	probe_device_uuid(NULL, 0);
@@ -518,11 +524,12 @@ int main(int argc, char *argv[])
 			{"verbose",	no_argument, NULL, 'v'},
 			{"version",	no_argument, NULL, 'V'},
 			{"help",	no_argument, NULL, 'h'},
+			{"phonebook",   optional_argument,NULL,'P'},
 			{"usage",	no_argument, NULL, 'h'},
 			{0, 0, 0, 0}
 		};
 		
-		c = getopt_long (argc, argv, "-ib::B:d:u::t:n:U::HST:L::l::c:C:f:o:g:G:p:k:XYxm:VvhN:FP",
+		c = getopt_long (argc, argv, "-ib::B:d:u::t:n:U::HST:L::l::c:C:f:o:g:G:p:k:XYxm:VvhN:FP::",
 				 long_options, &option_index);
 		if (c == -1)
 			break;
@@ -738,8 +745,25 @@ int main(int argc, char *argv[])
 			break;
 
 		case 'P':
-			fprintf(stderr,"Option -%c is deprecated, use -%c instead\n",'P','Y');
-		case 'Y':
+			/* handle severed optional option argument */
+			if (!optarg && argc > optind && argv[optind][0] != '-') {
+				optarg = argv[optind];
+				optind++;
+			}
+			if(cli_connect_uuid (UUID_PBAP,sizeof(UUID_PBAP),OBEX_PBAP_SERVICE)>=0) {
+				char *p=0; /* basename or output_file */
+				if(!optarg) optarg="/telecom/pb.vcf";
+				if ((p = strrchr(optarg, '/')) != NULL) p++;
+				else p = optarg;
+				if (output_file) p = output_file;
+				/* Get phonebook object */
+				ret = obexftp_get_type(cli, XBT_PHONEBOOK, p, optarg);
+				output_file = NULL;
+			}
+			most_recent_cmd = c;
+			break;
+
+	case 'Y':
 			if (cli == NULL)
 				probe_device();
 			fprintf(stderr, "No other transfer options allowed with --probe\n");
@@ -819,7 +843,8 @@ int main(int argc, char *argv[])
 				" -G, --getdelete <SOURCE>    fetch and delete (move) files \n"
 				" -p, --put <SOURCE>          send files\n"
 				" -k, --delete <SOURCE>       delete files\n\n"
-				" -X, --capability            retrieve capability object\n"
+				" -P, --phonebook [<PB>]      get phonebook <PB> (default \"/telecom/pb.vcf\")\n"
+			    " -X, --capability            retrieve capability object\n"
 				" -Y, --probe                 probe and report device characteristics\n"
 				" -x, --info                  retrieve infos (Siemens)\n"
 				" -m, --move <SRC> <DEST>     move files (Siemens)\n\n"
