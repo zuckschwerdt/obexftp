@@ -322,7 +322,7 @@ static void client_done(obex_t *handle, obex_object_t *object, int UNUSED(obex_c
 			}
 			else
 				DEBUG(3, "%s() Application parameters don't fit %d vs. %lu.\n", __func__, hlen, (unsigned long)sizeof(apparam_t));
-                        break;
+            /*            break; */
                 }
                 else    {
                         DEBUG(3, "%s() Skipped header %02x\n", __func__, hi);
