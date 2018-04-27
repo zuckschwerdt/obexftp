@@ -58,6 +58,7 @@ enum {
 #define OBEX_SYNC_SERVICE	0x1104
 #define OBEX_PUSH_SERVICE	0x1105
 #define OBEX_FTP_SERVICE	0x1106
+#define OBEX_PBAP_SERVICE	0x112f
 
 /* server and client helpers for bt */
 
