@@ -140,6 +140,11 @@ Siemens specific for now.
 
 Move (rename) files on the mobile. Siemens specific for now.
 
+*-P* [_phonebook_], *--phonebook* [_phonebook_]::
+
+Retrieve the mobile phonebook using the OBEX PBAP protocol.
+Specify the phonebook (default is "/telecom/pb.vcf")
+
 
 === Version Information And Help
 
