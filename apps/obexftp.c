@@ -228,7 +228,7 @@ static int find_bt(char *addr, char **res_bdaddr, int *res_channel, int svclass)
   
        	if (*res_channel < 0) {
 		fprintf(stderr, "Browsing %s ...\n", *res_bdaddr);
-		*res_channel = obexftp_browse_bt_src(*res_bdaddr, svclass);
+		*res_channel = obexftp_browse_bt_src(NULL, *res_bdaddr, svclass);
 	}
 	if (*res_channel < 0)
 		return -1; /* No valid BT channel found */
@@ -338,7 +338,7 @@ static int cli_connect()
 		return 0;
 	}
 
-	if (cli_connect_uuid(use_uuid, use_uuid_len, OBEX_TP_SERVICE) < 0)
+	if (cli_connect_uuid(use_uuid, use_uuid_len, OBEX_FTP_SERVICE) < 0)
 		exit(1);
 
 	return 0;
@@ -445,7 +445,7 @@ static void probe_device()
 	probe_device_uuid(UUID_PBAP, sizeof(UUID_PBAP),OBEX_PBAP_SERVICE);
 	
 	printf("\n=== Probing without uuid.\n");
-	probe_device_uuid(NULL, 0);
+	probe_device_uuid(NULL, 0, 0);
 	
 	printf("\nEnd of probe.\n");
 	exit (0);
