@@ -20,6 +20,17 @@
 
 #define UUID_FBS ((const uint8_t []) __UUID_FBS_bytes)
 
+/**  
+    Phone Book Access Profile
+    binary representation of 796135F0-F0C5-11D8-0966-0800200C9A66
+ */
+#define __UUID_PBAP_bytes \
+{ 0x79, 0x61, 0x35, 0xF0, \
+  0xF0, 0xC5, 0x11, 0xD8, 0x09, 0x66, \
+  0x08, 0x00, 0x20, 0x0C, 0x9A, 0x66 }
+
+#define UUID_PBAP ((const uint8_t []) __UUID_PBAP_bytes)
+
 /**
 	UUID for Siemens S45 and maybe others too.
 	binary representation of 6B01CB31-4106-11D4-9A77-0050DA3F471F
